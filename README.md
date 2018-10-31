@@ -164,3 +164,8 @@ cf154b44ee517543dd074bd074864dc6
 -------------------------------- 
 
 ```
+
+## Contacts
+On Discord : polyminer1#8454 <br>
+On Bitcointalk : polyminer1 <br>
+Twitter https://twitter.com/polyminer1 <br>
