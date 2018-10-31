@@ -28,24 +28,40 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2
 
 ## Build instructions (Windows)
 Install VisualStudio 2017 with chose Platform Toolset v140
+
 Install the lastest NVIDIA Display Driver
+
 Install the CUDA Toolkit 9.2 (or more)
+
 Install boost_1_64_0 and make libs using bjam (https://www.boost.org/doc/libs/1_64_0/more/getting_started/windows.html)
+
 be sure BOOST_ROOT point to the right boost root path
+
 Open solution, select target and compile
+
 Run
 
 ## Build Linux (Ubuntu)
 sudo apt-get install git build-essential cmake 
+
 install CUDA ToolKit
+
 Install and compile boost_1_64_0
+
 Install jsoncpp
+
 git clone https://github.com/polyminer1/rhminer.git
+
 cd rhminer
+
 mkdir build
+
 cd build
+
 Exemple to build for CUDA Pascal : cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all ..
+
 Exemple to build for CPU only    : cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all ..
+
 make all
 
 
@@ -97,10 +113,11 @@ Network options:
   -fop                  Failover password for stratum or local wallet
   -r                    Retries connection count for stratum or local wallet
 ```
-* Examples
-Mining solo with on cpu          : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -extrapayload HelloWorld
-Mining solo with on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld
-Mining on pool a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:2222 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1 
+
+## Examples
+*Mining solo with on cpu          : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -extrapayload HelloWorld
+*Mining solo with on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld
+*Mining on pool a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:2222 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1 
   
   
 ## Donations
