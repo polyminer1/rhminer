@@ -15,9 +15,9 @@ https://github.com/polyminer1/rhminer/blob/master/Release
 * Volta   GTX 1100 series (GV104), Tesla V100
 
 ## Tested on 
-CPU: I3, I5, Core2, Xeon, Athlon
-GPU: GTX 950, GTX 1060, GTX 1070 
-CUDA: Linux CUDA 9.1, Windows CUDA 9.2
+CPU: I3, I5, Core2, Xeon, Athlon 
+GPU: GTX 950, GTX 1060, GTX 1070  
+CUDA: Linux CUDA 9.1, Windows CUDA 9.2 
 
 ## Upcoming
 * CPU optimization using SSe4 and AVX
@@ -27,46 +27,30 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2
 
 
 ## Build instructions (Windows)
-Install VisualStudio 2017 with chose Platform Toolset v140
-
-Install the lastest NVIDIA Display Driver
-
-Install the CUDA Toolkit 9.2 (or more)
-
-Install boost_1_64_0 and make libs using bjam (https://www.boost.org/doc/libs/1_64_0/more/getting_started/windows.html)
-
-be sure BOOST_ROOT point to the right boost root path
-
-Open solution, select target and compile
-
-Run
+Install VisualStudio 2017 with chose Platform Toolset v140 
+Install the lastest NVIDIA Display Driver 
+Install the CUDA Toolkit 9.2 (or more) 
+Install boost_1_64_0 and make libs using bjam (https://www.boost.org/doc/libs/1_64_0/more/getting_started/windows.html) 
+be sure BOOST_ROOT point to the right boost root path 
+Open solution, select target and compile 
+Run 
 
 ## Build Linux (Ubuntu)
-sudo apt-get install git build-essential cmake 
-
-install CUDA ToolKit
-
-Install and compile boost_1_64_0
-
-Install jsoncpp
-
-git clone https://github.com/polyminer1/rhminer.git
-
-cd rhminer
-
-mkdir build
-
-cd build
-
-Exemple to build for CUDA Pascal : cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all ..
-
-Exemple to build for CPU only    : cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all ..
-
-make all
+sudo apt-get install git build-essential cmake  
+install CUDA ToolKit 
+Install and compile boost_1_64_0 
+Install jsoncpp 
+git clone https://github.com/polyminer1/rhminer.git 
+cd rhminer 
+mkdir build 
+cd build 
+Exemple to build for CUDA Pascal : cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all .. 
+Exemple to build for CPU only    : cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all .. 
+make all 
 
 
 ## Stability issues
-There are some limitations on nvidia gpu to consider.
+Thre are some limitations on nvidia gpu to consider.
 
 First, the kernel is not 100% stable in all settings. This mean you'll have to experiment to find the stable sweet spot in term of gputhreads. Maximum thread count does not mean maximum speed. Sometimes lower thread count will give you more stability and more speed also.
 
@@ -115,9 +99,9 @@ Network options:
 ```
 
 ## Examples
-*Mining solo with on cpu          : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -extrapayload HelloWorld
-*Mining solo with on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld
-*Mining on pool a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:2222 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1 
+* Mining solo with on cpu          : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -extrapayload HelloWorld
+* Mining solo with on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld
+* Mining on pool a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:2222 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1 
   
   
 ## Donations
@@ -127,8 +111,7 @@ Default dev donation is 1%. That is to support furtur bug fix and many optimisat
   * Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp
 
 
-## Release checksums
-### MD5
+## Release checksums MD5
 ```
 Linux:
 -------------------------------
