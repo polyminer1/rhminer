@@ -25,8 +25,23 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 * GPU optimizations
 * curl Api for stats and control
 
+## Performances
 
-## Build instructions (Windows)
+| ------------- |:-------------:| -----:|
+
+
+| Cpu/GPU                                      | Speed in H/s   |
+| -------------------------------------------- ||--------------:|
+| Gtx 1060 3gb 262                             |      109       |  
+| gtx 950 2gb 140                              |       52       |
+| i5-4460 CPU @ 3.20GHz                        |      511       |
+| i5-3337U CPU @ 1.80GHz                       |      245       |
+| i5-2400 CPU @ 3.10GHz                        |      303       |
+| Core(TM)2 CPU 6300 @ 1.86GHz                 |       92       |
+| Core(TM) 2 QuadCore Q6600 @ 2.40GHz          |      163       |
+                                                     
+                                                     
+## Build instructions (Windows)                      
 Install VisualStudio 2017 with chose Platform Toolset v140 <br>
 Install the lastest NVIDIA Display Driver <br>
 Install the CUDA Toolkit 9.2 (or more) <br>
