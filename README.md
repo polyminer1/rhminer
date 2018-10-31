@@ -1,11 +1,11 @@
 # rhminer 
 
-RandomHash miner for the PascalCoin blockchain.
-Support CPU and NVidia GPU.
-Support stratum and solo mining
+RandomHash miner for the PascalCoin blockchain.<br>
+Support CPU and NVidia GPU.<br>
+Support stratum and solo mining<br>
 
 ## Download prebuilt binaries
-There is one prebuilt binariy per OS and CUDA architectures. 
+There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/blob/master/Release
 
 ## Supported Cuda architecture
@@ -31,7 +31,6 @@ Install VisualStudio 2017 with chose Platform Toolset v140 <br>
 Install the lastest NVIDIA Display Driver <br>
 Install the CUDA Toolkit 9.2 (or more) <br>
 Install boost_1_64_0 and make libs using bjam (https://www.boost.org/doc/libs/1_64_0/more/getting_started/windows.html) <br>
-be sure BOOST_ROOT point to the right boost root path <br>
 Open solution, select target and compile <br>
 Run <br>
 
@@ -44,8 +43,10 @@ git clone https://github.com/polyminer1/rhminer.git <br>
 cd rhminer <br>
 mkdir build <br>
 cd build <br>
-Exemple to build for CUDA Pascal : cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all .. <br>
-Exemple to build for CPU only    : cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all .. <br>
+```
+To build for CUDA Pascal : cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all .. <br>
+To build for CPU only    : cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all .. <br>
+```
 make all <br>
 
 
@@ -58,7 +59,7 @@ On multiple gpu rigs, it's NOT recommended to mine CPU at the same time. You'll 
 Also, it is recommented, on multiple GPU rigs, to run the miner in a loop in a batch file !
 
 Best way to find stability sweetspot's thread count is to divide total memory mb by 4.4 and then by 2<br>
-ex: on GTX 1060 3gb, 3000 / 8.8 /2  = 170 gpu threads. Use that as a starting point for the -gputhreads parameter.
+Exemple: On GTX 1060 3gb, 3000 / 8.8 /2  = 170 gpu threads. Use that as a starting point for the -gputhreads parameter.
 
 ## Troubleshoot
 On Windows 7/8/10, if you get the missing OpenCL.dll error you need to download it into rhminer's folder. (hint: You can safely get one with the Intel SDK on Intel's opencl website)
