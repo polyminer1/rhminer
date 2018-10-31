@@ -44,8 +44,8 @@ cd rhminer <br>
 mkdir build <br>
 cd build <br>
 ```
-To build for CUDA Pascal : cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all .. <br>
-To build for CPU only    : cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all .. <br>
+To build for CUDA Pascal : cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all ..
+To build for CPU only    : cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all ..
 ```
 make all <br>
 
@@ -100,13 +100,15 @@ Network options:
 ```
 
 ## Examples
- Mining solo with on cpu          : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -extrapayload HelloWorld <br>
- Mining solo with on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld <br>
- Mining on pool a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:2222 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1  <br>
+```
+ Mining solo with on cpu          : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -extrapayload HelloWorld
+ Mining solo with on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld
+ Mining on pool a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:2222 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1
+```
   
   
 ## Donations
-Default dev donation is 1%. That is to support furtur bug fix and many optimisations.
+Default dev donation is 1%. That is to support bug fixes and many upcoming optimisations. To disable donation use disabledevfee option.
 
   * Pascal address 529692-23
   * Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp
