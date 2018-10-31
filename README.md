@@ -1,7 +1,7 @@
 # rhminer 
 
 RandomHash miner for the PascalCoin blockchain.<br>
-Support CPU and NVidia GPU.<br>
+Support Intel/AMD 64 bit CPU and NVidia GPU.<br>
 Support stratum and solo mining<br>
 
 ## Download prebuilt binaries
@@ -108,7 +108,7 @@ Network options:
   
   
 ## Donations
-Default dev donation is 1%. That is to recoup the 6 month it toke to develop this miner, and to support bug fixes and many upcoming optimisations. To disable donation use disabledevfee option.
+Default dev donation is 1%. That is to recoup the 6 month it toke to develop this miner, and to support bug fixes and many upcoming optimizations. To disable donation use disabledevfee option.
 
   * Pascal address 529692-23
   * Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp
