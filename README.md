@@ -55,10 +55,8 @@ git clone https://github.com/polyminer1/rhminer.git <br>
 cd rhminer <br>
 mkdir build <br>
 cd build <br>
-```
-To build for CUDA Pascal : cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all ..
-To build for CPU only    : cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all ..
-```
+**To build for CUDA Pascal :** cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all ..  <br>
+**To build for CPU only    :** cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all ..  <br>
 make all <br>
 
 
@@ -113,57 +111,18 @@ Network options:
 
 ## Examples
 ```
- Mining solo with on cpu          : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -extrapayload HelloWorld
- Mining solo with on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld
- Mining on pool a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:2222 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1
+ Mining solo on cpu          : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 4 -extrapayload HelloWorld
+ Mining solo on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld
+ Mining on a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:1379 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1
 ```
   
   
 ## Donations
-Default dev donation is 1%. That is to recoup the 6 month it toke to develop this miner, and to support bug fixes and many upcoming optimizations. To disable donation use disabledevfee option.
-
-  * Pascal address 529692-23
+Default dev donation is 1%. That is to recoup the 6 month it toke to develop this miner, and to support bug fixes and many upcoming optimizations. To disable donation use disabledevfee option. <br>
+For direct donations:
+  * Pascal wallet 529692-23
   * Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp
 
-
-## Release checksums MD5
-```
-Linux:
--------------------------------
-MD5 for rhminer for CPU is :
-5092420042198639106c227557c40b38
--------------------------------
-MD5 for rhminer for Kepler is :
-711acdf4c57e879dd7c5bb05f545d747
--------------------------------
-MD5 for rhminer for Maxwell is :
-346ab4b200077d948de786c6a758ca97
--------------------------------
-MD5 for rhminer for Pascal is :
-623ab16821c84c234df97f55b359b4f3
--------------------------------
-MD5 for rhminer for Volta is :
-d8a6c2615c8b815b524df4af216994cd
-
-Windows:
--------------------------------- 
-MD5 for rhminer.exe CPU is  
-d6483f7a81c23ef62529681da98bf463
--------------------------------- 
-MD5 for rhminer.exe Kepler is  
-a769de7d37bac88ec11954342123874c
--------------------------------- 
-MD5 for rhminer.exe Maxwell is  
-bfbc6a38969cfc3d717e74502fcd5268
--------------------------------- 
-MD5 for rhminer.exe Pascal is  
-e770e60ce12bdca47165af6c831753c4
--------------------------------- 
-MD5 for rhminer.exe Volta is  
-cf154b44ee517543dd074bd074864dc6
--------------------------------- 
-
-```
 
 ## Contacts
 On Discord : polyminer1#8454 <br>
