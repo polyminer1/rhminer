@@ -55,8 +55,8 @@ git clone https://github.com/polyminer1/rhminer.git <br>
 cd rhminer <br>
 mkdir build <br>
 cd build <br>
-**To build for CUDA Pascal :** cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all ..  <br>
-**To build for CPU only    :** cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all ..  <br>
+*To build for CUDA Pascal :* `cmake -DRH_CPU_ONLY=OFF -DRH_DEBUG_TARGET=OFF -DRH_CUDA_ARCH=Pascal --target all ..`  <br>
+*To build for CPU only    :* `cmake -DRH_CPU_ONLY=ON -DRH_DEBUG_TARGET=OFF --target all ..`  <br>
 make all <br>
 
 

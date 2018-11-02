@@ -1,6 +1,6 @@
 # rhminer binaries
 
-Prebuilt binaries forthe RandomHash miner.<br>
+Prebuilt binaries for the PascalCoin RandomHash miner.<br>
 
 ## Release checksums MD5
 ```
