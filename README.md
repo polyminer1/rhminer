@@ -1,3 +1,4 @@
+
 # rhminer 
 
 RandomHash miner for the PascalCoin blockchain.<br>
@@ -7,6 +8,18 @@ Support stratum and solo mining<br>
 ## Download prebuilt binaries
 There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/blob/master/Release
+
+## Mining locally/Solo
+To mine locally/solo you'll need the official PascalCoin wallet https://github.com/PascalCoin/PascalCoin/releases
+In order to mine locally wheh rhminer, *You need to set a miner name smaller than 26 characters*<br>
+In the wallet application, go to Project menu, then Options and set a miner name smaller than 26 characters<br>
+
+```
+For Test net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
+For Main net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
+
+NOTE: remote -gpu 0 -gputhreads 100 if you dont have a gpu
+```
 
 ## Supported Cuda architecture
 * Kepler  GTX  700 series, Tesla K40/K80
@@ -31,7 +44,8 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 | -------------------------------------------- |:--------------:|
 | Gtx 1060 3gb with 262 threads                |      109       |  
 | Gtx 950 2gb with 140 threads                 |       52       |
-| i5-4460 CPU @ 3.20GHz                        |      511       |
+| i7-850m CPU @ 3.90Hz 11 threads              |      1217      |
+| i5-4460 CPU @ 3.20GHz 4 threads              |      511       |
 | i5-3337U CPU @ 1.80GHz                       |      245       |
 | i5-2400 CPU @ 3.10GHz                        |      303       |
 | Core(TM) 2 Duo 6300 @ 1.86GHz                |       92       |
