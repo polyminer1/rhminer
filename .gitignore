@@ -1,12 +1,9 @@
-*.sln
-*.vcxproj
 *.filters
 *.user
 *.sdf
 *.opensdf
 *.suo
 *.log
-*.txt
 *.cmd
 *.ext
 *.bak 
@@ -18,7 +15,6 @@
 .project
 .cproject
 *.args
-
 /.settings/
 \debug\
 \release\
