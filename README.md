@@ -115,10 +115,49 @@ Network options:
  Mining solo on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld
  Mining on a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:1379 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1
 ```
+
+## Api access
+Default port is 7111. Just sending empty string will return mining status in json format like that:
+```
+{
+	"infos": [
+        {
+			"name": "GPU2",
+			"threads": 262,
+			"speed": 114,
+			"accepted": 1,
+			"rejected": 0,
+			"temp": 0,
+			"fan": 0
+		}, 
+        {
+			"name": "CPU",
+			"threads": 2,
+			"speed": 266,
+			"accepted": 3,
+			"rejected": 0,
+			"temp": 0,
+			"fan": 0
+		}
+	],
+	"speed": 380,
+	"accepted": 4,
+	"rejected": 0,
+	"failed": 0,
+	"uptime": 91,
+	"extrapayload": "",
+	"stratum.server": "localhost:4109",
+	"stratum.user": "",
+	"diff": 0.00000049
+}
+```
+
   
-  
-## Donations
-Default dev donation is 1%. That is to recoup the 6 month it toke to develop this miner, and to support bug fixes and many upcoming optimizations. To disable donation use disabledevfee option. <br>
+## Developer Donation
+Default donation is 1%. <br>
+Donation is hardcoded in the binaries downloadable on gitgub. That is to recoup the 6 month it toke to R&D, develop, stabilize and optimize this miner and for the upcoming bug fixes and many upcoming optimizations. <br>
+To disable donation download and compile locally, then use the -disabledevfee option. <br>
+
 For direct donations:
   * Pascal wallet 529692-23
   * Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp
