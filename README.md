@@ -29,7 +29,7 @@ NOTE: remove -gpu 0 -gputhreads 100 if you dont have a gpu
 
 ## Gpu mining
 To mine using gpu you must provide the gpu numbers and the amount of threads for each gpu.<br>
-If you only have one gpu, use -gpu 0 and -gputhreads {amount of threads}<br>
+If you only have one gpu, use **-gpu 0** and **-gputhreads {amount of threads}**<br>
 If you have more than one gpus, you can see their number by executing the miner with the *list* option :<br> 
 ``` 
 C:>rhminer -list 
@@ -78,7 +78,7 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 | Gtx 1060 3gb                       | 570              | 110          |
 | Gtx 950 2gb                        | 140              | 52           |
 | i7-8750H CPU @ 3.90Hz              | 11               | 1217         |
-| Ryzen 1800X @ 4GHz, 3200MHz RAM    | 833 (302 rounds) | 1324         |
+| Ryzen 1800X @ 4GHz, 3200MHz RAM    | 8 (302 rounds)   | 1324         |
 | i5-4460 CPU @ 3.20GHz              | 4                | 511          |
 | i5-3337U CPU @ 1.80GHz             | 4                | 245          |
 | i5-2400 CPU @ 3.10GHz              | 4                | 303          |
