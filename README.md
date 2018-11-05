@@ -10,15 +10,15 @@ There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/blob/master/Release
 
 ## Mining locally/Solo
-To mine locally/solo you'll need the official PascalCoin wallet https://github.com/PascalCoin/PascalCoin/releases
-In order to mine locally wheh rhminer, *You need to set a miner name smaller than 26 characters*<br>
+To mine locally/solo you'll need the official PascalCoin wallet https://github.com/PascalCoin/PascalCoin/releases <br>
+In order to mine locally wheh rhminer, **You need to set a miner name smaller than 26 characters**<br>
 In the wallet application, go to Project menu, then Options and set a miner name smaller than 26 characters<br>
 
 ```
 For Test net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
 For Main net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
 
-NOTE: remote -gpu 0 -gputhreads 100 if you dont have a gpu
+NOTE: remove -gpu 0 -gputhreads 100 if you dont have a gpu
 ```
 
 ## Supported Cuda architecture
