@@ -1,4 +1,5 @@
-# rhminer 
+
+# rhminer 
 
 RandomHash miner for the PascalCoin blockchain.<br>
 Support Intel/AMD 64 bit CPU and NVidia GPU.<br>
@@ -9,15 +10,15 @@ There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/blob/master/Release
 
 ## Mining locally/Solo
-To mine locally/solo you'll need the official PascalCoin wallet https://github.com/PascalCoin/PascalCoin/releases
-In order to mine locally wheh rhminer, *You need to set a miner name smaller than 26 characters*<br>
+To mine locally/solo you'll need the official PascalCoin wallet https://github.com/PascalCoin/PascalCoin/releases <br>
+In order to mine locally wheh rhminer, **You need to set a miner name smaller than 26 characters**<br>
 In the wallet application, go to Project menu, then Options and set a miner name smaller than 26 characters<br>
 
 ```
 For Test net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
 For Main net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
 
-NOTE: remote -gpu 0 -gputhreads 100 if you dont have a gpu
+NOTE: remove -gpu 0 -gputhreads 100 if you dont have a gpu
 ```
 
 ## Supported Cuda architecture
@@ -25,6 +26,38 @@ NOTE: remote -gpu 0 -gputhreads 100 if you dont have a gpu
 * Maxwell GTX  900 series, Quadro M series, GTX Titan X
 * Pascal  GTX 1000 series, Titan Xp, Tesla P40, Tesla P4,GP100/Tesla P100 – DGX-1
 * Volta   GTX 1100 series (GV104), Tesla V100
+
+## Gpu mining
+To mine using gpu you must provide the gpu numbers and the amount of threads for each gpu.<br>
+If you only have one gpu, use **-gpu 0** and **-gputhreads {amount of threads}**<br>
+If you have more than one gpus, you can see their number by executing the miner with the *list* option :<br> 
+``` 
+C:>rhminer -list 
+
+  rhminer v0.9 beta for CPU and NVIDIA GPUs by polyminer1 (http://github.com/polyminer1)
+  NVIDIA CUDA SDK 9.2
+
+  Donations : Pascal account 529692-23
+  Donations : Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp
+
+List of gpus and cpus:
+GPU0 : GeForce GTX 1060 3GB
+GPU1 : GeForce GTX 1060 3GB
+GPU2 : GeForce GTX 950 2GB
+CPU  : Intel(R) Core(TM) i5-4460 CPU @ 3.20GHz
+```
+Then select the ones you want to mine with like this : <br> 
+```
+rhminer -s http://localhost:4009 -gpu 1,2 -gputhreads 262,102
+```
+
+## Ideal CUDA threads count
+To find the ideal maximum amount of threads, start with 75% of the memory divided by 8.8. <br>
+For a GTX 1060 3GB that is 3000 * 0.75 / 8.8 = 255 threads. <br>
+Then run 2 minutes and if everything is stable, raise by say 32 until you get no crashes after 2 min.<br>
+To help you in that process, look for the log line that say "CUDA: Using " when the miner starts. It  will indicate how much memory you take and how much is left depending on your selected thread count.<br>
+**ALLWAYS* let at lease 150 meg of free memory, for internal OS operations, or you have stability issues.<br>
+
 
 ## Tested on 
 CPU: I3, I5, Core2, Xeon, Athlon <br>
@@ -39,16 +72,18 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 
 ## Performances
 
-| Cpu/GPU                                      | Speed in H/s   |
-| -------------------------------------------- |:--------------:|
-| Gtx 1060 3gb with 262 threads                |      109       |  
-| Gtx 950 2gb with 140 threads                 |       52       |
-| i7-850m CPU @ 3.90Hz 11 threads              |      1217      |
-| i5-4460 CPU @ 3.20GHz 4 threads              |      511       |
-| i5-3337U CPU @ 1.80GHz                       |      245       |
-| i5-2400 CPU @ 3.10GHz                        |      303       |
-| Core(TM) 2 Duo 6300 @ 1.86GHz                |       92       |
-| Core(TM) 2 QuadCore Q6600 @ 2.40GHz          |      163       |
+| Cpu/GPU                            | Threads          | Speed in H/s |
+| -----------------------------------|-----------------:|-------------:|
+| Gtx 1060 3gb                       | 262              | 109          |  
+| Gtx 1060 6gb (mobile)              | 570              | 199          |
+| Gtx 950 2gb                        | 140              | 52           |
+| i7-8750H CPU @ 3.90Hz              | 11               | 1217         |
+| Ryzen 1800X @ 4GHz, 3200MHz RAM    | 8 (302 rounds)   | 1324         |
+| i5-4460 CPU @ 3.20GHz              | 4                | 511          |
+| i5-3337U CPU @ 1.80GHz             | 4                | 245          |
+| i5-2400 CPU @ 3.10GHz              | 4                | 303          |
+| Core(TM) 2 Duo 6300 @ 1.86GHz      | 2                | 92           |
+| Core(TM) 2 QuadCore Q6600@2.40GHz  | 4                | 163          |
                                                      
                                                      
 ## Build instructions (Windows)                      
