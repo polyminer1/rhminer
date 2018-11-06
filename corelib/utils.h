@@ -87,6 +87,7 @@ extern S64         ToInt64X(const string& s);
 extern U64         ToUInt64X(const string& s);
 inline float       ToFloat(const string& s) { try { return std::stof(s); } catch (...) { return 0.0f; } }
 extern const char* SecondsToStr(U64 sec);
+extern const char* DiffToStr(float diff);
 extern const char* HashrateToString(float hashrate);
 
 
@@ -95,6 +96,7 @@ extern const char* HashrateToString(float hashrate);
 extern void PrintOut(const char *szFormat, ...);                                                            //Verbose level 1
 extern void PrintOutCritical(const char *szFormat, ...);                                                    //Verbose level 0
 extern void PrintOutWarning(const char *szFormat, ...);                                                     //Verbose level 2
+extern void PrintOutSilent(const char *szFormat, ...);                                                      //Verbose level 3
 extern void SetLogFileName(const char* fn);
 #ifndef RHMINER_RELEASE
     extern void DebugOut(const char *szFormat, ...);

@@ -11,10 +11,14 @@ https://github.com/polyminer1/rhminer/blob/master/Release
 
 ## Mining locally/Solo
 To mine locally/solo you'll need the official PascalCoin wallet https://github.com/PascalCoin/PascalCoin/releases <br>
-In order to mine locally wheh rhminer, **You need to set a miner name smaller than 26 characters**<br>
-In the wallet application, go to Project menu, then Options and set a miner name smaller than 26 characters<br>
+In order to mine locally with rhminer, **You need to set a miner name smaller than 26 characters and mine into a private key with encryption type secp256k1**<br>
+The best way to assure you're mining in a secp256k1 private key is to create one and select it in the option **"Always mine with this key"**.<br>
+**Do not use the "Use random existing key" option** because if one of your key is not a secp256k1 key, the miner will exit when. Plus when there is to much keys in the wallet it gives out errors, sometimes, when submiting nonces<br>
+To ensure your miner name is correct, go to Project menu, then Options and set a miner name smaller than 26 characters<br>
 
 ```
+Solo mining examples:
+
 For Test net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
 For Main net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
 
@@ -56,7 +60,7 @@ To find the ideal maximum amount of threads, start with 75% of the memory divide
 For a GTX 1060 3GB that is 3000 * 0.75 / 8.8 = 255 threads. <br>
 Then run 2 minutes and if everything is stable, raise by say 32 until you get no crashes after 2 min.<br>
 To help you in that process, look for the log line that say "CUDA: Using " when the miner starts. It  will indicate how much memory you take and how much is left depending on your selected thread count.<br>
-**ALLWAYS* let at lease 150 meg of free memory, for internal OS operations, or you have stability issues.<br>
+**ALLWAYS** let at lease 150 meg of free memory, for internal OS operations, or you have stability issues.<br>
 
 
 ## Tested on 
@@ -78,7 +82,7 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 | Gtx 1060 6gb (mobile)              | 570              | 199          |
 | Gtx 950 2gb                        | 140              | 52           |
 | i7-8750H CPU @ 3.90Hz              | 11               | 1217         |
-| Ryzen 1800X @ 4GHz, 3200MHz RAM    | 8 (302 rounds)   | 1324         |
+| Ryzen 1800X @ 4GHz, 3200MHz RAM    | 8                | 1324         |
 | i5-4460 CPU @ 3.20GHz              | 4                | 511          |
 | i5-3337U CPU @ 1.80GHz             | 4                | 245          |
 | i5-2400 CPU @ 3.10GHz              | 4                | 303          |
@@ -141,7 +145,6 @@ General options:
 Gpu options:
   -cpu                  Enable the use of CPU to mine. ex '-cpu -cputhread 4' will enable mining on cpu while gpu mining.
   -cputhreads           Number of CPU miner threads when mining with CPU. ex: -cpu -cputhread 4
-  -cpurounds            Number of round per CPU cpu threads. Default is 50. ex: -cpu -cpurounds do 100. Each cpu thread will 100 hashes at a time
   -gputhreads           Cuda thread count. ex: -gputhreads  100 launche 100 threads on selected gpu
   -gpu                  Enable indiviaual GPU by their index. GPU not in the list will be disabled. ex: -gpu 0,3,4.
   -kernelactivewayting  Enable active wayting on kernel run. This will raise cpu usage but bring more stability, specially when mining on multiple gpu. WARNING: This affect cpu mining

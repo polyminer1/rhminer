@@ -131,7 +131,7 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
             gid++;
             workSize--;
         }
-
+        
         kernelData->m_itterations++;
 
         if (kernelData->m_id == 0)
@@ -168,7 +168,7 @@ bool RandomHashCPUMiner::init(const PascalWorkSptr& work)
     //start hashrate counting
     if (m_hashCountTime == 0)
         m_hashCountTime = TimeGetMilliSec();
-
+    
     //set this thread at high prio
     if (g_useCPU && !g_useGPU)
         RH_SetThreadPriority(RH_ThreadPrio_High);
@@ -180,7 +180,6 @@ bool RandomHashCPUMiner::configureGPU()
 {
     return true;
 }
-
 
 PrepareWorkStatus RandomHashCPUMiner::PrepareWork(const PascalWorkSptr& workTempl, bool reuseCurrentWP)
 {

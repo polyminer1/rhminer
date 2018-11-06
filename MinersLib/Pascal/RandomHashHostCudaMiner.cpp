@@ -20,8 +20,8 @@
 #include "MinersLib/Global.h"
 #include "rhminer/ClientManager.h"
 
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("kernelactivewayting", g_kernelactivewayting, "Gpu", "Enable active wayting on kernel run. This will raise cpu usage but bring more stability, specially when mining on multiple gpu. WARNING: This affect cpu mining");
-RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_kernelactivewayting, false);
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("kernelactivewaiting", g_kernelactivewaiting, "Gpu", "Enable active waiting on kernel run. This will raise cpu usage but bring more stability, specially when mining on multiple gpu. WARNING: This affect cpu mining");
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_kernelactivewaiting, false);
 
 using namespace std;
 

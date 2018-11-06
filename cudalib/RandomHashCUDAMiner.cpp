@@ -22,7 +22,7 @@
 #include "corelib/CommonData.h"
 #include "MinersLib/Pascal/PascalCommon.h"
 
-extern bool g_kernelactivewayting;
+extern bool g_kernelactivewaiting;
 extern void cuda_randomhash_create(uint32_t blocks, uint32_t threadsPerBlock, uint32_t* input, U32 deviceID);
 extern void cuda_RandomHash_SetTarget(uint64_t target);
 extern void cuda_randomhash_init(uint32_t* input, U32 nonce2);    
@@ -103,7 +103,7 @@ bool RandomHashCUDAMiner::Init(const CudaWorkPackage& work, const CudaMinerValue
 
     if (m_outputBuffer)
     {
-        if (g_kernelactivewayting)
+        if (g_kernelactivewaiting)
             cudaDeviceSynchronize();
         else
         {
@@ -153,7 +153,7 @@ void RandomHashCUDAMiner::PrepareWork(const CudaWorkPackage& work)
     m_currentWork = work;
     if (m_kernelItterations)
     {
-        if (g_kernelactivewayting)
+        if (g_kernelactivewaiting)
             cudaDeviceSynchronize();
         else
         {

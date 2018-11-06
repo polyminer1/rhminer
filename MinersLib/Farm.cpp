@@ -221,13 +221,22 @@ WorkingProgress const& Farm::miningProgress(bool reset)
 	WorkingProgress p;
 	{
         Guard l2(m_minerWorkMutex);
+        if (!m_lastProgressTime)
+            m_lastProgressTime = TimeGetMilliSec();
+        U32 dt = TimeGetMilliSec() - m_lastProgressTime;
+        if (dt < 100)
+            dt = 100;
+        m_lastProgressTime = TimeGetMilliSec();
+
         unsigned deadCount = 0;
 		for (int cnt = 0; cnt < m_miners.size(); cnt++)
 		{
             if (m_miners[cnt]->isStopped())
                 deadCount++;
+            
+            U64 hcount = m_miners[cnt]->GetHashRatePerSec();
+            U32 minerHashRate = (U64)round(hcount /(float)(dt/1000.0f));
 
-            U32 minerHashRate = (U32)m_miners[cnt]->GetHashRatePerSec();
             p.totalHashRate += minerHashRate;
             p.minersHasheRate.push_back(minerHashRate);
             p.gpuGlobalIndex.push_back(m_miners[cnt]->getAbsoluteIndex());

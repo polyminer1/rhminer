@@ -107,6 +107,8 @@ void StratumClient::Write(tcp::socket& socket, boost::asio::streambuf& buff)
         size_t size = buff.size();
         std::string s((std::istreambuf_iterator<char>(&buff)), std::istreambuf_iterator<char>());            
 
+        PrintOutSilent("send : %s\n", s.c_str());
+
         std::ostream os(&buff);
         os << s;
     
@@ -286,11 +288,9 @@ void StratumClient::Disconnect()
 {
     StopFarming();
 
-	//PrintOut("Disconnecting...\n");
 	m_connected = false;
 	m_running = false;
 	m_socket.close();
-	//m_io_service.stop();
 }
 
 string StratumClient::ReadLineFromServer()
@@ -300,6 +300,9 @@ string StratumClient::ReadLineFromServer()
 
     std::istream is(&m_responseBuffer);
     getline(is, response);
+
+    PrintOutSilent("recv : %s\n", response.c_str());
+
     return response;
 }
 
@@ -600,7 +603,7 @@ void StratumClient::SendWorkToMiners(PascalWorkSptr wp)
         ids = wp->m_jobID;
     
     U64 ts = ToUIntX(wp->m_ntime);    
-    PrintOutCritical("Received new Work %s. Work target 0x%s (diff %.8f)\n", ids.c_str(), toHex(wp->GetDeviceTargetUpperBits()).c_str(),(float)wp->m_workDiff);
+    PrintOutCritical("Received new Work %s. Work target 0x%s (diff %s)\n", ids.c_str(), toHex(wp->GetDeviceTargetUpperBits()).c_str(), DiffToStr((float)wp->m_workDiff));
 
     //Propagate the workpackage to all miners
     m_farm->SetWork(InstanciateWorkPackage(&wp));
@@ -732,7 +735,7 @@ void StratumClient::SetStratumDiff(float stratDiff)
 {
     if (GlobalMiningPreset::I().m_localDifficulty != 0.0f)
     {
-        PrintOut("Ignoring stratum difficulty of %.8f over locally chosen difficulty of %.9f \n", (float)stratDiff, (float)m_nextWorkDifficulty);
+        PrintOut("Ignoring stratum difficulty of %.8f over locally chosen difficulty of %s \n", (float)stratDiff, DiffToStr((float)m_nextWorkDifficulty));
     }
     else
     {

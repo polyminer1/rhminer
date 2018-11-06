@@ -46,6 +46,8 @@ void MiniWeb_Connection(socket_ptr sock)
         boost::system::error_code error;
         size_t length = sock->read_some(boost::asio::buffer(data), error);
 		data[MaxBuffer-1] = 0;
+        
+        PrintOutSilent("api : %s\n", data);
 
         //if (stristr(data, "get"))
         {

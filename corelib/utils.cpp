@@ -56,8 +56,14 @@ string TrimZeros(const string& str, bool tailing, bool heading)
 {
     const char* head = str.c_str();
     if (heading)
+    {
         while(*head == '0' && *head != 0)
+        {
+            if (*(head + 1) == '.')
+                break;
             head++;
+        }
+    }
 
     string rstring(head);
     if (tailing) 
@@ -68,6 +74,8 @@ string TrimZeros(const string& str, bool tailing, bool heading)
             *foot = 0;
             foot--;
         }
+        if (*foot == '.')
+            *foot = 0;
     }
 
     return rstring;
@@ -236,24 +244,25 @@ void DebugOut(const char *szFormat, ...)
 
 void PrintOutWarning(const char *szFormat, ...) 
 {
+    va_list argList;
+    char szBuffer[RHMINER_KB(12)];
+
+    va_start(argList, szFormat);
+    _vsnprintf(szBuffer, sizeof(szBuffer), szFormat, argList);
+    va_end(argList);
+
+    GlobalOutputMutex()->lock();
+    const char* str = GetOutputDecoration(szBuffer);
     if (g_logVerbosity > 1)
     {
-        va_list argList;
-        char szBuffer[RHMINER_KB(12)];
-
-        va_start(argList, szFormat);
-        _vsnprintf(szBuffer, sizeof(szBuffer), szFormat, argList);
-        va_end(argList);
-
-        GlobalOutputMutex()->lock();
-        const char* str = GetOutputDecoration(szBuffer);
         printf("%s", str);
 #if defined(RHMINER_DEBUG) || defined(RH_OUTPUT_TO_DEBUGGER)
         OutputDebugStringA(str);
 #endif
-        _PrintToLog(str);
-        GlobalOutputMutex()->unlock();
     }
+
+    _PrintToLog(str);
+    GlobalOutputMutex()->unlock();
 }
 
 void PrintOutCritical(const char *szFormat, ...) 
@@ -277,7 +286,29 @@ void PrintOutCritical(const char *szFormat, ...)
 
 void PrintOut(const char *szFormat, ...)
 {
+    va_list argList;
+    char szBuffer[RHMINER_KB(12)];
+
+    va_start(argList, szFormat);
+    _vsnprintf(szBuffer, sizeof(szBuffer), szFormat, argList);
+    va_end(argList);
+
+    GlobalOutputMutex()->lock();
+    const char* str = GetOutputDecoration(szBuffer);
     if (g_logVerbosity > 0)
+    {
+        printf("%s", str);
+#if defined(RHMINER_DEBUG) || defined(RH_OUTPUT_TO_DEBUGGER)
+        OutputDebugStringA(str);
+#endif
+    }
+    _PrintToLog(str);
+    GlobalOutputMutex()->unlock();
+}
+
+void PrintOutSilent(const char *szFormat, ...)
+{
+    if (g_logVerbosity > 2)
     {
         va_list argList;
         char szBuffer[RHMINER_KB(12)];
@@ -288,11 +319,10 @@ void PrintOut(const char *szFormat, ...)
 
         GlobalOutputMutex()->lock();
         const char* str = GetOutputDecoration(szBuffer);
-        printf("%s", str);
+        _PrintToLog(str);
 #if defined(RHMINER_DEBUG) || defined(RH_OUTPUT_TO_DEBUGGER)
         OutputDebugStringA(str);
 #endif
-        _PrintToLog(str);
         GlobalOutputMutex()->unlock();
     }
 }
@@ -534,13 +564,21 @@ U64 ToUInt64X(const string& s)
 
 const char* HashrateToString(float hashrate)
 {
+    /*
     if (hashrate > (1000.0f*1000.0f))
         return FormatString("%.2f MH/S", hashrate/(1000.0f*1000.0f));
     else if (hashrate > 1000.0f)
         return FormatString("%.3f KH/S", hashrate/1000.0f);
-    else
+    else*/
         return FormatString("%d H/S", (U32)hashrate);
 
+}
+
+
+const char* DiffToStr(float diff) 
+{
+    string s = FormatString("%.9f", diff);
+    return FormatString("%s", TrimZeros(s, true, true).c_str());
 }
 
 const char* SecondsToStr(U64 sec) 
