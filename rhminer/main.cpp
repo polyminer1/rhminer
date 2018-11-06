@@ -30,7 +30,7 @@
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("processpriority", g_setProcessPrio, "General", "Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority. Default is 2. WARNING: Changing this value will affect GPU mining.", 0, 3);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 2)
 
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("v", g_logVerbosity, "General", "Log verbosity. From 0 to 3. 0 no log, 1 normal log, 2 include warnings. Default is 1",0, 2);
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("v", g_logVerbosity, "General", "Log verbosity. From 0 to 3. 0 no log, 1 normal log, 2 include warnings. 3 network (only in log file). Default is 1",0, 3);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_logVerbosity, 1)
 bool g_ExitApplication = false;
 

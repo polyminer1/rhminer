@@ -87,6 +87,7 @@ private:
 	mutable Mutex          m_minerWorkMutex;
 	std::vector<MinerSptr> m_miners;
     std::atomic<unsigned>  m_minersCount;
+    U64                    m_lastProgressTime = 0;
 
     Mutex m_sumbitMutex;
     std::map<unsigned, std::pair<std::thread*, bool>> m_submiters;

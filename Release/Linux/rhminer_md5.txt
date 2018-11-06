@@ -1,15 +1,15 @@
 -------------------------------
 MD5 for rhminer for CPU is :
-afe1cf9288945f3acd86a99ffe556792
+c308384eb7e84fe39197192a23a39e53
 -------------------------------
 MD5 for rhminer for Kepler is :
-3db0d3f173d99c9f56b2f5c8863f270b
+af6239bf99c39121488198e60ab30c22
 -------------------------------
 MD5 for rhminer for Maxwell is :
-711fe2cabda397d98d01f8d7cd830e1d
+6179ebb8f5ec6b18d7cc766929aeee23
 -------------------------------
 MD5 for rhminer for Pascal is :
-f9e571a7d6e60db58109cae46cf8c44d
+19de3ec48d8267119806f9ebf9815d99
 -------------------------------
 MD5 for rhminer for Volta is :
-d005392cd9baf34a693f622b146e3d51
+37595a861991bfb67f3f4216f7d9c978

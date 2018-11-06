@@ -22,10 +22,11 @@
 #include "MinersLib/CLMinerBase.h"
 #include "rhminer/CommandLineManager.h"
 
+const U32 g_cpuRoundsThread = 64;
+
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_STRING("logfilename", g_logFileName, "General", "Set the name of the log's filename. Note: the log file will be overwritten every time you start rhminer");
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("cpu", g_useCPU, "Gpu", "Enable the use of CPU to mine. ex '-cpu -cputhread 4' will enable mining on cpu while gpu mining.");
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("cputhreads", g_cpuMinerThreads, "Gpu", "Number of CPU miner threads when mining with CPU. ex: -cpu -cputhread 4", 0, S32_Max);
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("cpurounds", g_cpuRoundsThread, "Gpu", "Number of round per CPU cpu threads. Default is 50. ex: -cpu -cpurounds do 100. Each cpu thread will 100 hashes at a time", 0, S32_Max);
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("cpu", g_useCPU, "Gpu", "Enable the use of CPU to mine. ex '-cpu -cputhreads 4' will enable mining on cpu while gpu mining.");
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("cputhreads", g_cpuMinerThreads, "Gpu", "Number of CPU miner threads when mining with CPU. ex: -cpu -cputhreads 4", 0, S32_Max);
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("testperformance", g_testPerformance, "Debug", "Run performance test for an amount of seconds", 0, 120)
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("disabledevfee", g_disableDevFee, "General", "Before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software.");
 

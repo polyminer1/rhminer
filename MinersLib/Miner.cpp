@@ -46,15 +46,8 @@ U64 Miner::GetHashRatePerSec()
     U64 rate = 0;
     if (m_hashCountTime)
     {
-        S64 dt = TimeGetMilliSec() - m_hashCountTime;
-        
-        if (dt > 0)
-            rate = (U64)round(m_hashCount /(float)(dt/1000.0f));            
-        else
-        {
-            //handle time change !
-        }
-        AtomicAdd(m_resetHashRateTime, 1);
+        rate = AtomicGet(m_hashCount);
+        AtomicAdd(m_resetHash, 1);
     }
 
     return rate;
@@ -107,16 +100,6 @@ void Miner::WorkLoop()
 }
 
 
-void Miner::TryResetHashCount()
-{
-    U64 reset = AtomicSet(m_resetHashRateTime, 0);
-    if (reset)
-    {
-        m_hashCount = 0;
-        m_hashCountTime = TimeGetMilliSec();
-    }
-}
-
 void Miner::Pause()
 {
     m_workReadyEvent.Reset();
@@ -130,16 +113,17 @@ void Miner::Kill()
 
 void Miner::AddHashCount(U64 hashes)
 { 
-    U64 reset = AtomicSet(m_resetHashRateTime, 0);
+    U64 reset = AtomicSet(m_resetHash, 0);
     if (reset)
     {
-        m_hashCount = hashes;
-        m_hashCountTime = TimeGetMilliSec();
+        AtomicSet(m_hashCount, hashes);
     }
     else
     {
-        m_hashCount += hashes;
+        AtomicAdd(m_hashCount, hashes);
     }
+
+    m_hashCountTime = TimeGetMilliSec();
 }
 
 void Miner::GetTemp(U32& temp, U32& fan)

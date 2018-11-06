@@ -186,7 +186,6 @@ protected:
 
     PascalWorkSptr  GetWork() const { Guard l(m_workMutex); return m_workTemplate; }
     virtual void    AddHashCount(U64 hashes);
-    void            TryResetHashCount();
 
     std::atomic<bool> m_isInitializing;
     std::atomic<bool> m_isInitializationDone;
@@ -205,10 +204,10 @@ protected:
 
     U64              m_hashCount = 0;   //NOTE: CPU platform we do hash*1000 so we can have near 0 hash/sec
     U64              m_hashCountTime = 0;
-    U64              m_resetHashRateTime = 0;
-
+    U64              m_resetHash = 0;
+    
     Event           m_workReadyEvent; //only set when work is null
-    PascalWorkSptr m_workTemplate;
+    PascalWorkSptr  m_workTemplate;
 	mutable Mutex   m_workMutex;
     U32             m_workpackageDirty = 0;
 
