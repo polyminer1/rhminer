@@ -218,6 +218,5 @@ For direct donations:
 
 ## Contacts
 Discord channel : https://discord.gg/x4Yaq4 <br>
-Discord user : polyminer1#8454 <br>
-Bitcointalk user : polyminer1 <br>
+Bitcointalk : https://bitcointalk.org/index.php?topic=5065304.0 <br>
 Twitter https://twitter.com/polyminer1 <br>
