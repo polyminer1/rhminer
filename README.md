@@ -4,6 +4,7 @@
 RandomHash miner for the PascalCoin blockchain.<br>
 Support Intel/AMD 64 bit CPU and NVidia GPU.<br>
 Support stratum and solo mining<br>
+Works on Windows 7,10 and Ubuntu 18
 
 ## Download prebuilt binaries
 There is one prebuilt binariy per OS and CUDA architectures. <br>
@@ -24,6 +25,7 @@ For Main net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu
 
 NOTE: remove -gpu 0 -gputhreads 100 if you dont have a gpu
 ```
+Note2: It is not recommended to mine using a laptop.
 
 ## Supported Cuda architecture
 * Kepler  GTX  700 series, Tesla K40/K80
@@ -215,6 +217,7 @@ For direct donations:
 
 
 ## Contacts
-On Discord : polyminer1#8454 <br>
-On Bitcointalk : polyminer1 <br>
+Discord channel : https://discord.gg/x4Yaq4 <br>
+Discord user : polyminer1#8454 <br>
+Bitcointalk user : polyminer1 <br>
 Twitter https://twitter.com/polyminer1 <br>
