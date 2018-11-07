@@ -122,9 +122,6 @@ First, the kernel is not 100% stable in all settings. This mean you'll have to e
 On multiple gpu rigs, it's NOT recommended to mine CPU at the same time. You'll have more kernel timeout error because the driver will lack cpu time.<br>
 Also, it is recommented, on multiple GPU rigs, to run the miner in a loop in a batch file !
 
-Best way to find stability sweetspot's thread count is to divide total memory mb by 4.4 and then by 2<br>
-Exemple: On GTX 1060 3gb, 3000 / 8.8 /2  = 170 gpu threads. Use that as a starting point for the -gputhreads parameter.
-
 ## Troubleshoot
 On Windows 7/8/10, if you get the missing OpenCL.dll error you need to download it into rhminer's folder. (hint: You can safely get one with the Intel SDK on Intel's opencl website)
 
