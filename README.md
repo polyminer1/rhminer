@@ -214,6 +214,6 @@ For direct donations:
 
 
 ## Contacts
-Discord channel : https://discord.gg/x4Yaq4 <br>
+Discord channel : https://discord.gg/Egz2bdS <br>
 Bitcointalk : https://bitcointalk.org/index.php?topic=5065304.0 <br>
 Twitter https://twitter.com/polyminer1 <br>
