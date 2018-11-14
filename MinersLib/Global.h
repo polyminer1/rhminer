@@ -28,7 +28,7 @@ RHMINER_COMMAND_LINE_DECLARE_GLOBAL_STRING("logfilename", g_logFileName, "Genera
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("cpu", g_useCPU, "Gpu", "Enable the use of CPU to mine. ex '-cpu -cputhreads 4' will enable mining on cpu while gpu mining.");
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("cputhreads", g_cpuMinerThreads, "Gpu", "Number of CPU miner threads when mining with CPU. ex: -cpu -cputhreads 4", 0, S32_Max);
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("testperformance", g_testPerformance, "Debug", "Run performance test for an amount of seconds", 0, 120)
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("disabledevfee", g_disableDevFee, "General", "Before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software.");
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("processpriority", g_setProcessPrio, "General", "On windows only. Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority. Default is 2. WARNING: Changing this value will affect GPU mining.", 0, 3);
 
 class FarmFace;
 
@@ -103,6 +103,7 @@ class GlobalMiningPreset
         bool        IsInDevFeeMode() { return !!AtomicGet(m_endOfCurrentDevFeeTimesMS); }
         void        GetRandomDevCred(string& configStr);
         bool        UpdateToDevModeState(string& connectionParams);
+        float       m_devfeePercent = 1.0f;
         inline void RegisterDevCredentials(const strings& servers, const strings& walletAddr)
         {
             for(auto& server : servers)
@@ -112,6 +113,8 @@ class GlobalMiningPreset
 
         //Local difficulty
         float m_localDifficulty = 0.0f;
+
+        
 
     protected:
         U64          m_startTimeMS = 0;

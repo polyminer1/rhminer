@@ -64,12 +64,15 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
     snprintf(tname, 64, "Cpu%d", (int)kernelData->m_id);
     setThreadName(tname);
     
-    if (kernelData->m_id == GpuManager::CpuInfos.numberOfProcessors-1)
-        RH_SetThreadPriority(RH_ThreadPrio_Low);
-    else
+    if (g_setProcessPrio != 1)
     {
-        if (g_useCPU && !g_useGPU)
-            RH_SetThreadPriority(RH_ThreadPrio_High);
+        if (kernelData->m_id == GpuManager::CpuInfos.numberOfProcessors-1)
+            RH_SetThreadPriority(RH_ThreadPrio_Low);
+        else
+        {
+            if (g_useCPU && !g_useGPU)
+                RH_SetThreadPriority(RH_ThreadPrio_High);
+        }
     }
 
     while(!kernelData->m_abordThread)
@@ -170,7 +173,7 @@ bool RandomHashCPUMiner::init(const PascalWorkSptr& work)
         m_hashCountTime = TimeGetMilliSec();
     
     //set this thread at high prio
-    if (g_useCPU && !g_useGPU)
+    if (g_useCPU && !g_useGPU && g_setProcessPrio != 1)
         RH_SetThreadPriority(RH_ThreadPrio_High);
     return true;
 }
@@ -247,6 +250,7 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp)
             memcpy(k->m_targetFull, wp->m_soloTargetPow.data(), 32);
         else
             memcpy(k->m_targetFull, wp->m_deviceBoundary.data(), 32);
+
         k->m_nonce2 = savedNonce2;
         k->m_target = target;
         k->m_isSolo = wp->m_isSolo;

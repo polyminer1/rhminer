@@ -67,21 +67,14 @@ void MiniWeb_Connection(socket_ptr sock)
 
 void MiniWeb_Server(boost::asio::io_service& io_service, unsigned short port)
 {
-    try
+    tcp::acceptor a(io_service, tcp::endpoint(tcp::v4(), port));
+    PrintOut("MiniWeb: Webserver started on port %d\n", port);
+    for (;;)
     {
-        tcp::acceptor a(io_service, tcp::endpoint(tcp::v4(), port));
-        PrintOut("MiniWeb: Webserver started on port %d\n", port);
-        for (;;)
-        {
-            socket_ptr sock(new tcp::socket(io_service));
-            a.accept(*sock);
-            boost::thread t(boost::bind(MiniWeb_Connection, sock));
-            t.join();
-        }
-    }
-    catch (std::exception& e)
-    {
-        PrintOut("MiniWeb: Exception in web server: %s\n", e.what());
+        socket_ptr sock(new tcp::socket(io_service));
+        a.accept(*sock);
+        boost::thread t(boost::bind(MiniWeb_Connection, sock));
+        t.join();
     }
 }
 
@@ -101,6 +94,7 @@ void StartMiniWeb()
             catch (std::exception& e)
             {
                 PrintOut("MiniWeb: Exception in miniweb: %s\n", e.what());
+                return;
             }
             CpuSleep(1000);
         }

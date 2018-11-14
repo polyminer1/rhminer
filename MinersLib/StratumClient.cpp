@@ -28,7 +28,6 @@ RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_forceSequentialNonce, false)
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_disableCachedNonceReuse, false)
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_extraPayload, "")
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_apiPort, 7111)
-extern bool g_disableDevFee;
 extern bool g_useGPU;
 
 using boost::asio::ip::tcp;
@@ -205,7 +204,7 @@ void StratumClient::Reconnect(U32 preSleepTimeMS)
 	m_connected = false;
     m_workID = 0;
 
-    if (g_disableDevFee)
+    if (GlobalMiningPreset::I().m_devfeePercent == 0.0f)
     {
         DevReminder();
         CpuSleep(2000);
@@ -375,12 +374,12 @@ void StratumClient::WorkLoop()
         {
             if (!m_devFeeConnectionMode)
                 RHMINER_PRINT_EXCEPTION_EX("Network Error",  _e.what());
-            Reconnect(1000);
+            Reconnect(3000);
         }
         catch (...) 
         {
             PrintOutCritical("Network exception\n");
-            Reconnect(1000);
+            Reconnect(3000);
         }
     }
 }
@@ -454,9 +453,12 @@ void StratumClient::Preconnect()
         CpuSleep(m_sleepBeforeConnectMS);
     }    
     
-    if (!GlobalMiningPreset::I().IsInDevFeeMode() && !m_soloMining)
+    if (!GlobalMiningPreset::I().IsInDevFeeMode())
     {
-        PrintOut("User: '%s' PW: '%s'\n", m_active->user.c_str(), m_active->pass.c_str());
+        if (!m_soloMining)
+            PrintOut("User: '%s' PW: '%s'\n", m_active->user.c_str(), m_active->pass.c_str());
+        else
+            PrintDonationMsg();
     }
 
     if (IsSoloMining())
@@ -480,7 +482,7 @@ void StratumClient::Preconnect()
     if (error)
     {
         RHMINER_PRINT_EXCEPTION_EX(FormatString("Could not connect to server %s", m_active->HostDescr()), "Retrying...");
-        Reconnect(3 * 1000);
+        Reconnect(5 * 1000);
     }
     else
     {
@@ -827,6 +829,17 @@ void StratumClient::RespondMiningSubmit(Json::Value& responseObject, U64 gpuInde
     }
 }
 
+void StratumClient::PrintDonationMsg()
+{
+    if (GlobalMiningPreset::I().m_devfeePercent > 0.0f)
+        PrintOut("Dev donation set to %s%%\n", TrimZeros(FormatString("%.2f", GlobalMiningPreset::I().m_devfeePercent), true, true).c_str());
+    else
+    {
+        PrintOut("Dev donation is off.\n");
+        DevReminder();
+    }
+}
+
 void StratumClient::RespondAuthorize(Json::Value& responseObject, U64 gpuIndex)
 {
     Json::Value res = responseObject.get("result", Json::Value::null);
@@ -879,13 +892,7 @@ void StratumClient::RespondAuthorize(Json::Value& responseObject, U64 gpuIndex)
             else
                 PrintOut("Autorized on stratum server %s\n", m_active->HostDescr());
              
-            if (!g_disableDevFee)
-                PrintOut("Dev donation set to 1%%\n");
-            else
-            {
-                PrintOut("Dev donation is off.\n");
-                DevReminder();
-            }
+            PrintDonationMsg();
         }
     } 
 }
@@ -954,15 +961,17 @@ void StratumClient::ProcessMiningNotifySolo(Json::Value& jsondata)
 
         string nonce1;
         char LocalPayloadData[67] = {0};
-        strncpy(LocalPayloadData, ".rhminer.rhminer.rhminer.rhminer.rhminer.rhminer.rhminer.polyminer", sizeof(LocalPayloadData));
+        strncpy(LocalPayloadData, "rhminer.rhminer.rhminer.rhminer.rhminer.rhminer.rhminer.polyminer1", sizeof(LocalPayloadData));
         if (g_extraPayload.length())
         {
             //filter
             for (auto& c : g_extraPayload)
+            {
                 if (c < 32 || c > 126)
                     c = 32;
-            memset(LocalPayloadData + 9, 32, 66 - 9);
-            memcpy(LocalPayloadData + 9, g_extraPayload.c_str(), RH_Min((size_t)(66 - 9), g_extraPayload.length()) ); 
+            }
+            memset(LocalPayloadData, 32, 66 - 11);
+            memcpy(LocalPayloadData , g_extraPayload.c_str(), RH_Min((size_t)(66 - 11), g_extraPayload.length()) ); 
             LocalPayloadData[66] = 0;
         }
         if (payload.length() > 52)
@@ -1263,7 +1272,6 @@ void StratumClient::CallSubmit(SolutionSptr solution)
             cbwp->m_nonce2_64,
             cbwp->m_ntime.c_str(),
             nonceHex.c_str());
-
 
         CallJsonMethod("mining.submit", params, solution->m_gpuIndex);
     }

@@ -32,8 +32,7 @@ RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_logFileName, "");
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_useCPU, false);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_cpuMinerThreads, 1);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformance, 0);
-RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_disableDevFee, false);
-
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 2)
 bool g_useGPU = false;
 
 const U64 t1M = 1000 * 60;
@@ -95,6 +94,35 @@ GlobalMiningPreset::GlobalMiningPreset()
         }
     });
 #endif //RH_COMPILE_CPU_ONLY
+
+    CmdLineManager::GlobalOptions().RegisterValue("disabledevfee", "", "deprecated.", [&](const string& val)
+    {
+        PrintOut("This option as been deprecated. Use -devfee now.\n");
+    });
+
+    CmdLineManager::GlobalOptions().RegisterValue("devfee", "General", "Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.", [&](const string& val)
+    {
+        if (val == "0" || val == "0.0")
+            m_devfeePercent = 0.0f;
+        else
+        {
+            for(auto c : val)
+            {
+                if (!((c >= '0' && c <= '9') || c == '.'))
+                {
+                    m_devfeePercent = 1.0f;
+                    return;
+                }
+            }
+            m_devfeePercent = ToFloat(val);
+
+            if (m_devfeePercent > 50.0f)
+                m_devfeePercent = 50.0f;
+            
+            if (m_devfeePercent < 1.0f)
+                m_devfeePercent = 1.0f;
+        }
+    });
 
     CmdLineManager::GlobalOptions().RegisterFlag("list", "General", "List all gpu in the system", [&]() 
     {
@@ -181,7 +209,7 @@ void GlobalMiningPreset::Initialize(char** argv, int argc)
     });
 
 
-    CmdLineManager::GlobalOptions().RegisterValueMultiple("processorsaffinity", "General", "Force miner to only run on selected core processors. ex: -processorsaffinity 0,3 will make the miner run only on core #0 and #3. WARNING: Changing this value will affect GPU mining.", [&](const string& val)
+    CmdLineManager::GlobalOptions().RegisterValueMultiple("processorsaffinity", "General", "On windows only. Force miner to only run on selected logical core processors. ex: -processorsaffinity 0,3 will make the miner run only on logical core #0 and #3. WARNING: Changing this value will affect GPU mining.", [&](const string& val)
     { 
 #ifdef _WIN32_WINNT
         CmdLineManager::GlobalOptions().PreParseSymbol("cputhreads");
@@ -190,7 +218,7 @@ void GlobalMiningPreset::Initialize(char** argv, int argc)
         std::vector<U32> iVals;
         if (iVals.size() > GpuManager::CpuInfos.numberOfProcessors)
         {
-            PrintOutCritical("cpucores error. You selected %d cores while there is %d on this system", iVals.size(), GpuManager::CpuInfos.numberOfProcessors);
+            PrintOutCritical("Error. You selected %d logical cores while there is %d on this system", iVals.size(), GpuManager::CpuInfos.numberOfProcessors);
             RHMINER_EXIT_APP("");
         }
         
@@ -206,7 +234,7 @@ void GlobalMiningPreset::Initialize(char** argv, int argc)
         PrintOut("Warning: Setting processor affinity WILL affect gpu mining. Use with caution.\n");
 
         if (GpuManager::CpuInfos.UserSelectedCoresCount > g_cpuMinerThreads)
-            PrintOut("Warning: You selected %d core to mine but only %d working threads.\n", GpuManager::CpuInfos.UserSelectedCoresCount, g_cpuMinerThreads);
+            PrintOut("Warning: You selected %d logical cores to mine but only %d working threads.\n", GpuManager::CpuInfos.UserSelectedCoresCount, g_cpuMinerThreads);
 #else
         PrintOut("-processorsaffinity not implemented yet\n");
 #endif
@@ -236,13 +264,18 @@ bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
         m_devFeeTimer24hMS = nowMS + t24H;
         m_nextDevFeeTimesMS.clear();
         m_totalDevFreeTimeToDayMS = 0;
-
-        U64 nextDevTime = nowMS + GetTimeRangeRnd((3 * t1M), (45 * t1M)-t3_8M);
+        const U64 devPeriod = (U64)(t3_8M*m_devfeePercent);
+        U64 nextDevTime;
+        if (devPeriod > 45)
+            nextDevTime = nowMS + (15 * t1M);
+        else
+            nextDevTime = nowMS + GetTimeRangeRnd((3 * t1M), (45 * t1M)-devPeriod);
+        
         m_nextDevFeeTimesMS.push_back(nextDevTime);        
         while(m_nextDevFeeTimesMS.size() < 4)
         {
             int k;
-            U64 val = nowMS + GetTimeRangeRnd((3 * t1M), (24 * t1H)-t3_8M);
+            U64 val = nowMS + GetTimeRangeRnd((3 * t1M), (24 * t1H)-devPeriod);
             for (k = 1; k < m_nextDevFeeTimesMS.size(); k++)
             {
                 U64 dt = m_nextDevFeeTimesMS[k] - m_nextDevFeeTimesMS[k - 1];
@@ -302,7 +335,7 @@ U32 GlobalMiningPreset::GetUpTimeMS()
 
 Miner* GlobalMiningPreset::CreateMiner(CreatorClasType type, FarmFace& _farm, U32 gpuIndex)
 {
-    if (g_disableDevFee)
+    if (GlobalMiningPreset::I().m_devfeePercent == 0.0f)
     {
         m_devFeeTimer24hMS = U64_Max;
     }

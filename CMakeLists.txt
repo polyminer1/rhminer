@@ -33,6 +33,9 @@ if(RH_CPU_ONLY)
 	add_definitions(-DRH_COMPILE_CPU_ONLY)
 endif(RH_CPU_ONLY)
 
+add_definitions(-DRH_CUDA_ARCH=${RH_CUDA_ARCH})
+
+
 if(RH_DEBUG_TARGET)
 	message(STATUS "Building ${PROJECT_NAME} in DEBUG")
 	add_definitions( -Wall -fexceptions -Wfatal-errors -Wno-sign-compare -Wno-deprecated-declarations -Wno-unused-variable)

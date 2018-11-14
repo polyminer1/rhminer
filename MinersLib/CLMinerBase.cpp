@@ -191,7 +191,8 @@ bool CLMinerBase::init(const PascalWorkSptr& work)
 #endif //RH_COMPILE_CPU_ONLY
 
         //set this thread at high prio
-        RH_SetThreadPriority(RH_ThreadPrio_High);
+        if (g_setProcessPrio != 1)
+            RH_SetThreadPriority(RH_ThreadPrio_High);
 
         m_isInitialized = true;
     }

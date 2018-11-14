@@ -78,20 +78,27 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 
 ## Performances
 
-| Cpu/GPU                            | Threads          | Speed in H/s |
-| -----------------------------------|-----------------:|-------------:|
-| Gtx 1060 3gb                       | 262              | 109          |  
-| Gtx 1060 6gb (mobile)              | 570              | 199          |
-| Gtx 950 2gb                        | 140              | 52           |
-| i7-8750H CPU @ 3.90Hz              | 11               | 1217         |
-| Ryzen 1800X @ 4GHz, 3200MHz RAM    | 8                | 1324         |
-| i5-4460 CPU @ 3.20GHz              | 4                | 511          |
-| i5-3337U CPU @ 1.80GHz             | 4                | 245          |
-| i5-2400 CPU @ 3.10GHz              | 4                | 303          |
-| Core(TM) 2 Duo 6300 @ 1.86GHz      | 2                | 92           |
-| Core(TM) 2 QuadCore Q6600@2.40GHz  | 4                | 163          |
-                                                     
-                                                     
+| Cpu/GPU                            |  OS        | Threads          | Speed in H/s |
+| -----------------------------------|------------|-----------------:|-------------:|
+| Gtx 1060 3gb                       | Windows 10 | 262              | 109          |  
+| Gtx 1060 6gb (mobile)              | Windows 10 | 570              | 199          |
+| Gtx 1080 11gb                      | Ubuntu     | 400              | 400          |
+| Gtx 950 2gb                        | Windows 7  | 140              | 52           |
+| i7-8750H CPU @ 3.90Hz              | Ubuntu 18  | 11               | 1217         |
+| Ryzen 1800X @ 4GHz                 | Windows 10 | 15               | 1241         |
+| Xeon x5650@ 2.67GHz                | Linux      | 24               | 716          |
+| Xeon E5 2690 @ 2.4 GHz.            | Ubuntu 18  | 24               | 1347         |
+| Xeon Platinum 8168@ 2.70GHz        | Ubuntu 18  | 32               | 3085         | 
+| i7 7700K  @ 4.2Ghz                 | Windows 10 | 8                | 945          |
+| i7 2600K  @ 3.4Ghz                 | Windows 10 | 8                | 506          |
+| i7-4558U CPU @ 2.80GHz             | Linux Mint | 4                | 342          |
+| i5-4460 CPU @ 3.20GHz              | Windows 10 | 4                | 511          |
+| i5-3337U CPU @ 1.80GHz             | Windows 10 | 4                | 245          |
+| i5-2400 CPU @ 3.10GHz              | Ubuntu 18  | 4                | 303          |
+| Core(TM) 2 Duo 6300 @ 1.86GHz      | Windows 7  | 2                | 92           |
+| Core(TM) 2 QuadCore Q6600@2.40GHz  | windows 7  | 4                | 163          |
+
+
 ## Build instructions (Windows)                      
 Install VisualStudio 2017 with chose Platform Toolset v140 <br>
 Install the lastest NVIDIA Display Driver <br>
@@ -136,9 +143,9 @@ General options:
   -displayspeedtimeout  Display mining speeds every x seconds. Default is 10
   -processpriority      Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority. Default is 2. WARNING: Changing this value will affect GPU mining.
   -v                    Log verbosity. From 0 to 3. 0 no log, 1 normal log, 2 include warnings. Default is 1
-  -disabledevfee        Before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software.
+  -devfee               Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.
   -completelist         Exhaustive list of all devices in the system
-  -processorsaffinity   Force miner to only run on selected core processors. ex: -processorsaffinity 0,3 will make the miner run only on core #0 and #3. WARNING: Changing this value will affect GPU mining.
+  -processorsaffinity   Force miner to only run on selected logical core processors. ex: -processorsaffinity 0,3 will make the miner run only on logical core #0 and #3. WARNING: Changing this value will affect GPU mining.
   -maxsubmiterrors      Stop the miner when a number of consecutive submit errors occured. Default is 10 consecutive errors. This is usefull when mining into local wallet.
 
 Gpu options:
@@ -214,6 +221,9 @@ For direct donations:
 
 
 ## Contacts
-Discord channel : https://discord.gg/Egz2bdS <br>
+Discord channel : https://discord.gg/RVcEpF9 (PascalCoin discord server) <br>
+Discord channel : https://discord.gg/Egz2bdS (polyminer1 discord server) <br>
 Bitcointalk : https://bitcointalk.org/index.php?topic=5065304.0 <br>
 Twitter https://twitter.com/polyminer1 <br>
+
+ 
