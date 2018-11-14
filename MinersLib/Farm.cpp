@@ -312,11 +312,12 @@ void Farm::submitProof(SolutionSptr sol)
     //launch m_onSolutionFound in an autothread
     auto t = new std::thread(([&]
     {
+        RH_SetThreadPriority(RH_ThreadPrio_High);
+
         //Because we can find a none while other GPU are initializing. without this init crashes
         extern std::mutex*  gs_sequentialBuildMutex;
         std::lock_guard<std::mutex> g(*gs_sequentialBuildMutex);
 
-        RH_SetThreadPriority(RH_ThreadPrio_High);
         setThreadName("Send");
         SolutionSptr solLocal = sol;
         uint32_t idlocal = id;

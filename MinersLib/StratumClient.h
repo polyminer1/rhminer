@@ -138,7 +138,7 @@ protected:
     
     virtual void SendWorkToMiners(PascalWorkSptr wp);
     virtual bool ValidateNewWork(PascalWorkSptr& work);
-
+    
     U32 GetNewNonce2();
 
     virtual PascalWorkSptr  InstanciateWorkPackage(PascalWorkSptr* cloneFrom = 0);
@@ -146,6 +146,7 @@ protected:
     virtual void            CallJsonMethod(string methodName, string params, U64 gpuIndexOrRigID = 0, string additionalCallParams = "", bool dontPutID = false);
     void                    MiningNotify(Json::Value& responseObject);
     void                    SetStratumDiff(float stratDiff);
+    void                    PrintDonationMsg();
 
 protected:
 	ServerCredential*   m_active;
@@ -153,7 +154,7 @@ protected:
 	ServerCredential    m_failover;
     ServerCredential    m_devFee;
     bool    m_devFeeConnectionMode = false;
-    string  m_userAgent = RH_PROJECT_NAME "/" RH_PROJECT_VERSION;
+    string  m_userAgent = RH_PROJECT_NAME "/" RH_PROJECT_VERSION "/" RH_BUILD_TYPE;
 
 	bool m_authorized;
 	bool m_connected;

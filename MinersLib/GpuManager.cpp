@@ -256,7 +256,7 @@ void GpuManager::listDevices()
     for (U32 i = 0; i < GpuManager::Gpus.size(); ++i)
     {
         if (GpuManager::Gpus[i].gpuType == GpuType_CPU)
-            printf("CPU : %s\n", GpuManager::Gpus[i].description.c_str());
+            printf("CPU : %s with %d logical cores\n", GpuManager::Gpus[i].description.c_str(), GpuManager::Gpus[i].maxCU);
     }
    
     exit(0);
@@ -476,7 +476,7 @@ void GpuManager::LoadGPUMap()
     CPUinf.memorySize = CpuInfos.avaiablelMem/1024/1024;
     CPUinf.localMemSize = 0;
     CPUinf.maxAllocSize = CPUinf.memorySize;
-    CPUinf.maxCU = 1;
+    CPUinf.maxCU = CpuInfos.numberOfProcessors;
     CPUinf.maxWorkSize = 1;
     CPUinf.maxGroupSize = 1;
     CPUinf.gpuType = GpuType_CPU;
@@ -540,7 +540,7 @@ bool GpuManager::SetupGPU()
         if (g.gpuType == GpuType_CPU)
         {
             if (! g_testPerformance)
-                PrintOutCritical("Selecting CPU (GPU%d) %s to mine on %d cores with %d threads\n",
+                PrintOutCritical("Selecting CPU (GPU%d) %s to mine on %d logical cores with %d threads\n",
                     g.globalIndex,
                     g.description.c_str(),
                     GpuManager::CpuInfos.UserSelectedCoresCount ? GpuManager::CpuInfos.UserSelectedCoresCount : GpuManager::CpuInfos.numberOfProcessors,
@@ -615,7 +615,6 @@ void GpuManager::LoadCPUInfos()
         CpuInfos.avaiablelMem = statex.ullAvailPhys;
     else
         CpuInfos.avaiablelMem = 0;
-
 
     int CPUInfo[4] = {-1};
     unsigned   nExIds, i =  0;

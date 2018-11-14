@@ -27,9 +27,6 @@
 #include "cuda_runtime.h"
 #endif
 
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("processpriority", g_setProcessPrio, "General", "Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority. Default is 2. WARNING: Changing this value will affect GPU mining.", 0, 3);
-RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 2)
-
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("v", g_logVerbosity, "General", "Log verbosity. From 0 to 3. 0 no log, 1 normal log, 2 include warnings. 3 network (only in log file). Default is 1",0, 3);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_logVerbosity, 1)
 bool g_ExitApplication = false;
@@ -57,12 +54,13 @@ int main(int argc, char** argv)
     //
     //      App header
     //
-#ifndef RH_COMPILE_CPU_ONLY
-    printf("\n  rhminer v%s beta for CPU and NVIDIA GPUs by polyminer1 (http://github.com/polyminer1)\n", RH_PROJECT_VERSION);
-    printf("  NVIDIA CUDA SDK %d.%d\n\n",CUDART_VERSION/1000, (CUDART_VERSION % 1000)/10);
+#ifndef RH_COMPILE_CPU_ONLY 
+    printf("\n  rhminer v%s beta for CPU and NVIDIA GPUs by polyminer1 (https://github.com/polyminer1/rhminer)\n", RH_PROJECT_VERSION);
+    printf("  Buid %s (CUDA SDK %d.%d) %s %s\n\n", RH_BUILD_TYPE, CUDART_VERSION/1000, (CUDART_VERSION % 1000)/10, __DATE__, __TIME__);
 #else
-    printf("\n  rhminer v%s beta for CPU by polyminer1 (http://github.com/polyminer1)\n\n", RH_PROJECT_VERSION);
-#endif
+    printf("\n  rhminer v%s beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)\n", RH_PROJECT_VERSION);
+    printf("  Buid %s %s %s\n\n", RH_BUILD_TYPE, __DATE__, __TIME__);
+#endif    
 
 	printf("  Donations : Pascal account 529692-23 \n");
     printf("  Donations : Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp \n\n");

@@ -46,6 +46,8 @@
 #define RH_NOEXCEPT throw()
 #endif
 
+#define RH_BUILD_TYPE RHMINER_STRINGIZE(RH_CUDA_ARCH)
+
 class RH_Exception : public std::exception 
 {
 public:
