@@ -86,6 +86,7 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 | Gtx 950 2gb                        | Windows 7  | 140              | 52           |
 | i7-8750H CPU @ 3.90Hz              | Ubuntu 18  | 11               | 1217         |
 | Ryzen 1800X @ 4GHz                 | Windows 10 | 15               | 1241         |
+| Ryzen 7 2700x 4.1GHz               | Ubuntu     | ?                | 1372         |
 | Xeon x5650@ 2.67GHz                | Linux      | 24               | 716          |
 | Xeon E5 2690 @ 2.4 GHz.            | Ubuntu 18  | 24               | 1347         |
 | Xeon Platinum 8168@ 2.70GHz        | Ubuntu 18  | 32               | 3085         | 
@@ -213,7 +214,7 @@ Default port is 7111. Just sending empty string will return mining status in jso
 ## Developer Donation
 Default donation is 1%. <br>
 Donation is hardcoded in the binaries downloadable on gitgub. That is to recoup the 6 month it toke to R&D, develop, stabilize and optimize this miner and for the upcoming bug fixes and many upcoming optimizations. <br>
-To disable donation download and compile locally, then use the -disabledevfee option. <br>
+To disable donation download and compile locally, then use the -devfee option with chosen donation percentage. 0 will disable the donation. <br>
 
 For direct donations:
   * Pascal wallet 529692-23
