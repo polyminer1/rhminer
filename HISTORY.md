@@ -1,6 +1,6 @@
 # rhminer update and bugfix history
 
-##Nov 13 2008
+Nov 13 2008
 * Fixed processproprity bug on windows
 * Clarify and update documentation
 * change -disabledevfee to -devfee so good souls can donate more than 1%
