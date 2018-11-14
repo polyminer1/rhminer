@@ -8,7 +8,12 @@ Works on Windows 7,10 and Ubuntu 18
 
 ## Download prebuilt binaries
 There is one prebuilt binariy per OS and CUDA architectures. <br>
-https://github.com/polyminer1/rhminer/blob/master/Release
+https://github.com/polyminer1/rhminer/blob/master/Release<br>
+
+## Alternative download site : 
+* Windows binaries https://mega.nz/#F!DqpAjCJQ!Q12a_YRlu_CWA92kIglKug
+* Linux binaries https://mega.nz/#F!Dz4ElAwK!gbWbU4OpmEf6YnOCLIKfSQ
+
 
 ## Mining locally/Solo
 To mine locally/solo you'll need the official PascalCoin wallet https://github.com/PascalCoin/PascalCoin/releases <br>
@@ -91,14 +96,17 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 | Xeon E5 2690 @ 2.4 GHz.            | Ubuntu 18  | 24               | 1347         |
 | Xeon Platinum 8168@ 2.70GHz        | Ubuntu 18  | 32               | 3085         | 
 | i7 7700K  @ 4.2Ghz                 | Windows 10 | 8                | 945          |
+| i7-3615QM CPU @ 2.30GHz            | Linux      | 8                | 675 raw      |
 | i7 2600K  @ 3.4Ghz                 | Windows 10 | 8                | 506          |
 | i7-4558U CPU @ 2.80GHz             | Linux Mint | 4                | 342          |
 | i5-4460 CPU @ 3.20GHz              | Windows 10 | 4                | 511          |
 | i5-3337U CPU @ 1.80GHz             | Windows 10 | 4                | 245          |
 | i5-2400 CPU @ 3.10GHz              | Ubuntu 18  | 4                | 303          |
+| i3-4030U CPU @ 1.90GHz             | Linux      | 400              | 201 raw      |
 | Core(TM) 2 Duo 6300 @ 1.86GHz      | Windows 7  | 2                | 92           |
 | Core(TM) 2 QuadCore Q6600@2.40GHz  | windows 7  | 4                | 163          |
 
+note: raw is for raw performance on all hyper-threads. This does not represent real life performance.
 
 ## Build instructions (Windows)                      
 Install VisualStudio 2017 with chose Platform Toolset v140 <br>
