@@ -69,12 +69,14 @@ void GenericMinerClient::PushMiniWebData(SolutionStats& farmSol, WorkingProgress
     jdata += FormatString("\"failed\":%u, ", farmSol.getTotalFailures());
     jdata += FormatString("\"uptime\":%u, ", GlobalMiningPreset::I().GetUpTimeMS()/1000);
     jdata += FormatString("\"extrapayload\":\"%s\", ", g_extraPayload.c_str());
-    jdata += FormatString("\"stratum.server\":\"%s:%s\", ",m_stratumClient->GetCurrentCred()->host.c_str(), m_stratumClient->GetCurrentCred()->port.c_str());
+    jdata += FormatString("\"stratum.server\":\"%s:%s\", ", m_stratumClient->GetCurrentCred()->host.c_str(), m_stratumClient->GetCurrentCred()->port.c_str());
     jdata += FormatString("\"stratum.user\":\"%ss\", ", m_stratumClient->GetCurrentCred()->user.c_str());
     jdata += FormatString("\"diff\":%.8f", m_stratumClient->GetDiff());
     jdata += "}";
+
     SetMiniWebData(jdata);
-    }
+}
+
 void GenericMinerClient::doStratum()
 { 
     FarmPreset* farmInfo = GlobalMiningPreset::I().Get();
@@ -108,6 +110,27 @@ void GenericMinerClient::doStratum()
             {
                 m_stratumClient->SetDevFeeCredentials(connectParam);
                 m_stratumClient->ReconnectToServer();
+
+                //start devfee time watchdog
+                if (!m_WatchdogDevFee)
+                {
+                    m_WatchdogDevFee = new std::thread([&]()
+                    {
+                        while(1)
+                        {
+                            try
+                            {
+                                CpuSleep(1000);
+                                if (!g_ExitApplication)
+                                {
+                                    if (GlobalMiningPreset::I().DetectDevfeeOvertime())
+                                        m_stratumClient->ReconnectToServer();
+                                }
+                            }
+                            catch (...){}
+                        }
+                    });
+                }
             }
         }
         else
@@ -140,7 +163,7 @@ void GenericMinerClient::doStratum()
 			    {
                     RHMINER_RETURN_ON_EXIT_FLAG()
 
-                    auto farmSol = m_farm.GetSolutionStats();
+                    SolutionStats farmSol = m_farm.GetSolutionStats();
 				    PrintOut("%s\n", farmSol.ToString(m_stratumClient->GetLastSubmitTime()).c_str());
 
                     static U64 acc = 0;
@@ -151,14 +174,6 @@ void GenericMinerClient::doStratum()
 
                     PushMiniWebData(farmSol, mp);
 
-                    if (!oncePerFRame)
-                    {
-                        oncePerFRame = true;
-                        string tmpStr = mp.TemperatureToString();
-                        if (!tmpStr.empty())
-                            PrintOut("%s\n", tmpStr.c_str());
-                    }
-                    
                     if (!m_farm.isMining())
                     {
                         if (m_stratumClient.get())
@@ -173,6 +188,11 @@ void GenericMinerClient::doStratum()
 
             for(auto x = 0; x < g_DisplaySpeedTimeout; x++)
             {   
+                if (m_stratumClient->IsWorkTimedOut())
+                {
+                    PrintOut("WorkTimeout reacched. No new work received after %u seconds.",  g_workTimeout);
+                    RHMINER_EXIT_APP("");
+                }
                 CpuSleep(1000);
             }
 	    }

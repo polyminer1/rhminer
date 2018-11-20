@@ -28,6 +28,7 @@ RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_forceSequentialNonce, false)
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_disableCachedNonceReuse, false)
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_extraPayload, "")
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_apiPort, 7111)
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_workTimeout, 60);
 extern bool g_useGPU;
 
 using boost::asio::ip::tcp;
@@ -193,6 +194,8 @@ void DevReminder()
 
 void StratumClient::Reconnect(U32 preSleepTimeMS)
 {
+    Guard l(m_reconnMutex);
+
     if (m_farm->isMining())
     {
         m_farm->Pause();
@@ -340,7 +343,9 @@ void StratumClient::WorkLoop()
                 response = ReadLineFromServer();
                 
                 if (!response.empty())
-                {                    
+                {    
+                    m_lastReceivedCommandTime = TimeGetMilliSec();
+
                     if (!response.empty() && response.size() > 2 && response[0] == 0)
                         response = (const char*)&response[1];
 
@@ -470,7 +475,6 @@ void StratumClient::Preconnect()
     tcp::resolver::query q(m_active->host, m_active->port);
     tcp::resolver::iterator endpoint_iterator = r.resolve(q);
     tcp::resolver::iterator end;
-    
 
     boost::system::error_code error = boost::asio::error::host_not_found;
     while (error && endpoint_iterator != end)
@@ -568,6 +572,10 @@ void StratumClient::MiningNotify(Json::Value& responseObject)
     }
 }
 
+ServerCredential* StratumClient::GetCurrentCred() 
+{ 
+    return m_active;
+}
 
 bool StratumClient::GetCurrentWorkInfo(h256& out_header)
 {
@@ -646,7 +654,8 @@ bool StratumClient::ProcessMiningNotify(Json::Value& params)
         {
             PascalWorkSptr newWork = InstanciateWorkPackage();
             newWork->Init(job, h256(prevHash), coinbase1, coinbase2, nTime, cleanWork, m_nonce1, m_nonce2Size, m_extraNonce);
-            
+           
+
             SendWorkToMiners(newWork);
         }
 
@@ -812,7 +821,7 @@ void StratumClient::RespondMiningSubmit(Json::Value& responseObject, U64 gpuInde
     bool succeded = HandleMiningSubmitResponceResult(responseObject, errorStr, lastMethodCallTime);
     if (succeded)
     {
-        if (!m_devFeeConnectionMode)
+        if (!GlobalMiningPreset::I().IsInDevFeeMode())
         {
             PrintOutCritical("Share accepted by %s\n\n", m_active->HostDescr());
             m_farm->AddAcceptedSolution((U32)gpuIndex);
@@ -821,7 +830,7 @@ void StratumClient::RespondMiningSubmit(Json::Value& responseObject, U64 gpuInde
     }
     else
     {
-        if (!m_devFeeConnectionMode)
+        if (!GlobalMiningPreset::I().IsInDevFeeMode())
         {
             PrintOutCritical("Share rejected by %s. Reason :%s\n\n", m_active->HostDescr(), errorStr.c_str());
             m_farm->AddRejectedSolution((U32)gpuIndex);
@@ -1263,7 +1272,7 @@ void StratumClient::CallSubmit(SolutionSptr solution)
         GetSysTimeStrF(tstr, sizeof(tstr), "%H:%M:%S", false);
         string nonceHex = toHex(currentNonce);
 
-        PrintOut("Nonce %llX found on %s at %s. Submitting to %s\n", currentNonce, GpuManager::Gpus[solution->m_gpuIndex].gpuName.c_str(), tstr, m_active->HostDescr());
+        PrintOut("Nonce %llX found on %s for job %s at %s. Submitting to %s\n", currentNonce, GpuManager::Gpus[solution->m_gpuIndex].gpuName.c_str(), cbwp->m_jobID.c_str(), tstr, m_active->HostDescr());
 
         RHMINER_ASSERT(cbwp->m_nonce2 != U32_Max);
         params = FormatString("\"%s\",\"%s\",\"%llx\",\"%s\",\"%s\"",
@@ -1290,5 +1299,3 @@ PascalWorkSptr StratumClient::InstanciateWorkPackage(PascalWorkSptr* cloneFrom)
         return PascalWorkSptr(new PascalWorkPackage(IsSoloMining()));
     }    
 }
-
-

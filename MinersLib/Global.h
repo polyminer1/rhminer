@@ -101,6 +101,7 @@ class GlobalMiningPreset
         //
         U64         GetTotalDevFeeTime24H() { return m_totalDevFreeTimeToDayMS; }
         bool        IsInDevFeeMode() { return !!AtomicGet(m_endOfCurrentDevFeeTimesMS); }
+        bool        DetectDevfeeOvertime();
         void        GetRandomDevCred(string& configStr);
         bool        UpdateToDevModeState(string& connectionParams);
         float       m_devfeePercent = 1.0f;
@@ -113,8 +114,6 @@ class GlobalMiningPreset
 
         //Local difficulty
         float m_localDifficulty = 0.0f;
-
-        
 
     protected:
         U64          m_startTimeMS = 0;

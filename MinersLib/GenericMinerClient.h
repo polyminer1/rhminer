@@ -105,4 +105,5 @@ private:
     StratumClientSptr           m_stratumClient;
     GenericFarmClientSptr       m_farmCLient;
     Farm                        m_farm;
+    std::thread*                m_WatchdogDevFee = 0;
 };

@@ -332,3 +332,5 @@ void RandomHashCPUMiner::QueueKernel()
 }
 
 
+
+
