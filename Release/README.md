@@ -1,4 +1,6 @@
 # rhminer binaries 
+
+**Current version is 0.9.3** <br>
  
 Prebuilt binaries for the PascalCoin RandomHash miner.<br> 
 Please refer to https://en.wikipedia.org/wiki/CUDA to select the CUDA architecture name of your GPU
