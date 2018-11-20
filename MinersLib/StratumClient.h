@@ -33,6 +33,7 @@ RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("forcesequentialnonce", g_forceSequenti
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("disablecachednoncereuse", g_disableCachedNonceReuse, "Debug", "(For debugging purpose) Disable RandomHash cached nonce reuse. This will lower hashrate substantially.")
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_STRING("extrapayload", g_extraPayload, "General", "An extra payload to be added when submiting solution to local wallet.")
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("apiport", g_apiPort, "General", "Tcp port of the remote api. Default port is 71111. Set to 0 to disable server", 0, 32768)
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("worktimeout", g_workTimeout, "General", "work timeout. Default is 60 seconds", 0, 1000)
 
 using namespace std;
 //using namespace boost::asio;
@@ -94,6 +95,8 @@ public:
     U32     ReceivedWorkCount() { return m_receivedWorkCount; }
 
     bool IsStarted() { return m_started; }
+    bool IsWorkTimedOut() { return m_connected && m_running && m_lastReceivedCommandTime && (TimeGetMilliSec() - m_lastReceivedCommandTime) > g_workTimeout*1000; }
+
     virtual void StartWorking();
     virtual void Connect();
     virtual void Disconnect();
@@ -102,7 +105,7 @@ public:
     virtual void Write(tcp::socket& socket, boost::asio::streambuf& buff);
 
     bool                GetCurrentWorkInfo(h256& header);
-    ServerCredential*   GetCurrentCred() { return m_active; }
+    ServerCredential*   GetCurrentCred();
     float               GetDiff() { return (float)m_nextWorkDifficulty; }
     
     virtual bool    Submit(SolutionSptr sol);
@@ -165,10 +168,12 @@ protected:
 	int	m_retries = 0;
 	int	m_maxRetries;  //set by -retries
 
+    U64 m_lastReceivedCommandTime = 0;
     string m_lastReceivedMiningNotify;
 	string m_lastReceivedLine;
     U32   m_processedResponsesCount = 0;
 	Farm* m_farm;
+    std::mutex m_reconnMutex;
 	mutex m_currentMutex;
 	
     boost::asio::io_service m_io_service;
@@ -233,6 +238,7 @@ protected:
     U64         m_lastTimestamp = 0;
     U64         m_cleanTime = 0;
     U32         m_soloJobId = 0;
+
     virtual void ProcessMiningNotifySolo(Json::Value& arrayParam);
     virtual void RespondMiningSubmitSolo(Json::Value& stratumData, U32 gpuIndex);
 };

@@ -13,35 +13,35 @@ Please refer to https://en.wikipedia.org/wiki/CUDA to select the CUDA architectu
 Windows MD5 : 
 -------------------------------- 
 MD5 for rhminer.exe CPU is 
-383029e765a1c1b2143f5a7632cfb041
+fd624f588b4ac6914bce460bd9c4792c
 -------------------------------- 
 MD5 for rhminer.exe Kepler is 
-ea6f0b734bbf09414fbb93c090add80e
+053acf6a9098183eb01af194cca0e1aa
 -------------------------------- 
 MD5 for rhminer.exe Maxwell is 
-581591dc9cc3d3263fd05ca2074e4faa
+5d4f20d389c200d779927452bb67c106
 -------------------------------- 
 MD5 for rhminer.exe Pascal is 
-59acb8f318ead088adef574447732fa0
+c43788ac071ebd074cd5d1594aea261a
 -------------------------------- 
 MD5 for rhminer.exe Volta is 
-880f4194aec9b38bd2818943ecd86295
+3b157fa26881eba5fa67e4fab50d8244
 -------------------------------- 
  
 Linux MD5 
 -------------------------------
 MD5 for rhminer for CPU is :
-7f0615482f10f05b2200be7cb7dc0bff
+764d14d0251ed80075e26291d5feb9f6
 -------------------------------
 MD5 for rhminer for Kepler is :
-2c26171017e70b5085a951c6c96aeae1
+b4e5a7d9c6850f4fa5047c4dc836e91c
 -------------------------------
 MD5 for rhminer for Maxwell is :
-33154792a5e91a912494a77ad8706215
+f096e4e077ada56c528a7ea26d0d6d2f
 -------------------------------
 MD5 for rhminer for Pascal is :
-f0d1a7b4caa54960ebcc704415a3e93a
+e9c4e9a4d5502a076690f3929a6da250
 -------------------------------
 MD5 for rhminer for Volta is :
-7b234b5d13d5ad21f9dba9a9dc9ca1b5
+da884133f177432a36c76f6660ff2878
 ``` 

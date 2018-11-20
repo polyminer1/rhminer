@@ -265,16 +265,16 @@ void PascalWorkPackage::UpdateHeader()
 
     string noncePlaceHolder;
     string payload;
-    noncePlaceHolder = toHex((U64)0);      
+    noncePlaceHolder = toHex((U64)0);
     payload = ComputePayload();
 
     if (m_coinbase1.length() == 0 || m_nonce1.length() == 0)
         throw RH_Exception("Error. Coinbase data is wrong.");
 
-    // 256 -> 180b
-    // 283 -> 194b
-    // 384 -> 244b
-    // 512 -> 314b
+    // 256 -> 180bytes
+    // 283 -> 194bytes
+    // 384 -> 244bytes
+    // 512 -> 314bytes
     if (m_coinbase1.length() != 180)
     {
         RHMINER_EXIT_APP("Private key length is to long. Please chose a mining key with encryption type secp256k1.\n");
@@ -284,10 +284,15 @@ void PascalWorkPackage::UpdateHeader()
     headerStr = m_coinbase1 + payload + m_coinbase2 + noncePlaceHolder;
     m_fullHeader = fromHex(headerStr, WhenError::Throw); 
 
+    if (m_fullHeader.size() != PascalHeaderSize)
+    {
+        //sometimes the wallet send incorect package
+        throw RH_Exception("Incorect coinbase/wallet data.\n");
+    }
+
     h32 ntime(m_ntime);
     ((uint32_t *)m_fullHeader.data())[48] = RH_swap_u32(*(U32*)ntime.data()); 
-    ((uint32_t *)m_fullHeader.data())[49] = 0;
-    RHMINER_ASSERT((m_fullHeader.size() == PascalHeaderSize));
+    ((uint32_t *)m_fullHeader.data())[49] = 0;    
 }
 
 

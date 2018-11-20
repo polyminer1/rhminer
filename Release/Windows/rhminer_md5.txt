@@ -1,17 +1,27 @@
 Windows MD5 : 
 -------------------------------- 
 MD5 for rhminer.exe CPU is 
-383029e765a1c1b2143f5a7632cfb041
+fd624f588b4ac6914bce460bd9c4792c
+-------------------------------- 
+053acf6a9098183eb01af194cca0e1aa
 -------------------------------- 
 MD5 for rhminer.exe Kepler is 
-ea6f0b734bbf09414fbb93c090add80e
+053acf6a9098183eb01af194cca0e1aa
+-------------------------------- 
+053acf6a9098183eb01af194cca0e1aa
 -------------------------------- 
 MD5 for rhminer.exe Maxwell is 
-581591dc9cc3d3263fd05ca2074e4faa
+5d4f20d389c200d779927452bb67c106
+-------------------------------- 
+053acf6a9098183eb01af194cca0e1aa
 -------------------------------- 
 MD5 for rhminer.exe Pascal is 
-59acb8f318ead088adef574447732fa0
+c43788ac071ebd074cd5d1594aea261a
+-------------------------------- 
+053acf6a9098183eb01af194cca0e1aa
 -------------------------------- 
 MD5 for rhminer.exe Volta is 
-880f4194aec9b38bd2818943ecd86295
+3b157fa26881eba5fa67e4fab50d8244
+-------------------------------- 
+053acf6a9098183eb01af194cca0e1aa
 -------------------------------- 

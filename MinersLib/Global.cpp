@@ -94,7 +94,6 @@ GlobalMiningPreset::GlobalMiningPreset()
         }
     });
 #endif //RH_COMPILE_CPU_ONLY
-
     CmdLineManager::GlobalOptions().RegisterValue("disabledevfee", "", "deprecated.", [&](const string& val)
     {
         PrintOut("This option as been deprecated. Use -devfee now.\n");
@@ -123,7 +122,6 @@ GlobalMiningPreset::GlobalMiningPreset()
                 m_devfeePercent = 1.0f;
         }
     });
-
     CmdLineManager::GlobalOptions().RegisterFlag("list", "General", "List all gpu in the system", [&]() 
     {
         GpuManager::listGPU(); 
@@ -271,7 +269,7 @@ bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
         else
             nextDevTime = nowMS + GetTimeRangeRnd((3 * t1M), (45 * t1M)-devPeriod);
         
-        m_nextDevFeeTimesMS.push_back(nextDevTime);        
+        m_nextDevFeeTimesMS.push_back(nextDevTime);
         while(m_nextDevFeeTimesMS.size() < 4)
         {
             int k;
@@ -309,18 +307,27 @@ bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
             TimeGetMilliSec() > m_nextDevFeeTimesMS[0])
         {
             m_currentDevFeeTimesMS = m_nextDevFeeTimesMS[0];
-            AtomicSet(m_endOfCurrentDevFeeTimesMS, m_currentDevFeeTimesMS + (U64)(t3_8M));
+            AtomicSet(m_endOfCurrentDevFeeTimesMS, m_currentDevFeeTimesMS + (U64)(t3_8M*m_devfeePercent));
             PrintOutCritical("Switching to DevFee mode.\n");
            
             m_nextDevFeeTimesMS.erase(m_nextDevFeeTimesMS.begin());
 
             GetRandomDevCred(connectionParams);
+
             return true;
         }
     }
     
     return false;
 }
+
+bool GlobalMiningPreset::DetectDevfeeOvertime()
+{
+    const U64 overTime = 90 * 1000;
+    U64 endOfCurrentDevFeeTimesMS = AtomicGet(m_endOfCurrentDevFeeTimesMS);
+    return (endOfCurrentDevFeeTimesMS && (TimeGetMilliSec() > (endOfCurrentDevFeeTimesMS + overTime)));
+}
+
 
 void GlobalMiningPreset::GetRandomDevCred(string& configStr)
 {

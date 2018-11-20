@@ -149,7 +149,7 @@ string SolutionStats::ToString(U64 lst)
 {
     string str;
     std::vector<unsigned> gpuIdx = GpuManager::GetEnabledGPUIndices();
-    auto ResToStr = [&](unsigned* arr, char ai)
+    auto ResToStr = [&](unsigned* arr)
     {
         string str;
         U32 total = 0;
@@ -172,9 +172,10 @@ string SolutionStats::ToString(U64 lst)
         }
         return str;
     };
-    str = "Shares: Accepted " + ResToStr(accepts, 'a');
-    str += "  Rejected " + ResToStr(rejects, 'r');
-    str += "  Failed " + ResToStr(failures, 'f');
+
+    str = FormatString("%s: Accepted %s", GlobalMiningPreset::I().Get()->m_soloOvertStratum ? "Blocks":"Shares",  ResToStr(accepts).c_str()); 
+    str += "  Rejected " + ResToStr(rejects);
+    str += "  Failed " + ResToStr(failures);
     str += FormatString(" Up for %s", SecondsToStr((U64)Elapsed()));
 
     return str;

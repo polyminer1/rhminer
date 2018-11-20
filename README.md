@@ -1,4 +1,3 @@
-
 # rhminer 
 
 RandomHash miner for the PascalCoin blockchain.<br>
@@ -96,6 +95,8 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 | Xeon E5 2690 @ 2.4 GHz.            | Ubuntu 18  | 24               | 1347         |
 | Xeon Platinum 8168@ 2.70GHz        | Ubuntu 18  | 32               | 3085         | 
 | i7 7700K  @ 4.2Ghz                 | Windows 10 | 8                | 945          |
+| i7-7500U CPU @ 2.70GHz             | Linux      | 400              | 339 raw      |
+| i7 4770k @ 4.5GHz. Dual chan. DDR3 | Ubuntu     | 8/10             | 1100         |
 | i7-3615QM CPU @ 2.30GHz            | Linux      | 8                | 675 raw      |
 | i7 2600K  @ 3.4Ghz                 | Windows 10 | 8                | 506          |
 | i7-4558U CPU @ 2.80GHz             | Linux Mint | 4                | 342          |
