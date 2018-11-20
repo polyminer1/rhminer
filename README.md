@@ -21,6 +21,19 @@ In order to mine locally with rhminer, **You need to set a miner name smaller th
 The best way to assure you're mining in a secp256k1 private key is to create one and select it in the option **"Always mine with this key"**.<br>
 **Do not use the "Use random existing key" option** because if one of your key is not a secp256k1 key, the miner will exit when. Plus when there is to much keys in the wallet it gives out errors, sometimes, when submiting nonces<br>
 To ensure your miner name is correct, go to Project menu, then Options and set a miner name smaller than 26 characters<br>
+To get the number of logical cores, on you system, simply run rhminer with the -completelist option. The last line is the cpu description with the amount of logical core. Ex :<br>
+```
+C:\rhminer>rhminer -completelist
+
+  rhminer v0.9.3 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
+  Buid CPU Nov 19 2018 20:04:01
+
+  Donations : Pascal account 529692-23
+  Donations : Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp
+
+CPU : Intel(R) Core(TM) i5-4460 CPU @ 3.20GHz with 4 logical cores
+```
+This tells you what is the ideal maximum number of threads for cpu mining (-cputhreads) <br>
 
 ```
 Solo mining examples:
