@@ -6,6 +6,7 @@ Support stratum and solo mining<br>
 Works on Windows 7,10 and Ubuntu 18
 
 ## Download prebuilt binaries
+**Current version is 0.9.3** <br>
 There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/blob/master/Release<br>
 
@@ -149,6 +150,8 @@ General options:
   -list                 List all gpu in the system
   -diff                 Set local difficulyu. ex: -diff 0.832
   -logfilename          Set the name of the log's filename. Note: the log file will be overwritten every time you start rhminer
+  -apiport              Tcp port of the remote api. Default port is 71111. Set to 0 to disable server
+  -worktimeout          work timeout. Default is 60 seconds
   -extrapayload         An extra payload to be added when submiting solution to local wallet.
   -displayspeedtimeout  Display mining speeds every x seconds. Default is 10
   -processpriority      Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority. Default is 2. WARNING: Changing this value will affect GPU mining.
