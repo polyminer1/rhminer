@@ -1,13 +1,21 @@
 # rhminer update and bugfix history
 
-Version 0.9.2 - Nov 13 2008
-* Fixed processproprity bug on windows
-* Clarify and update documentation
-* change -disabledevfee to -devfee so good souls can donate more than 1%
-* fixed miniweb exception when running more than one instance
-* change agent name and display title so it contain cuda arch
-* output available logical core on CPU, when calling -completelist
-* fixed reconnect bug when wallet crashes
+Version 0.9.4 - Nov 25 2008
+* Fixed wrong hashrate on linux. (a thread-concurency bug made H/S show-up higer on linux.) 
+* Minor code optimizations (up to 5% on certain system, more when not mining on all cores)
+* Fix failover server feature
+* Fixed "no work timeout" that was exiting application instead of reconnecting to server.
+* Fixed testperformance feature so it show pure hash performance instead of raw simulation of solo/pool mining.
+* Fixed some typos
+* Fixed processpriority 2 that made Windows GUI lags. Performances may reduce, over time, if this processpriority is chosen. NOTE: New defaul processpriority is now 3.
+* Added processpriority 3. All miner threads are on high priority. Give a gain on certain system. Can create GUI lags.
+* Change default 
+* Added "zero speed" watchdog. Miner will exit when speed is at zero for 60 sec
+* Added More stable hashrate
+* Added Faster work transfer time to miner threads
+* Added Faster share submition time
+* Change Speed output to show SMA20 of past raw speed readings
+
 
 Version 0.9.3 - Nov 20 2008
 * Graceful handling of recurrent assert (m_fullHeader.size() == PascalHeaderSize)
@@ -17,3 +25,13 @@ Version 0.9.3 - Nov 20 2008
 * Corrected share/block output stats depending if you mining locally or on pool
 * Devfee watchdog timer to assert devfee time in all possible situations
 * Updated windows/linux script example. Now linux script works properly.
+
+Version 0.9.2 - Nov 13 2008
+* Fixed processproprity bug on windows
+* Clarify and update documentation
+* change -disabledevfee to -devfee so good souls can donate more than 1%
+* fixed miniweb exception when running more than one instance
+* change agent name and display title so it contain cuda arch
+* output available logical core on CPU, when calling -completelist
+* fixed reconnect bug when wallet crashes
+

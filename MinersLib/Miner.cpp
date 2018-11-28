@@ -203,34 +203,3 @@ string WorkingProgress::TemperatureToString()
     return stemp;
 }
 
-
-string WorkingProgress::ToString()
-{
-    float mh = (float)totalHashRate;
-    string str;
-    if (minersHasheRate.size() == 1)
-    {
-        str = FormatString("Total: %s %s.", GpuManager::Gpus[gpuGlobalIndex[0]].gpuName.c_str(), HashrateToString(mh));
-    }
-    else
-    {
-        str = FormatString("Total: %s ", HashrateToString(mh));
-
-        if (minersHasheRate.size() > 1)
-        {
-            str += "(";
-            for (unsigned i = 0; i < minersHasheRate.size(); i++)
-            {
-                mh = pround(minersHasheRate[i], 2);
-                str += FormatString("%s %s", GpuManager::Gpus[gpuGlobalIndex[i]].gpuName.c_str(), HashrateToString(mh));
-                if (i + 1 != minersHasheRate.size())
-                    str += " ";
-            }
-
-            str += "). ";
-        }
-    }
-
-    return str;
-}
-

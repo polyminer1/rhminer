@@ -82,7 +82,6 @@ private:
     void submitProof(SolutionSptr sol) override;
 
 	void resetTimer(){ m_farmData.m_lastStart = std::chrono::steady_clock::now();	}
-    void PurgeThreadInternal();
 
 	mutable Mutex          m_minerWorkMutex;
 	std::vector<MinerSptr> m_miners;

@@ -47,7 +47,7 @@ long   __stdcall   GlobalExpCallback(_EXCEPTION_POINTERS*   excp);
 #endif
 
 bool g_appActive = true;
-
+ 
 int main(int argc, char** argv)
 {
     ////////////////////////////////////////////////////////////////////
@@ -56,10 +56,10 @@ int main(int argc, char** argv)
     //
 #ifndef RH_COMPILE_CPU_ONLY 
     printf("\n  rhminer v%s beta for CPU and NVIDIA GPUs by polyminer1 (https://github.com/polyminer1/rhminer)\n", RH_PROJECT_VERSION);
-    printf("  Buid %s (CUDA SDK %d.%d) %s %s\n\n", RH_BUILD_TYPE, CUDART_VERSION/1000, (CUDART_VERSION % 1000)/10, __DATE__, __TIME__);
+    printf("  Build %s (CUDA SDK %d.%d) %s %s\n\n", RH_BUILD_TYPE, CUDART_VERSION/1000, (CUDART_VERSION % 1000)/10, __DATE__, __TIME__);
 #else
     printf("\n  rhminer v%s beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)\n", RH_PROJECT_VERSION);
-    printf("  Buid %s %s %s\n\n", RH_BUILD_TYPE, __DATE__, __TIME__);
+    printf("  Build %s %s %s\n\n", RH_BUILD_TYPE, __DATE__, __TIME__);
 #endif    
 
 	printf("  Donations : Pascal account 529692-23 \n");
@@ -139,8 +139,13 @@ int main(int argc, char** argv)
     }
     else if (g_setProcessPrio == 1)
         SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
+    else if (g_setProcessPrio == 2)
+        //Force relax mode 
+        g_setProcessPrio = 1;
     else
-        SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
+    {
+        //High priority mode : Miner threads and stratum have High priority
+    }
 #endif
 
     ClientManager::I().Initialize();    

@@ -174,7 +174,6 @@ void GenericCLMiner::KernelCallBack()
 void GenericCLMiner::QueueKernel()
 {
     m_kernelItterations++;
-    m_totalKernelItterations++;
 
     {
         for(auto& kernels : m_kernels )

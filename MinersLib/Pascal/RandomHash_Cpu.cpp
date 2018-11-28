@@ -81,7 +81,7 @@ inline RH_StridePtr CUDA_SYM(RH_StrideArrayAllocOutput)(RandomHash_State* state)
     RHMINER_ASSERT(state->m_stridesAllocIndex < RH_TOTAL_STRIDES_INSTANCES);
     RHMINER_ASSERT( (((size_t)stride) % 32) == 0);
 
-    memset(stride, 0, RH_StrideSize);
+    PLATFORM_MEMSET(stride, 0, RH_StrideSize);
     RH_STRIDE_INIT(stride);
 
     return stride;
@@ -98,7 +98,7 @@ inline void CUDA_SYM(RH_StrideArrayReset)(RH_StridePtrArray strideArrayVar)
     accum[1] = 0;
 
     static_assert(sizeof(void*) == sizeof(U64), "Incorrect ptr size");
-    memset(arr->strides, 0, RH_StrideArrayCount * sizeof(void*));
+    PLATFORM_MEMSET(arr->strides, 0, RH_StrideArrayCount * sizeof(void*));
 }
 
 #include "MinersLib/Pascal/RandomHash_inl.h"
@@ -193,7 +193,7 @@ void CUDA_SYM(AllocateArray)(U8*& arrayData, int count)
 
 void CUDA_SYM(RandomHash_RoundDataAlloc)(RH_RoundData* rd, int round)
 {
-    memset(rd, 0, sizeof(RH_RoundData));
+    PLATFORM_MEMSET(rd, 0, sizeof(RH_RoundData));
 
     if (GetRoundOutputCount(round) > 0)
     {
@@ -934,4 +934,3 @@ void RandomHash_Search(RandomHash_State* in_state, U8* out_hash, U32 startNonce)
     RH_CALL_ALL_KERNEL_BLOCKS
     RandomHash_Finalize(allStates, out_hash);
 }
-

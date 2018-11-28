@@ -21,25 +21,32 @@
 
 struct CPUKernelData
 {
-    union
+    struct RH_ALIGN(64) DataPackage
     {
-        U8  asU8[256];
-        U32 asU32[256/4];
-    }                               m_header;
-    RH_ALIGN(64) U8           m_targetFull[32];
-    RH_ALIGN(64) U64          m_target;
-    RH_ALIGN(64) U64          m_arg1;
-    RH_ALIGN(64) U64          m_nonce2;
-    RH_ALIGN(64) U64          m_startNonce;
-    RH_ALIGN(64) U64          m_headerSize;
-    RH_ALIGN(64) U64          m_id;               //id in the array of cpu kernels
-    RH_ALIGN(64) U64          m_abordLoop;
-    RH_ALIGN(64) U64          m_abordThread;
-    RH_ALIGN(64) U64          m_running;
-    RH_ALIGN(64) U64          m_itterations;
-    RH_ALIGN(64) U64          m_isSolo;
-    RH_ALIGN(64) U8           m_work1[256];       //return state for RandomHash
-    RH_ALIGN(64) U8           m_work2[256];       //temp swapb buffer
-    RH_ALIGN(64) std::thread* m_thread;
-    RH_ALIGN(64) Event*       m_cpuKernelReadyEvent;
+        union
+        {
+            U8  asU8[256];
+            U32 asU32[256/4];
+        }                         m_header;
+        RH_ALIGN(64) U8           m_targetFull[32];
+        RH_ALIGN(64) U64          m_target;
+        RH_ALIGN(64) U8           m_workID[64];
+        RH_ALIGN(64) U64          m_nonce2;
+        RH_ALIGN(64) U64          m_startNonce;
+        RH_ALIGN(64) U64          m_headerSize;
+        RH_ALIGN(64) U8           m_work1[256];       //return state for RandomHash
+        RH_ALIGN(64) U8           m_work2[256];       //temp swapb buffer
+    };
+    
+    static const int PackagesCount = 16;
+    RH_ALIGN(64) U64             m_hashes = 0;
+    RH_ALIGN(64) DataPackage     m_packages[PackagesCount];
+    RH_ALIGN(64) U32             m_abortThread = 0;
+    //RH_ALIGN(64) U32             m_signalPause = 0;
+    //RH_ALIGN(64) U32             m_signalNewWork = 0; //one way
+    RH_ALIGN(64) U64             m_isSolo;
+    RH_ALIGN(64) U64             m_packageID = 0;
+    RH_ALIGN(64) U32             m_id;               //id in the array of cpu kernels
+    std::thread*                 m_thread;
+    
 };

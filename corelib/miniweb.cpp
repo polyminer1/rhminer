@@ -83,7 +83,6 @@ void StartMiniWeb()
 {
     std::thread* f = new std::thread([&]()
     {
-        RH_SetThreadPriority(RH_ThreadPrio_High);
         while(1)
         {
             try

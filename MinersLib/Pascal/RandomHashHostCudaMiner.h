@@ -47,7 +47,6 @@ protected:
 
         //inc stats
         m_kernelItterations++;
-        m_totalKernelItterations++;
 
         m_workOffset = KernelOffsetManager::Increment(m_globalWorkSize) - m_globalWorkSize;
         m_cudaMinerProxy->SetStartNonce(m_workOffset);

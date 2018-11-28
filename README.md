@@ -6,7 +6,7 @@ Support stratum and solo mining<br>
 Works on Windows 7,10 and Ubuntu 18
 
 ## Download prebuilt binaries
-**Current version is 0.9.3** <br>
+**Current version is 0.9.4** <br>
 There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/blob/master/Release<br>
 
@@ -25,7 +25,7 @@ To get the number of logical cores, on you system, simply run rhminer with the -
 ```
 C:\rhminer>rhminer -completelist
 
-  rhminer v0.9.3 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
+  rhminer v0.9.4 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
   Buid CPU Nov 19 2018 20:04:01
 
   Donations : Pascal account 529692-23

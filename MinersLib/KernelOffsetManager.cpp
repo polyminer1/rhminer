@@ -37,7 +37,6 @@ void KernelOffsetManager::Reset(U64 val)
 U64 KernelOffsetManager::Increment(U32 increment)
 { 
     U64 val;
-    RHMINER_ASSERT(increment);
     val = AtomicAdd(m_value, increment) % U32_Max;
     return val;
 }

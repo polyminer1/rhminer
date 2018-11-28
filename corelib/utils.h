@@ -57,7 +57,7 @@ extern U32 AtomicSet(U32& x, U32 val);  //NOTE: return previous value
 extern U64 AtomicSet(U64& x, U64 val);  //NOTE: return previous value
 extern U32 AtomicGet(U32& x);
 extern U64 AtomicGet(U64& x);
-enum RH_ThreadPrio {RH_ThreadPrio_Normal = 0, RH_ThreadPrio_Low, RH_ThreadPrio_High};
+enum RH_ThreadPrio {RH_ThreadPrio_Normal = 0, RH_ThreadPrio_Low, RH_ThreadPrio_High, RH_ThreadPrio_RT};
 extern void RH_SetThreadPriority(RH_ThreadPrio);
 extern void RH_SetThreadPriority_EXT(void* threadNativeHandle);
 

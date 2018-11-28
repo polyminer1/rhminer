@@ -151,9 +151,8 @@ inline void memcpy_uncached_load_sse41_SPILL(void *dest, const void *src, size_t
     }                                                                   \
     RH_MM_BARRIER();}
 
-//#define RH_INPLACE_MEMCPY_128_A(pDst, pSrc, byteCount, accum) 
 CUDA_DECL_DEVICE
-void CUDA_SYM(RH_INPLACE_MEMCPY_128_A)(U8* pDst, U8* pSrc, U32 byteCount, MurmurHash3_x86_32_State* accum)
+inline void CUDA_SYM(RH_INPLACE_MEMCPY_128_A)(U8* pDst, U8* pSrc, U32 byteCount, MurmurHash3_x86_32_State* accum)
 {
     RH_ASSERT(( (size_t)pDst % 8) == 0);
     RH_ASSERT(( (size_t)pSrc % 8) == 0);
@@ -218,7 +217,7 @@ void CUDA_SYM(RH_INPLACE_MEMCPY_128_A)(U8* pDst, U8* pSrc, U32 byteCount, Murmur
 #endif //CPU
 
 CUDA_DECL_DEVICE
-void CUDA_SYM(RH_STRIDE_MEMCPY_ALIGNED_SIZE128)(U8 *pDst, U8 *pSrc, size_t byteCount)
+inline void CUDA_SYM(RH_STRIDE_MEMCPY_ALIGNED_SIZE128)(U8 *pDst, U8 *pSrc, size_t byteCount)
 {
     RH_ASSERT(( (size_t)pDst % 8) == 0);
     RH_ASSERT(( (size_t)pSrc % 8) == 0);
@@ -229,7 +228,7 @@ void CUDA_SYM(RH_STRIDE_MEMCPY_ALIGNED_SIZE128)(U8 *pDst, U8 *pSrc, size_t byteC
 }
 
 CUDA_DECL_DEVICE
-void CUDA_SYM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(U8 *pDst, U8 *pSrc, size_t byteCount)
+inline void CUDA_SYM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(U8 *pDst, U8 *pSrc, size_t byteCount)
 {
     RH_ASSERT(byteCount < RH_StrideSize - 256); 
 
@@ -258,34 +257,71 @@ void CUDA_SYM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(U8 *pDst, U8 *pSrc, size_t byteC
 }
 
 #ifdef RH_ENABLE_OPTIM_STRIDE_ARRAY_MURMUR3
+
 CUDA_DECL_DEVICE
-void CUDA_SYM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(U8* strideArray, U32 elementIdx)
+inline void CUDA_SYM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(U8* strideArray, U32 elementIdx)
 {
     RH_ASSERT(( (size_t)strideArray % 8) == 0);
 
     RH_StridePtr lstride = RH_STRIDEARRAY_GET(strideArray, elementIdx);
     S32 n = (RH_STRIDE_GET_SIZE(lstride) / sizeof(U64)) * sizeof(U64);
     U32 m = RH_STRIDE_GET_SIZE(lstride) % sizeof(U64);
-    RH_STRIDE_GET_EXTRA(lstride)++;
     lstride = RH_STRIDE_GET_DATA(lstride);
+    RH_StridePtr lstride_end = lstride + n;
     U64 r0;
     RH_MUR3_BACKUP_STATE(RH_StrideArrayStruct_GetAccum(strideArray));
-    while (n > 0)
+    back_totalLen += n;
+    register uint32_t h1 = back_h1;                                   
+    while (lstride != lstride_end)
     {
         r0 = *(U64*)(lstride);
-        //MurmurHash3_x86_32_Update_8(r0, 8, RH_StrideArrayStruct_GetAccum(strideArray));
-        INPLACE_M_MurmurHash3_x86_32_Update_8(r0, 8);
-        lstride += sizeof(U64);
-        n -= sizeof(U64);
+        RH_ASSERT(back_idx != 0xDEADBEEF)                        
+        back_i = 0;                                              
+        if (back_idx)                                            
+        { 
+            register U32 len = 8;                                          
+            while(len)                                           
+            {                                                    
+                while (back_idx < 4 && len)                      
+                {                                                
+                    U32 b = (U8)(r0 >> (back_i*8));         
+                    back_buf &= ~(0xFF << (back_idx*8));         
+                    back_buf |= (b << (back_idx*8));             
+                    back_idx++;                                  
+                    len--;                                       
+                    back_i++;                                    
+                }                                                
+                if (back_idx == 4)                               
+                {                                                
+                    MURMUR3_BODY(back_buf)                       
+                    back_idx = 0;                                
+                }                                                
+            }                                                    
+        }                                                        
+        else                                                     
+        {             
+            U32 block;
+            //1
+            block = (U32)(r0);       
+            MURMUR3_BODY(block);                             
+            //2
+            block = (U32)(r0 >> 32);       
+            MURMUR3_BODY(block);                             
+        }                                                        
+                                                                     
+        lstride += sizeof(U64);        
     }
+    back_h1 = h1;                                            
+
     if (m)
     {
         r0 = *((U64 *)(lstride));
-        //MurmurHash3_x86_32_Update_8(r0, m, RH_StrideArrayStruct_GetAccum(strideArray));
-        INPLACE_M_MurmurHash3_x86_32_Update_8(r0, m);
+        INPLACE_M_MurmurHash3_x86_32_Update_8(r0, m); 
     }
+    
     RH_MUR3_RESTORE_STATE(RH_StrideArrayStruct_GetAccum(strideArray));
 }
+
 
 CUDA_DECL_DEVICE
 void CUDA_SYM(RH_STRIDEARRAY_PUSHBACK_MANY)(U8* strideArrayVar, U8* strideArrayVarSrc)
@@ -381,7 +417,7 @@ inline void CUDA_SYM(RH_STRIDEARRAY_CLONE)(U8* strideArrayVar, U8* strideArrayVa
     *((U64*)acc8_ptr) = acc8_buf;       \
 }
 
-void CUDA_SYM_DECL(Transfo0)(U8* nextChunk, U32 size, U8* workBytes)
+inline void CUDA_SYM_DECL(Transfo0)(U8* nextChunk, U32 size, U8* workBytes)
 {
     U32 rndState = _CM(MurmurHash3_x86_32_Fast)((const void *)nextChunk,size, 0);
     if (!rndState)
@@ -414,23 +450,127 @@ void CUDA_SYM_DECL(Transfo0)(U8* nextChunk, U32 size, U8* workBytes)
     }
     RH_Accum_8_Finish(nextChunk);
 #else
-    _CM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(&workBytes[0], nextChunk, size);
-    U8* head = nextChunk;
-    U8* end = head + size;
-    while(head < end)
+#ifdef RHMINER_PLATFORM_CPU
+    if (size <= 128 && (size_t(nextChunk)&0x0f)==0)
     {
-        uint32_t x = rndState;
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        rndState = x;
-        *head = workBytes[x % size];
-        head++;
+        //load in mmx reg
+        __m128i r0,r1,r2,r3,r4,r5,r6,r7;
+        switch(size/16)
+        {
+            case 8:
+            case 7: r7 = RH_MM_LOAD128 ((__m128i *)(nextChunk+7*sizeof(__m128i)));
+                    r6 = RH_MM_LOAD128 ((__m128i *)(nextChunk+6*sizeof(__m128i)));
+                    r5 = RH_MM_LOAD128 ((__m128i *)(nextChunk+5*sizeof(__m128i)));
+                    r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
+                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
+                    break;
+            case 6: r6 = RH_MM_LOAD128 ((__m128i *)(nextChunk+6*sizeof(__m128i)));
+                    r5 = RH_MM_LOAD128 ((__m128i *)(nextChunk+5*sizeof(__m128i)));
+                    r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
+                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
+                    break;
+            case 5: r5 = RH_MM_LOAD128 ((__m128i *)(nextChunk+5*sizeof(__m128i)));
+                    r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
+                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
+                    break;
+            case 4: r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
+                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
+                    break;
+            case 3: r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
+                    break;
+            case 2: r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
+            case 1: r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
+                    break;
+            case 0: r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); break;
+            default: RHMINER_ASSERT(false);
+        }
+
+        U8* head = nextChunk;
+        U8* end = head + size;
+        //load work
+        while(head < end)
+        {
+            uint32_t x = rndState;
+            x ^= x << 13;
+            x ^= x >> 17;
+            x ^= x << 5;
+            rndState = x;
+            U32 d;
+            #define RH_GB128(chunk128, n)                                         \
+                {                                                               \
+                    d = ((n) & 0x7)*8;                                          \
+                    switch((n)>>2)                                              \
+                    {                                                           \
+                        case 0:b = _mm_extract_epi32_M(chunk128, 0)>>d; break;  \
+                        case 1:b = _mm_extract_epi32_M(chunk128, 1)>>d; break;  \
+                        case 2:b = _mm_extract_epi32_M(chunk128, 2)>>d; break;  \
+                        case 3:b = _mm_extract_epi32_M(chunk128, 3)>>d; break;  \
+                        default:                                                \
+                            RHMINER_ASSERT(false);                              \
+                    };                                                          \
+                }
+
+            U8 b;
+            U32 val = x % size;
+            U32 reg = val / 16;
+            U32 n = val % 16;
+            switch(reg)
+            {
+                case 7: RH_GB128(r7, n)  break;
+                case 6: RH_GB128(r6, n)  break;
+                case 5: RH_GB128(r5, n)  break;
+                case 4: RH_GB128(r4, n)  break;
+                case 3: RH_GB128(r3, n)  break;
+                case 2: RH_GB128(r2, n)  break;
+                case 1: RH_GB128(r1, n)  break;
+                case 0: RH_GB128(r0, n)  break;
+                default: RHMINER_ASSERT(false);
+            }
+        
+            *head = b;
+            head++;
+        }
     }
+    else
+#endif //#ifdef RHMINER_PLATFORM_CPU
+    {
+        _CM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(&workBytes[0], nextChunk, size);
+        U8* head = nextChunk;
+        U8* end = head + size;
+        while(head < end)
+        {
+            uint32_t x = rndState;
+            x ^= x << 13;
+            x ^= x >> 17;
+            x ^= x << 5;
+            rndState = x;
+            *head = workBytes[x % size];
+            head++;
+        }
+    }
+
 #endif
 }
 
-void CUDA_SYM_DECL(Transfo1)(U8* nextChunk, U32 size, U8* workBytes)
+inline void CUDA_SYM_DECL(Transfo1)(U8* nextChunk, U32 size, U8* workBytes)
 {
     U32 halfSize = size >> 1;
     U32 sizeIsOdd = size % 2;
@@ -451,7 +591,7 @@ void CUDA_SYM_DECL(Transfo1)(U8* nextChunk, U32 size, U8* workBytes)
 #endif
 }
 
-void CUDA_SYM_DECL(Transfo2)(U8* nextChunk, U32 size, U8* workBytes)
+inline void CUDA_SYM_DECL(Transfo2)(U8* nextChunk, U32 size, U8* workBytes)
 {
     U32 halfSize = size >> 1;
 #ifdef RH_ENABLE_OPTIM_EXPAND_ACCUM8
@@ -484,7 +624,7 @@ void CUDA_SYM_DECL(Transfo2)(U8* nextChunk, U32 size, U8* workBytes)
 #endif
 }
 
-void CUDA_SYM_DECL(Transfo3)(U8* nextChunk, U32 size, U8* workBytes)
+inline void CUDA_SYM_DECL(Transfo3)(U8* nextChunk, U32 size, U8* workBytes)
 {
     U32 sizeIsOdd = size % 2;
     U32 halfSize = size >> 1;
@@ -527,10 +667,10 @@ void CUDA_SYM_DECL(Transfo3)(U8* nextChunk, U32 size, U8* workBytes)
 #endif
 }
 
-void CUDA_SYM_DECL(Transfo4)(U8* nextChunk, U32 size, U8* workBytes)
+inline void CUDA_SYM_DECL(Transfo4)(U8* nextChunk, U32 size, U8* workBytes)
 {
-    U32 sizeIsOdd = size % 2;
-    U32 halfSize = size >> 1;
+    RH_ALIGN(64) U32 sizeIsOdd = size % 2;
+    RH_ALIGN(64) U32 halfSize = size >> 1;
 #ifdef RH_ENABLE_OPTIM_EXPAND_ACCUM8
     int left = 0;
     int right = halfSize + sizeIsOdd;
@@ -552,9 +692,10 @@ void CUDA_SYM_DECL(Transfo4)(U8* nextChunk, U32 size, U8* workBytes)
 
     RH_ASSERT(size < RH_StrideSize);
 #else
-    U8* work = workBytes;
+
     int left = 0;
     int right = halfSize + sizeIsOdd;
+    U8* work = workBytes;
     while(left < halfSize)
     {
         *work = nextChunk[right++];
@@ -571,7 +712,7 @@ void CUDA_SYM_DECL(Transfo4)(U8* nextChunk, U32 size, U8* workBytes)
 #endif
 }
 
-void CUDA_SYM_DECL(Transfo5)(U8* nextChunk, U32 size, U8* workBytes)
+inline void CUDA_SYM_DECL(Transfo5)(U8* nextChunk, U32 size, U8* workBytes)
 {
     U32 sizeIsOdd = size % 2;
     U32 halfSize = size >> 1;
@@ -598,9 +739,9 @@ void CUDA_SYM_DECL(Transfo5)(U8* nextChunk, U32 size, U8* workBytes)
         nextChunk[halfSize] = workBytes[size-1];
 }
 
-void CUDA_SYM_DECL(Transfo6)(U8* nextChunk, U32 size, U8* workBytes)
+inline void CUDA_SYM_DECL(Transfo6)(U8* nextChunk, U32 size, U8* workBytes)
 {
-    U32 i = 0;
+    RH_ALIGN(64) U32 i = 0;
 #ifdef RH_ENABLE_OPTIM_EXPAND_ACCUM8
     
     U8* work = nextChunk;
@@ -637,60 +778,37 @@ void CUDA_SYM_DECL(Transfo6)(U8* nextChunk, U32 size, U8* workBytes)
     }
     while(nextChunk < end)
     {
-        U8 b;
-        U64 res = 0;
-        U64 buf = *(U64*)nextChunk;
-        U8 buf_idx = 0;
+        RH_ALIGN(64) U8 b;
+        RH_ALIGN(64) U64 res = 0;
+        RH_ALIGN(64) U64 buf = *(U64*)nextChunk;
+        RH_ALIGN(64) U32 localSize = size - i;
         
         //UNROLL
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTL8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTL8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++; 
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTL8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTL8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTL8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTL8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTL8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTL8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
+        b = (U8)(buf);
+        b = ROTL8(b, localSize); localSize--;
+        res |= ((U64)(b));
+        b = (U8)(buf >> (1<<3));
+        b = ROTL8(b, localSize); localSize--; 
+        res |= ((U64)(b) << (U64)(1 << 3));
+        b = (U8)(buf >> (2<<3));
+        b = ROTL8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(2 << 3));
+        b = (U8)(buf >> (3<<3));
+        b = ROTL8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(3 << 3));
+        b = (U8)(buf >> (4<<3));
+        b = ROTL8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(4 << 3));
+        b = (U8)(buf >> (5<<3));
+        b = ROTL8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(5 << 3));
+        b = (U8)(buf >> (6<<3));
+        b = ROTL8(b, localSize); localSize--; 
+        res |= ((U64)(b) << (U64)(6 << 3));
+        b = (U8)(buf >> (7<<3));
+        b = ROTL8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(7 << 3));
+        i += 8;
         *(U64*)nextChunk = res;
         nextChunk += 8;
     }
@@ -703,9 +821,9 @@ void CUDA_SYM_DECL(Transfo6)(U8* nextChunk, U32 size, U8* workBytes)
 #endif
 }
 
-void CUDA_SYM_DECL(Transfo7)(U8* nextChunk, U32 size, U8* workBytes)
+inline void CUDA_SYM_DECL(Transfo7)(U8* nextChunk, U32 size, U8* workBytes)
 {
-    U32 i = 0;
+    RH_ALIGN(64) U32 i = 0;
 #ifdef RH_ENABLE_OPTIM_EXPAND_ACCUM8
     U8* work = nextChunk;
     //Align chunkPtr
@@ -740,60 +858,37 @@ void CUDA_SYM_DECL(Transfo7)(U8* nextChunk, U32 size, U8* workBytes)
     }
     while(nextChunk < end)
     {
-        U8 b;
-        U64 res = 0;
-        U64 buf = *(U64*)nextChunk;
-        U8 buf_idx = 0;
-        
+        RH_ALIGN(64) U8 b;
+        RH_ALIGN(64) U64 res = 0;
+        RH_ALIGN(64) U64 buf = *(U64*)nextChunk;
+        RH_ALIGN(64) U32 localSize = size - i;
+
         //UNROLL
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTR8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTR8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++; 
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTR8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTR8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTR8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTR8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTR8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
-        b = (U8)(buf >> (buf_idx<<3));
-        b = ROTR8(b, size - i);
-        res |= ((U64)(b) << (U64)(buf_idx << 3));
-        i++;
-        buf_idx++;
-
+        b = (U8)(buf);
+        b = ROTR8(b, localSize); localSize--;
+        res |= ((U64)(b));
+        b = (U8)(buf >> (1<<3));
+        b = ROTR8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(1 << 3));
+        b = (U8)(buf >> (2<<3));
+        b = ROTR8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(2 << 3));
+        b = (U8)(buf >> (3<<3));
+        b = ROTR8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(3 << 3));
+        b = (U8)(buf >> (4<<3));
+        b = ROTR8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(4 << 3));
+        b = (U8)(buf >> (5<<3));
+        b = ROTR8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(5 << 3));
+        b = (U8)(buf >> (6<<3));
+        b = ROTR8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(6 << 3));
+        b = (U8)(buf >> (7<<3));
+        b = ROTR8(b, localSize); localSize--;
+        res |= ((U64)(b) << (U64)(7 << 3));
+        i += 8;
         *(U64*)nextChunk = res;
         nextChunk += 8;
     }

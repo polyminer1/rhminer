@@ -161,12 +161,6 @@ void Farm::PauseCpuMiners()
 	
 void Farm::stop()
 {
-    {
-        Guard l2(m_sumbitMutex);
-        PurgeThreadInternal();
-        CpuSleep(1000);
-    }
-    
     Guard l(m_minerWorkMutex);
     internalStop();
 }
@@ -305,25 +299,12 @@ void Farm::submitProof(SolutionSptr sol)
 
     m_submitID++;
     uint32_t id = m_submitID;    
-    std::atomic<bool> started;
-    started = false;
-    U64 lt = TimeGetMilliSec();
         
     //launch m_onSolutionFound in an autothread
-    auto t = new std::thread(([&]
+    auto t = new std::thread(([&] (SolutionSptr solLocal, uint32_t idlocal)
     {
-        RH_SetThreadPriority(RH_ThreadPrio_High);
+        RH_SetThreadPriority(RH_ThreadPrio_RT);
 
-        //Because we can find a none while other GPU are initializing. without this init crashes
-        extern std::mutex*  gs_sequentialBuildMutex;
-        std::lock_guard<std::mutex> g(*gs_sequentialBuildMutex);
-
-        setThreadName("Send");
-        SolutionSptr solLocal = sol;
-        uint32_t idlocal = id;
-        
-        //wait until the sptr is increfed
-        started = true;
         try
         {
             m_onSolutionFound(solLocal);
@@ -333,54 +314,9 @@ void Farm::submitProof(SolutionSptr sol)
             PrintOut("Exception caught in Farm::submitProof. Submit aborted...\n");
         }
 
-        //prevent this thread from ending before being put in m_submitters to late
-        CpuSleep(100);
-
-        Guard l(m_sumbitMutex);
-        auto fnd = m_submiters.find(idlocal);
-        if (fnd != m_submiters.end())
-        {
-            fnd->second.second = true;
-        }
         solLocal.reset();
-    }));
+    }), sol, id);
 
-    while(!started)
-        CpuSleep(20);
-        
-    {
-        Guard l(m_sumbitMutex);
-        m_submiters[id] = { t, false };
-        t->detach();
-
-        //purge old threads
-        PurgeThreadInternal();
-    }
-}
-
-void Farm::PurgeThreadInternal()
-{
-    if (m_submiters.size())
-    {
-        std::map<unsigned, std::pair<std::thread*, bool>> newsub;
-        for (auto it : m_submiters)
-        {
-            if (it.second.second)
-            {
-                try
-                {
-                    delete it.second.first;
-                    it.second.first = 0;
-                }
-                catch (...)
-                {
-                }
-            }
-            else
-                newsub[it.first] = it.second;
-        }
-        m_submiters = newsub;
-    }
 }
 
 extern int g_maxConsecutiveSubmitErrors;

@@ -87,17 +87,22 @@ bool StratumClient::IsSoloMining()
     return m_soloMining && !GlobalMiningPreset::I().IsInDevFeeMode();
 }
 
-void StratumClient::SetFailover(string const & host, string const & port)
-{
-	SetFailover(host, port, m_active->user, m_active->pass);
-}
-
 void StratumClient::SetFailover(string const & host, string const & port, string const & user, string const & pass)
 {
-	m_failover.host = host;
-	m_failover.port = port;
-	m_failover.user = user;
-	m_failover.pass = pass;
+    if (!user.length())
+    {
+	    m_failover.host = host;
+	    m_failover.port = port;
+	    m_failover.user = m_active->user;
+	    m_failover.pass = m_active->pass;        
+    }
+    else
+    {
+	    m_failover.host = host;
+	    m_failover.port = port;
+	    m_failover.user = user;
+	    m_failover.pass = pass;
+    }
 }
 
 void StratumClient::Write(tcp::socket& socket, boost::asio::streambuf& buff)
@@ -310,7 +315,7 @@ string StratumClient::ReadLineFromServer()
 
 void StratumClient::WorkLoop()
 {
-    if (g_useCPU && !g_useGPU)
+    if (g_useCPU && !g_useGPU && g_setProcessPrio != 1)
         RH_SetThreadPriority(RH_ThreadPrio_High);
 
     while (m_running)
@@ -574,7 +579,9 @@ void StratumClient::MiningNotify(Json::Value& responseObject)
 
 ServerCredential* StratumClient::GetCurrentCred() 
 { 
-    return m_active;
+    if (m_active == &m_failover)
+        return &m_failover;
+    return &m_primary;
 }
 
 bool StratumClient::GetCurrentWorkInfo(h256& out_header)
@@ -606,12 +613,7 @@ void StratumClient::SendWorkToMiners(PascalWorkSptr wp)
     InitializeWP(wp);
 
     //print status
-    string ids;
-    if (IsSoloMining())
-        ids = FormatString("#%u", m_soloJobId);
-    else
-        ids = wp->m_jobID;
-    
+    string ids = wp->m_jobID;
     U64 ts = ToUIntX(wp->m_ntime);    
     PrintOutCritical("Received new Work %s. Work target 0x%s (diff %s)\n", ids.c_str(), toHex(wp->GetDeviceTargetUpperBits()).c_str(), DiffToStr((float)wp->m_workDiff));
 
@@ -1016,7 +1018,7 @@ void StratumClient::ProcessMiningNotifySolo(Json::Value& jsondata)
 
         //send work to miners
         PascalWorkSptr newWork = InstanciateWorkPackage();
-        newWork->Init(toHex(m_soloJobId++), h256("0000000000000000000000000000000000000000000000000000000000000000"), coinbase1, coinbase2, nTime, cleanFlag, m_nonce1, m_nonce2Size, m_extraNonce);
+        newWork->Init(toHex(++m_soloJobId), h256("0000000000000000000000000000000000000000000000000000000000000000"), coinbase1, coinbase2, nTime, cleanFlag, m_nonce1, m_nonce2Size, m_extraNonce);
         newWork->m_soloTargetPow = soloTargetPow;
         SendWorkToMiners(newWork);
     }
@@ -1254,6 +1256,7 @@ void StratumClient::CallSubmit(SolutionSptr solution)
     if (IsSoloMining())
     {
         U32 nTimeV = ToUIntX(cbwp->m_ntime);
+
         char payload[64]; 
         memcpy(payload, &solution->m_work->m_fullHeader[90], 34);
         payload[34] = 0;

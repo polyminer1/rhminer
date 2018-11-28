@@ -694,7 +694,7 @@ inline void CUDA_SYM_DECL(_RandomHash_SHA2_512)(RH_StridePtr roundInput, RH_Stri
     //finish
 	register uint64_t lowBits, hiBits;
 	register int32_t padindex;
-    RH_ALIGN(16) uint8_t pad[255];
+    RH_ALIGN(64) uint8_t pad[255];
 	    
 	lowBits = oriLen << 3;
 	hiBits = oriLen >> 61;

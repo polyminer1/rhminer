@@ -37,10 +37,9 @@ RandomHashCPUMiner::~RandomHashCPUMiner()
 void RandomHashCPUMiner::InitFromFarm(U32 relativeIndex)
 {
     //NOTE: WE need to force the local WS to 64 for UpdateWorkSize
+    const U32 g_cpuRoundsThread = 64;
     m_localWorkSize = 64;
-
-    //Set a worksize for EACH CPU miner thread (TODO: tune to 100 ms/run)
-    UpdateWorkSize(g_cpuRoundsThread * g_cpuMinerThreads);
+    UpdateWorkSize(g_cpuRoundsThread * g_cpuMinerThreads); //64
 
     RandomHash_DestroyMany(m_randomHashArray, g_cpuMinerThreads);
     RandomHash_CreateMany(&m_randomHashArray, g_cpuMinerThreads); 
@@ -51,7 +50,7 @@ void RandomHashCPUMiner::InitFromFarm(U32 relativeIndex)
         CPUKernelData* kdata = (CPUKernelData*)RH_SysAlloc(sizeof(CPUKernelData));
         memset(kdata, 0, sizeof(CPUKernelData));
         kdata->m_id = i;
-        kdata->m_cpuKernelReadyEvent = new Event(false, false);
+        //kdata->m_signalPause = 1; //start paused
         kdata->m_thread = new std::thread([&,kdata] { RandomHashCpuKernel(kdata); });
         m_cpuKernels.push_back(kdata);
         kdata->m_thread->detach();
@@ -60,14 +59,14 @@ void RandomHashCPUMiner::InitFromFarm(U32 relativeIndex)
 
 void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
 {
-    char* tname = (char*)malloc(64);
+    char tname[64];
     snprintf(tname, 64, "Cpu%d", (int)kernelData->m_id);
     setThreadName(tname);
-    
+
     if (g_setProcessPrio != 1)
     {
-        if (kernelData->m_id == GpuManager::CpuInfos.numberOfProcessors-1)
-            RH_SetThreadPriority(RH_ThreadPrio_Low);
+        if (kernelData->m_id == GpuManager::CpuInfos.numberOfProcessors-1) 
+            RH_SetThreadPriority(RH_ThreadPrio_Normal);
         else
         {
             if (g_useCPU && !g_useGPU)
@@ -75,74 +74,87 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
         }
     }
 
-    while(!kernelData->m_abordThread)
+    U32 workWindow = m_globalWorkSizePerCPUMiner;
+    U32 gid = (U32)KernelOffsetManager::Increment(workWindow) - workWindow;
+    U32 endFrame = gid + workWindow;
+    bool paused = false;
+    U64 oldID = 0;
+    while(!kernelData->m_abortThread)
     {
-        AtomicSet(kernelData->m_abordLoop, 0); 
-        AtomicSet(kernelData->m_running, 0);
-        kernelData->m_cpuKernelReadyEvent->WaitUntilDone();
-        AtomicSet(kernelData->m_running, 1);
+        RHMINER_RETURN_ON_EXIT_FLAG();        
+        U32 packageID = AtomicGet(kernelData->m_packageID);
+        CPUKernelData::DataPackage* packageData = &kernelData->m_packages[packageID % CPUKernelData::PackagesCount];
 
-        RHMINER_RETURN_ON_EXIT_FLAG(); 
-        if (kernelData->m_abordThread)
-            break;
-        
-        U32 workSize = m_globalWorkSizePerCPUMiner;
-        U32 gid = (U32)KernelOffsetManager::Increment(workSize) - workSize;
-        
-        if (g_disableCachedNonceReuse == true || 
-            (g_disableCachedNonceReuse == false && memcmp(m_randomHashArray[kernelData->m_id].m_cachedHheader, kernelData->m_header.asU8, PascalHeaderSize - 4) != 0))
+        if (oldID != packageID && paused)
+            paused = false;
+        oldID = packageID;
+
+        if (!paused)
         {
-            RandomHash_SetHeader(&m_randomHashArray[kernelData->m_id], kernelData->m_header.asU8, (U32)kernelData->m_nonce2); //copy header
-        }
-        
-        while(workSize)
-        {
-            U64 isAbort = AtomicGet(kernelData->m_abordLoop) || kernelData->m_abordThread;
-            if (isAbort)
+            if (g_disableCachedNonceReuse == true || 
+                (g_disableCachedNonceReuse == false && memcmp(m_randomHashArray[kernelData->m_id].m_cachedHheader, packageData->m_header.asU8, PascalHeaderSize - 4) != 0))
             {
-                break;
+                RandomHash_SetHeader(&m_randomHashArray[kernelData->m_id], packageData->m_header.asU8, (U32)packageData->m_nonce2); //copy header
             }
 
-#ifdef RH_FORCE_PASCAL_V3_ON_CPU
+    #ifdef RH_FORCE_PASCAL_V3_ON_CPU
             extern void PascalHashV3(void *state, const void *input);
             U32 gidBE = RH_swap_u32(gid); 
-            kernelData->m_header.asU32[PascalHeaderNoncePosV3 / 4] = gidBE;
-            PascalHashV3(kernelData->m_work1, kernelData->m_header.asU8);
-#else
+            packageData->m_header.asU32[PascalHeaderNoncePosV3 / 4] = gidBE;
+            PascalHashV3(packageData->m_work1, packageData->m_header.asU8);
+    #else
             //set start nonce here
-            RandomHash_Search(&m_randomHashArray[kernelData->m_id], (U8*)kernelData->m_work1, gid);
-#endif            
-            swab256(kernelData->m_work2, kernelData->m_work1);
-            U32 leftMost256 = *(U32*)(kernelData->m_work2 + 28);
-            if (leftMost256 <= kernelData->m_target)
+            RandomHash_Search(&m_randomHashArray[kernelData->m_id], (U8*)packageData->m_work1, gid);
+    #endif            
+            if (RH_swap_u32(*(U32*)packageData->m_work1) <= packageData->m_target)
             {
-                if (IsHashLessThan_32(kernelData->m_work2, kernelData->m_targetFull))
+                //Swapb256
+                U32 *work = (uint32_t *)packageData->m_work1;
+                U32 tmp[4] = {work[0], work[1], work[2], work[3]};
+                work[0] = RH_swap_u32(work[7]);            
+                work[1] = RH_swap_u32(work[6]);
+                work[2] = RH_swap_u32(work[5]);
+                work[3] = RH_swap_u32(work[4]);
+                work[4] = RH_swap_u32(tmp[3]);
+                work[5] = RH_swap_u32(tmp[2]);
+                work[6] = RH_swap_u32(tmp[1]);
+                work[7] = RH_swap_u32(tmp[0]);
+                if (IsHashLessThan_32(work, packageData->m_targetFull))
                 {
-                    std::vector<U64> foundNonce;
+                    if (packageID == AtomicGet(kernelData->m_packageID))
+                    {
+                        std::vector<U64> foundNonce;
 #ifdef RH_FORCE_PASCAL_V3_ON_CPU
-                    foundNonce.push_back(gidBE);
-#else                    
-                    foundNonce.push_back(m_randomHashArray[kernelData->m_id].m_startNonce);
+                        foundNonce.push_back(gidBE);
+#else
+                        foundNonce.push_back(m_randomHashArray[kernelData->m_id].m_startNonce);
 #endif              
-                    SolutionSptr solPtr = MakeSubmitSolution(foundNonce, true);
-                    m_farm.submitProof(solPtr);
-                    CpuSleep(100);
+                        SolutionSptr solPtr = MakeSubmitSolution(foundNonce, true);
+                        m_farm.submitProof(solPtr);
 
-                    break;
+                        //pause all solutions until next package in solo
+                        if (kernelData->m_isSolo)
+                        {
+                            PrintOut("--> Pausing work...\n");
+                            paused = true;
+                        }
+                    }
                 }
-            }        
+            }
             gid++;
-            workSize--;
+            if (gid == endFrame)
+            {
+                gid = (U32)KernelOffsetManager::Increment(workWindow) - workWindow;
+                endFrame = gid + workWindow;
+            }
         }
-        
-        kernelData->m_itterations++;
-
-        if (kernelData->m_id == 0)
+        else
         {
-            m_firstKernelCycleDone.SetDone();
+            CpuSleep(20);
         }
+        kernelData->m_hashes++;
     }
-    AtomicSet(kernelData->m_abordThread, U64_Max);
+    AtomicSet(kernelData->m_abortThread, U32_Max);
 }
 
 void RandomHashCPUMiner::UpdateWorkSize(U32 absoluteVal)
@@ -166,18 +178,15 @@ void RandomHashCPUMiner::UpdateWorkSize(U32 absoluteVal)
 
 bool RandomHashCPUMiner::init(const PascalWorkSptr& work)
 {
-    //Generic CPU thread init. Set this thread at high prio
     m_isInitialized = true;
     //start hashrate counting
     if (m_hashCountTime == 0)
         m_hashCountTime = TimeGetMilliSec();
-    
-    //set this thread at high prio
-    if (g_useCPU && !g_useGPU && g_setProcessPrio != 1)
-        RH_SetThreadPriority(RH_ThreadPrio_High);
+
+    m_lastHashReading.resize(g_cpuMinerThreads);
+
     return true;
 }
-
 
 bool RandomHashCPUMiner::configureGPU()
 {
@@ -189,48 +198,18 @@ PrepareWorkStatus RandomHashCPUMiner::PrepareWork(const PascalWorkSptr& workTemp
     PrepareWorkStatus workStatus = GenericCLMiner::PrepareWork(workTempl, reuseCurrentWP);    
     
     //in case we're pause, the workStatus will be PrepareWork_Nothing, BUT we need to restart the cpu kernel...
-    U32 oldPause = AtomicSet(m_isPaused, 0);
-    if (workStatus == PrepareWork_Nothing && oldPause == 1)
-    {
-        for (auto& k : m_cpuKernels)
-        {
-            //Start all cpu kernels
-            k->m_cpuKernelReadyEvent->SetDone();
-        }
+    Guard g(m_pauseMutex);
+    if (workStatus == PrepareWork_Nothing && m_isPaused == 1)
+    {        
+        CpuSleep(20);
     }
     else if (workStatus == PrepareWork_NewWork)
     {
-        //was not allready paused ??
-        if (oldPause == 0)
-        {
-            //pause the cpu kernels
-            PauseCpuKernel();
-            AtomicSet(m_isPaused, 0);
-        }
 
-        //wait for the threads to pause
-        U32 doneCnt = 0;
-        U64 timtoutSec = TimeGetMilliSec() + 5000;
-        while(doneCnt <= m_cpuKernels.size())
-        {
-            if (TimeGetMilliSec() > timtoutSec)
-            {
-                PrintOut("Error. A cpu miner is stalled. Abording new work\n");
-                return workStatus;
-            }
-
-            for (auto& k : m_cpuKernels)
-            {
-                U64 isRunning = AtomicGet(k->m_running);
-                if (!k->m_abordLoop || isRunning == 0)
-                    doneCnt++;
-            }
-        }
-        
-        m_firstKernelCycleDone.Reset();
         SendWorkPackageToKernels(m_currentWp.get());
     }
-
+    
+    m_isPaused = 0;
     return workStatus;
 }
 
@@ -238,42 +217,42 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp)
 {
     // makeup CPU work pakcage
     const U32 target = m_currentWp->GetDeviceTargetUpperBits();
-
     U32 savedNonce2 = wp->m_nonce2;
-    for (auto& k : m_cpuKernels)
+    for (auto& data : m_cpuKernels)
     {
-        k->m_headerSize = wp->m_fullHeader.size();
-        memcpy(k->m_header.asU8, &wp->m_fullHeader[0], wp->m_fullHeader.size());
-        RHMINER_ASSERT(wp->m_fullHeader.size() <= sizeof(k->m_header.asU8));
+        data->m_isSolo = wp->m_isSolo;
+        U64 nextPackage = (AtomicGet(data->m_packageID) + 1) % CPUKernelData::PackagesCount;
+        CPUKernelData::DataPackage* kernelData = &data->m_packages[nextPackage];
+
+        kernelData->m_headerSize = wp->m_fullHeader.size();
+        memcpy(kernelData->m_header.asU8, &wp->m_fullHeader[0], wp->m_fullHeader.size());
+        RHMINER_ASSERT(wp->m_fullHeader.size() <= sizeof(kernelData->m_header.asU8));
 
         if (wp->m_isSolo)
-            memcpy(k->m_targetFull, wp->m_soloTargetPow.data(), 32);
+            memcpy(kernelData->m_targetFull, wp->m_soloTargetPow.data(), 32);
         else
-            memcpy(k->m_targetFull, wp->m_deviceBoundary.data(), 32);
+            memcpy(kernelData->m_targetFull, wp->m_deviceBoundary.data(), 32);
 
-        k->m_nonce2 = savedNonce2;
-        k->m_target = target;
-        k->m_isSolo = wp->m_isSolo;
+        kernelData->m_nonce2 = savedNonce2;
+        kernelData->m_target = target;
+        
+        RHMINER_ASSERT(wp->m_jobID.length() < sizeof(kernelData->m_workID)-1);
+        memcpy(&kernelData->m_workID[0], wp->m_jobID.c_str(), wp->m_jobID.length()+1);
 
-        //Start all cpu kernels
-        k->m_cpuKernelReadyEvent->SetDone();
+        //set next wp
+        AtomicSet(data->m_packageID, nextPackage);
     }
 }
 
 void RandomHashCPUMiner::PauseCpuKernel()
 {
-    U32 oldPause = AtomicSet(m_isPaused, 1);
-    if (oldPause)
+    Guard g(m_pauseMutex);
+    if (m_isPaused)
     {
         return;
     }
-
-    for (auto& k : m_cpuKernels)
-    {
-        k->m_cpuKernelReadyEvent->Reset();
-        AtomicSet(k->m_abordLoop, 1);
-    }
-    CpuSleep(20);
+    
+    m_isPaused = true;
 }
 
 void RandomHashCPUMiner::Pause()
@@ -286,51 +265,56 @@ void RandomHashCPUMiner::Kill()
 {
     for (auto& k : m_cpuKernels)
     {
-        k->m_abordThread = true;
-        k->m_cpuKernelReadyEvent->SetDone();
+        k->m_abortThread = true;
     }
-    CpuSleep(50);
+    CpuSleep(150);
     
-    AtomicSet(m_setWorkComming, 1);
-    m_firstKernelCycleDone.SetDone();
-    CpuSleep(20);
     GenericCLMiner::Kill();
 }
+
+
 
 //unjam the queueKernel method
 void RandomHashCPUMiner::SetWork(PascalWorkSptr _work)
 { 
-    if (AtomicGet(m_waitingForKernel))
-    {
-        AtomicSet(m_setWorkComming, 1);
-        m_firstKernelCycleDone.SetDone();
-        CpuSleep(20);
-    }
-
     GenericCLMiner::SetWork(_work);
 }
 
 void RandomHashCPUMiner::QueueKernel()
 {
-    AtomicSet(m_waitingForKernel, 1);
-    m_firstKernelCycleDone.WaitUntilDone(); 
-    AtomicSet(m_waitingForKernel, 0);
-    RHMINER_RETURN_ON_EXIT_FLAG();
-
-    U32 ittCount = (U32)m_cpuKernels[0]->m_itterations;
-    U32 deltaItt = ittCount - m_lastIttCount;
-    m_lastIttCount = ittCount;
-
-    //aborting due to new work pending
-    if (AtomicSet(m_setWorkComming, 0) == 1)
+    //wait 100ms
+    S32 cnt = 5;
+    while (!m_cpuKernels[0]->m_abortThread && cnt >= 0)
     {
-        return;
+        CpuSleep(20);
+        cnt--;
+        RHMINER_RETURN_ON_EXIT_FLAG();
     }
-    m_firstKernelCycleDone.Reset();
 
-    m_totalKernelItterations += deltaItt;
 }
 
+U64 RandomHashCPUMiner::GetHashRatePerSec() 
+{
+    U64 rate = 0;
+    if (m_hashCountTime)
+    {
+        for(U32 i=0; i < m_cpuKernels.size(); i++)
+        {
+            U64 dt = 1;
+            U64 kHash = m_cpuKernels[i]->m_hashes;
+            if (kHash > m_lastHashReading[i])
+            {
+                dt = kHash - m_lastHashReading[i];
+                m_lastHashReading[i] = kHash;
+            }
+            rate += dt;
+        }
+    }
 
+    return rate;
+}
 
-
+void RandomHashCPUMiner::AddHashCount(U64 hashes)
+{ 
+    m_hashCountTime = TimeGetMilliSec();
+}
