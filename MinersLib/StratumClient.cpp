@@ -122,6 +122,7 @@ void StratumClient::Write(tcp::socket& socket, boost::asio::streambuf& buff)
     catch (std::exception const& _e) 
     {
         RHMINER_PRINT_EXCEPTION_EX("Network Error", _e.what());
+        Reconnect(3000);
     }
 }
 

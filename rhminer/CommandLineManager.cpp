@@ -31,7 +31,7 @@ S32 RHMINER_ValidateGlobalVarRange(const char* varName, const string& valStr, S3
     {
         if (val < _min || val > _max)
         {
-            PrintOut("Comand line Warning: value for -%s is invalid. Defaulting to %d\n", varName, _min);
+            PrintOut("ERROR: Comand line value for -%s is invalid. Must range from %d to %d. Defaulting to %d\n", varName, _min, _max, _min);
             val = _min;
         }
     }
