@@ -33,7 +33,7 @@ RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("forcesequentialnonce", g_forceSequenti
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("disablecachednoncereuse", g_disableCachedNonceReuse, "Debug", "(For debugging purpose) Disable RandomHash cached nonce reuse. This will lower hashrate substantially.")
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_STRING("extrapayload", g_extraPayload, "General", "An extra payload to be added when submiting solution to local wallet.")
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("apiport", g_apiPort, "General", "Tcp port of the remote api. Default port is 71111. Set to 0 to disable server", 0, 32768)
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("worktimeout", g_workTimeout, "General", "work timeout. Default is 60 seconds", 0, 1000)
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("worktimeout", g_workTimeout, "General", "No new work timeout. Default is 60 seconds", 0, 1000)
 
 using namespace std;
 //using namespace boost::asio;

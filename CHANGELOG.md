@@ -1,6 +1,9 @@
 # rhminer update and bugfix history
 
-Version 0.9.4 - Nov 25 2008
+Version 0.9.4b - Nov 28 2008
+* Fixed network error with coinotron and f2pool where miner was in limbo after pool disconnected.
+
+Version 0.9.4 - Nov 27 2008
 * Fixed wrong hashrate on linux. (a thread-concurency bug made H/S show-up higer on linux.) 
 * Minor code optimizations (up to 5% on certain system, more when not mining on all cores)
 * Fix failover server feature

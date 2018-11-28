@@ -17,6 +17,7 @@
 *.args
 /.settings/
 \debug\
+Bin\
 \release\
 /build/
 /build2
