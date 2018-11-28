@@ -32,7 +32,8 @@ RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_logFileName, "");
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_useCPU, false);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_cpuMinerThreads, 1);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformance, 0);
-RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 2)
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 3)
+
 bool g_useGPU = false;
 
 const U64 t1M = 1000 * 60;
@@ -94,6 +95,7 @@ GlobalMiningPreset::GlobalMiningPreset()
         }
     });
 #endif //RH_COMPILE_CPU_ONLY
+
     CmdLineManager::GlobalOptions().RegisterValue("disabledevfee", "", "deprecated.", [&](const string& val)
     {
         PrintOut("This option as been deprecated. Use -devfee now.\n");
@@ -134,6 +136,9 @@ GlobalMiningPreset::GlobalMiningPreset()
 void GlobalMiningPreset::FailOverURL(const string& val)
 {
     string url = val;
+    ReplaceStringALL(url, "stratum+tcp://", "");
+    ReplaceStringALL(url, "http://", "");
+
     size_t p = url.find_last_of(":");
     if (p != string::npos)
     {
@@ -267,7 +272,7 @@ bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
         if (devPeriod > 45)
             nextDevTime = nowMS + (15 * t1M);
         else
-            nextDevTime = nowMS + GetTimeRangeRnd((3 * t1M), (45 * t1M)-devPeriod);
+            nextDevTime = nowMS + GetTimeRangeRnd((15 * t1M), (55 * t1M)-devPeriod);
         
         m_nextDevFeeTimesMS.push_back(nextDevTime);
         while(m_nextDevFeeTimesMS.size() < 4)
@@ -362,7 +367,6 @@ Miner* GlobalMiningPreset::CreateMiner(CreatorClasType type, FarmFace& _farm, U3
 
 void GlobalMiningPreset::DoPerformanceTest()
 {
-    U32 hashCnt = 0;
     U8 out_hash[32];
     mersenne_twister_state rnd;
     _CM(merssen_twister_seed)(0xF923A401, &rnd);
@@ -375,45 +379,62 @@ void GlobalMiningPreset::DoPerformanceTest()
     PrintOut("CPU: %s\n", GpuManager::CpuInfos.cpuBrandName.c_str());
     PrintOut("Testing raw cpu performance for %d sec on %d threads\n", g_testPerformance, ThreadCount);
 
-    U64 timeout = TimeGetMilliSec() + (g_testPerformance * 1000);
-    auto kernelFunc = [&](RandomHash_State* allStates, U32 startNonce)
+    U64 timeout[] = { 10 * 1000, g_testPerformance * 1000 };
+    std::vector<U64> hashes;
+    hashes.resize(ThreadCount);
+
+    auto kernelFunc = [&](RandomHash_State* allStates, U32 startNonce, U64 to)
     {       
-        while (TimeGetMilliSec() < timeout)
+        while (TimeGetMilliSec() < to)
         {
             RandomHash_Search(allStates, out_hash, startNonce);
-            AtomicIncrement(hashCnt);
+            hashes[startNonce]++;
         }
     };
-
-    U32 input[PascalHeaderSize/4];
-    for (int i = 0; i < PascalHeaderSize / 4; i++)
-        input[i] = _CM(merssen_twister_rand)(&rnd);
-
-    //match DUDA thread #0
-    input[PascalHeaderNoncePosV4(PascalHeaderSize) / 4] = 0;
-
-    //NOTE: the header must allready be in device mem (via SetWork)
-    for(int i=0; i < ThreadCount; i++)
+    
+    for(U32 timeoutID = 0; timeoutID < 2; timeoutID++)
     {
-        CUDA_SYM(RandomHash_SetHeader)(&g_threadsData[i], (U8*)input, nonce2);
-    }
-    std::vector<std::thread> threads(ThreadCount);
-    std::atomic<bool> boolean{false};
+        U32 input[PascalHeaderSize/4];
+        for (int i = 0; i < PascalHeaderSize / 4; i++)
+            input[i] = _CM(merssen_twister_rand)(&rnd);
 
-    U32 gid=0;
-    for(int i = 0; i < ThreadCount; i++) 
-    {
-        threads[i] = std::thread([&] 
+        //match DUDA thread #0
+        input[PascalHeaderNoncePosV4(PascalHeaderSize) / 4] = 0;
+
+        //NOTE: the header must allready be in device mem (via SetWork)
+        for(int i=0; i < ThreadCount; i++)
         {
-            U32 _gid = AtomicIncrement(gid);
-            RH_SetThreadPriority(RH_ThreadPrio_High);
-            kernelFunc(&g_threadsData[_gid-1], _gid-1); 
+            CUDA_SYM(RandomHash_SetHeader)(&g_threadsData[i], (U8*)input, nonce2);
         }
-        );
-    }
-    for(std::thread & thread : threads) 
-        thread.join();
 
+        {
+            std::vector<std::thread> threads(ThreadCount);
+            U32 gid=0;
+            for(int i = 0; i < ThreadCount; i++) 
+            {
+                threads[i] = std::thread([&] 
+                {
+                    U32 _gid = AtomicIncrement(gid);
+                    RH_SetThreadPriority(RH_ThreadPrio_High);
+                    kernelFunc(&g_threadsData[_gid-1], _gid-1, TimeGetMilliSec() + timeout[timeoutID]); 
+                }
+                );
+            }
+            for(std::thread & thread : threads) 
+                thread.join();
+        }
+        
+        CpuSleep(20);
+        if (timeoutID == 0)
+        {
+            for (auto& h : hashes)
+                h = 0;
+        }
+    }
+
+    U64 hashCnt = 0;
+    for (auto h : hashes)
+        hashCnt += h;
     PrintOut("RandomHash speed is %.2f H/S \n", hashCnt / (float)g_testPerformance);
     exit(0);
 }

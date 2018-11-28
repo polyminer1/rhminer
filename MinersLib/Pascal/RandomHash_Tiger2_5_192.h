@@ -542,7 +542,7 @@ void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
 {
     uint64_t a, b, c, temp_a;
     uint32_t _rounds;
-    RH_ALIGN(16) uint64_t data[8];
+    RH_ALIGN(64) uint64_t data[8];
 
     memcpy(data, inData, 64);
 
@@ -803,7 +803,7 @@ void CUDA_SYM_DECL(RandomHash_Tiger2_5_192)(RH_StridePtr roundInput, RH_StridePt
     //finish
     {
         int32_t padindex; 
-        RH_ALIGN(16) uint8_t pad[72];
+        RH_ALIGN(64) uint8_t pad[72];
 
         if (len < 56)
             padindex = 56 - len;

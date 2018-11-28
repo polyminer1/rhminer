@@ -434,8 +434,8 @@ inline void CUDA_SYM_DECL(InjectMsg)(uint64_t*& state, uint64_t*& temp, const bo
 void CUDA_SYM_DECL(RandomHash_Grindahl512)(RH_StridePtr roundInput, RH_StridePtr output)
 {
     //init
-    RH_ALIGN(16) uint64_t stateBuff[Grindalh_WorkSize];
-    RH_ALIGN(16) uint64_t tempBuff[Grindalh_WorkSize];
+    RH_ALIGN(64) uint64_t stateBuff[Grindalh_WorkSize];
+    RH_ALIGN(64) uint64_t tempBuff[Grindalh_WorkSize];
 	memset(stateBuff, 0, Grindalh_WorkSize * sizeof(uint64_t));
     memset(tempBuff, 0, Grindalh_WorkSize * sizeof(uint64_t));
     uint64_t* state = stateBuff;

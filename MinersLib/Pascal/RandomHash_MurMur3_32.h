@@ -230,25 +230,6 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(uint4 data, uint32_t len
 
 #else
 
-#if !defined(_WIN32_WINNT)
-    template<unsigned i>
-    inline U32 _mm_extract_epi32_( __m128i V)
-    {
-        //convert __m128i to __m128
-        //__m128 x = _mm_castsi128_ps(V);
-
-        // shuffle V so that the element that you want is moved to the least-
-        // significant element of the vector (V[0])
-        V = _mm_shuffle_epi32(V, _MM_SHUFFLE(i, i, i, i));
-        // return the value in V[0]
-        return (U32)_mm_cvtsi128_si32(V);
-    }
-
-    #define _mm_extract_epi32_M(chunk128, i) (_mm_extract_epi32_<i>(chunk128))
-#else
-    #define _mm_extract_epi32_M _mm_extract_epi32
-#endif
-
 #define RH_M3_GET_BYTE(chunk128, n, b, d)                               \
         d = ((n) & 0x7)*8;                                              \
         switch((n)>>2)                                                  \
@@ -258,7 +239,7 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(uint4 data, uint32_t len
             case 2:b = _mm_extract_epi32_M(chunk128, 2)>>d; break;       \
             case 3:b = _mm_extract_epi32_M(chunk128, 3)>>d; break;       \
             default:                                                    \
-                RHMINER_ASSERT(false);                                  \
+                RH_ASSERT(false);                                  \
         }
 
 #define RH_M3_GET_WORD(chunk128, n, w)                              \
@@ -269,13 +250,13 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(uint4 data, uint32_t len
             case 2:w = _mm_extract_epi32_M(chunk128, 2); break;       \
             case 3:w = _mm_extract_epi32_M(chunk128, 3); break;       \
             default:                                                \
-                RHMINER_ASSERT(false);                              \
+                RH_ASSERT(false);                              \
         }
 
 inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(__m128i chunk128, uint32_t len, MurmurHash3_x86_32_State* state)
 {
-    RHMINER_ASSERT(len < S32_Max);
-    RHMINER_ASSERT(state->idx != 0xDEADBEEF)
+    RH_ASSERT(len < S32_Max);
+    RH_ASSERT(state->idx != 0xDEADBEEF)
         
     state->totalLen += len;
     uint32_t h1 = state->h1;
@@ -313,14 +294,14 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(__m128i chunk128, uint32
             RH_M3_GET_WORD(chunk128, i, d);
             MURMUR3_BODY(d);
             i++;
-            RHMINER_ASSERT(i <= 4);
+            RH_ASSERT(i <= 4);
         }
 
         //save pending end bytes
         i = (nblocks * 4);
 	    while (i < (int)len)
         {
-            RHMINER_ASSERT(state->idx < 4);
+            RH_ASSERT(state->idx < 4);
             RH_M3_GET_BYTE(chunk128, i, b, d);
             state->U.buf[state->idx++] = b;
             i++;
@@ -339,7 +320,7 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(__m128i chunk128, uint32
 
 #define INPLACE_M_MurmurHash3_x86_32_Update_16(chunk128, _len)                      \
 {                                                                                   \
-    RHMINER_ASSERT(back_idx != 0xDEADBEEF)                                             \
+    RH_ASSERT(back_idx != 0xDEADBEEF)                                             \
     U32 len = _len;                                                                 \
     back_totalLen += len;                                                           \
     uint32_t h1 = back_h1;                                                          \
@@ -374,12 +355,12 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(__m128i chunk128, uint32
             RH_M3_GET_WORD(chunk128, back_i, d);                                \
             MURMUR3_BODY(d);                                                    \
             back_i++;                                                                    \
-            RHMINER_ASSERT(back_i <= 4);                                                    \
+            RH_ASSERT(back_i <= 4);                                                    \
         }                                                                           \
         back_i = (nblocks * 4);                                                          \
 	    while (back_i < (int)len)                                                        \
         {                                                                           \
-            RHMINER_ASSERT(back_idx < 4);                                              \
+            RH_ASSERT(back_idx < 4);                                              \
             U8 b = RH_M3_GET_BYTE(chunk128, back_i, b, d);                          \
             back_buf &= ~(0xFF << (back_idx*8));                                    \
             back_buf |= (b << (back_idx*8));                                        \
@@ -399,7 +380,7 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(__m128i chunk128, uint32
 void CUDA_SYM_DECL(MurmurHash3_x86_32_Update)( const uint8_t* data, int len, MurmurHash3_x86_32_State* state)
 {
     RH_ASSERT(state->idx != 0xDEADBEEF)
-
+    
     state->totalLen += len;
     uint32_t h1 = state->h1;
     uint32_t a_index = 0;

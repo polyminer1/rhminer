@@ -621,7 +621,7 @@ PLATFORM_CONST uint32_t RH_ALIGN(64) Snefru_boxes[16][256] = { { 0x64F9001B, 0xF
 void CUDA_SYM_DECL(Snefru_8_256_Transform)(uint32_t* data, uint32_t* state)
 {
 	uint32_t i, j, k, shift;
-    RH_ALIGN(16) uint32_t work[16]; //beData
+    RH_ALIGN(64) uint32_t work[16]; //beData
 		
     //uint32_t *ptr_work = &work[0];
 	memcpy(&work[0], &state[0], SNEFRU_size * sizeof(uint32_t));
@@ -702,7 +702,7 @@ void CUDA_SYM_DECL(Snefru_8_256_Transform)(uint32_t* data, uint32_t* state)
 void CUDA_SYM_DECL(RandomHash_Snefru_8_256)(RH_StridePtr roundInput, RH_StridePtr output)
 {
     // init
-    RH_ALIGN(16) uint32_t state[SNEFRU_size];
+    RH_ALIGN(64) uint32_t state[SNEFRU_size];
     memset(state, 0, SNEFRU_size * sizeof(uint32_t));
 
     int32_t len = (int32_t)RH_STRIDE_GET_SIZE(roundInput);
@@ -725,7 +725,7 @@ void CUDA_SYM_DECL(RandomHash_Snefru_8_256)(RH_StridePtr roundInput, RH_StridePt
 	else
 		padindex = SNEFRU_BlockSize - pos - 8;
 
-    RH_ALIGN(16) uint32_t pad[SNEFRU_BlockSize*2];
+    RH_ALIGN(64) uint32_t pad[SNEFRU_BlockSize*2];
     memset(pad, 0, sizeof(pad));
 
 	bits = ReverseBytesUInt64(bits);

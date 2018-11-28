@@ -89,7 +89,7 @@ struct PascalSolution
     std::vector<U64>    m_results; 
     U32                 m_gpuIndex = 0;
     bool                m_isFromCpuMiner = false;
-    PascalWorkSptr      m_work; 
+    PascalWorkSptr      m_work;
 
 private:
     U32                 _eval_current_result_index = 0; //index used to travers m_results and eval each value

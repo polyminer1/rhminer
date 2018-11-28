@@ -60,15 +60,14 @@ class Farm;
 /// Describes the progress of a mining operation.
 struct WorkingProgress
 {
-    std::vector<U32> gpuGlobalIndex;
-	std::vector<U32> minersHasheRate;
-    std::vector<U32> acceptedShares;
-    std::vector<U32> rejectedShares;
-    std::vector<float> minersHasheRatePeak;
-    std::vector<U32> temperature;
-    std::vector<U32> fan;
-    U64 totalHashRate=0; //hash per sec
-    string ToString();
+    std::vector<U32>    gpuGlobalIndex;
+	std::vector<U32>    minersHasheRate;
+    std::vector<U32>    acceptedShares;
+    std::vector<U32>    rejectedShares;
+    std::vector<float>  minersHasheRatePeak;
+    std::vector<U32>    temperature;
+    std::vector<U32>    fan;
+    U64                 totalHashRate=0; //hash per sec
     string TemperatureToString();
 };
 
@@ -177,7 +176,7 @@ public:
 
     virtual void UpdateWorkSize(U32 absoluteVal) {};
 
-    U64             GetHashRatePerSec();
+    virtual U64     GetHashRatePerSec();
     virtual void    GetTemp(U32& temp, U32& fan);
     
 protected:

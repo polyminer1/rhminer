@@ -335,10 +335,10 @@ inline static uint32_t CUDA_SYM_DECL(maskWithReductionPolynomial)(const uint32_t
 
 void CUDA_SYM_DECL(WhirlPool_Transform)(uint64_t* inData, uint64_t* hash)
 {
-    RH_ALIGN(16) uint64_t data[8]; //BE
-    RH_ALIGN(16) uint64_t k[8];
-    RH_ALIGN(16) uint64_t m[8];
-    RH_ALIGN(16) uint64_t temp[8];
+    RH_ALIGN(64) uint64_t data[8]; //BE
+    RH_ALIGN(64) uint64_t k[8];
+    RH_ALIGN(64) uint64_t m[8];
+    RH_ALIGN(64) uint64_t temp[8];
 	
     for(uint32_t i=0; i < 8; i++)
     {
@@ -421,7 +421,7 @@ void CUDA_SYM_DECL(RandomHash_WhirlPool)(RH_StridePtr roundInput, RH_StridePtr o
     //finish
     {
         int32_t padindex; 
-        RH_ALIGN(16) uint8_t pad[96];
+        RH_ALIGN(64) uint8_t pad[96];
 
 		if (len > 31)
 			padindex = 120 - len;

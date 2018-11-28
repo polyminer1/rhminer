@@ -75,7 +75,6 @@ public:
     StratumClient(const StratumInit& initData);
     ~StratumClient();
 
-    void SetFailover(string const & host, string const & port);
 	void SetFailover(string const & host, string const & port, string const & user, string const & pass);
     ServerCredential GetFailover() { return m_failover;}
 

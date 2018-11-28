@@ -22,13 +22,11 @@
 #include "MinersLib/CLMinerBase.h"
 #include "rhminer/CommandLineManager.h"
 
-const U32 g_cpuRoundsThread = 64;
-
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_STRING("logfilename", g_logFileName, "General", "Set the name of the log's filename. Note: the log file will be overwritten every time you start rhminer");
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("cpu", g_useCPU, "Gpu", "Enable the use of CPU to mine. ex '-cpu -cputhreads 4' will enable mining on cpu while gpu mining.");
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("cputhreads", g_cpuMinerThreads, "Gpu", "Number of CPU miner threads when mining with CPU. ex: -cpu -cputhreads 4", 0, S32_Max);
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("testperformance", g_testPerformance, "Debug", "Run performance test for an amount of seconds", 0, 120)
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("processpriority", g_setProcessPrio, "General", "On windows only. Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority. Default is 2. WARNING: Changing this value will affect GPU mining.", 0, 3);
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("processpriority", g_setProcessPrio, "General", "On windows only. Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority, 3=High Priority. Default is 3. WARNING: Changing this value will affect GPU mining.", 0, 10);
 
 class FarmFace;
 
@@ -37,10 +35,10 @@ using namespace std;
 struct FarmPreset
 {
     string m_farmURL = "http://127.0.0.1:4009";
-	string m_farmFailOverURL = "";
 	string m_user;
 	string m_pass;
 	string m_port;
+	string m_farmFailOverURL = "";
 	string m_fuser = "";
 	string m_fpass = "";
 	string m_fport = "";

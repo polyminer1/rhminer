@@ -51,7 +51,6 @@ protected:
     //work management
     U64             m_lastWorkStartTimeMs = 0;
     U32             m_kernelItterations = 0;
-    U32             m_totalKernelItterations = 0;
     U64             m_workOffset = 0; 
     U64             m_startNonce = 0;
     unsigned        m_recycleCount = 0;

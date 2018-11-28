@@ -101,9 +101,15 @@ public:
 private:
     virtual void doStratum();
     void PushMiniWebData(SolutionStats& farmSol, WorkingProgress& mp);
-
+    
     StratumClientSptr           m_stratumClient;
     GenericFarmClientSptr       m_farmCLient;
     Farm                        m_farm;
+
+    static const U32            m_speedSMACount = 20;
+    std::vector<U64>            m_speedSMA;
+    
+    //watchdogs
     std::thread*                m_WatchdogDevFee = 0;
+    U64                         m_zeroSpeedWD = 0;
 };

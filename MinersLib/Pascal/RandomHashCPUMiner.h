@@ -44,6 +44,7 @@ protected:
     U32    m_waitingForKernel = 1;
     U32    m_lastIttCount = 0;
     U32    m_isPaused = 0;
+    std::mutex  m_pauseMutex;
     U32    m_globalWorkSizePerCPUMiner = 0;
 
     //Cut cl miner stuff
@@ -55,11 +56,13 @@ protected:
     virtual PrepareWorkStatus PrepareWork(const PascalWorkSptr& workTempl, bool reuseCurrentWP = false);
     virtual void SendWorkPackageToKernels(PascalWorkPackage* wp);
     virtual void QueueKernel();
+    virtual void AddHashCount(U64 hashes);
+    virtual U64 GetHashRatePerSec();
+    std::vector<U64> m_lastHashReading;
+
     void PauseCpuKernel();
     void UpdateWorkSize(U32 absoluteVal);
     void RandomHashCpuKernel(CPUKernelData* kernelData); //The Kernel
     RandomHash_State* m_randomHashArray = 0;
-
-    std::mutex test_;
 };
 

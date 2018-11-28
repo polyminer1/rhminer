@@ -530,14 +530,14 @@ void CUDA_SYM_DECL(RandomHash_SHA2_256)(RH_StridePtr roundInput, RH_StridePtr ou
     }                                                                                  
     {                                                                                  
 		int32_t padindex;                                                              
-        RH_ALIGN(16) uint8_t pad[72];                                                               
+        RH_ALIGN(64) uint8_t pad[72];                                                               
 		                                                                               
 		if (len < 56)                                                                  
 			padindex = 56 - len;                                                       
 		else                                                                           
 			padindex = 120 - len;                                                      
                                                                                        
-        PLATFORM_MEMSET(pad, 0, sizeof(pad));                                          
+        PLATFORM_MEMSET(pad, 0, sizeof(pad));
 		pad[0] = 0x80;                                                                 
         bits = ReverseBytesUInt64(bits);                                                    
 		ReadUInt64AsBytesLE(bits, pad+padindex);                                       

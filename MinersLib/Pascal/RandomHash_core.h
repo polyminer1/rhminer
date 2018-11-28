@@ -69,15 +69,15 @@ struct RH_StrideStruct
 {
     U32 size;
     U32 maxSize  : 16;
-    U32 extra    : 16;
+    U32 dummy    : 16;
 };
 
 #define RH_STRIDE_GET_SIZE(strideVar)                    (*(U32*)(strideVar))
-#define RH_STRIDE_SET_SIZE(strideVar, val)               {(*(U32*)(strideVar)) = (U32)(val); reinterpret_cast<RH_StrideStruct*>((void*)strideVar)->extra = 0; }
+#define RH_STRIDE_SET_SIZE(strideVar, val)               {(*(U32*)(strideVar)) = (U32)(val);}
 #define RH_STRIDE_GET_MAXSIZE(strideVar)                 ((RH_StrideStruct*)(strideVar))->maxSize
-#define RH_STRIDE_SET_MAXSIZE(strideVar, val)            {((RH_StrideStruct*)(strideVar))->maxSize = val; reinterpret_cast<RH_StrideStruct*>((void*)strideVar)->extra = 0;}
-#define RH_STRIDE_GET_EXTRA(strideVar)                   ((RH_StrideStruct*)(strideVar))->extra
-#define RH_STRIDE_RESET(strideVar)                       {RH_StrideStruct* p = reinterpret_cast<RH_StrideStruct*>(strideVar); p->size = (U32)0; p->extra = 0;}
+#define RH_STRIDE_SET_MAXSIZE(strideVar, val)            {((RH_StrideStruct*)(strideVar))->maxSize = val;}
+
+#define RH_STRIDE_RESET(strideVar)                       {RH_StrideStruct* p = reinterpret_cast<RH_StrideStruct*>(strideVar); p->size = (U32)0;}
 #define RH_STRIDE_GET_DATA(strideVar)                    (((U8*)(strideVar)) + RH_IDEAL_ALIGNMENT)
 
 
@@ -131,19 +131,6 @@ struct RH_StrideStruct
 
 #ifndef RANDOMHASH_CUDA
 
-#define RH_INPLACE_MEMCPY_128(pDst, pSrc, byteCount)                    \
-    {S32 n = RHMINER_CEIL(byteCount, sizeof(__m128i));                     \
-    __m128i r0;                                                         \
-    while (n >= sizeof(__m128i))                                        \
-    {                                                                   \
-        r0 = RH_MM_LOAD128 ((__m128i *)(pSrc));                         \
-        RH_MM_STORE128((__m128i *)(pDst), r0);                          \
-        pSrc += sizeof(__m128i);                                        \
-        pDst += sizeof(__m128i);                                        \
-        n -= sizeof(__m128i);                                           \
-    }                                                                   \
-    RH_MM_BARRIER();}
-
 #else //!CPU
 
 //TODO: Optmiz - Test memcpy
@@ -175,7 +162,6 @@ struct RH_StrideStruct
     RH_STRIDE_SET_SIZE(dstStride, _ss);                                                                         \
     RH_STRIDE_CHECK_INTEGRITY(srcStride);                                                                       \
     _CM(RH_INPLACE_MEMCPY_128_A)(RH_STRIDE_GET_DATA(dstStride), RH_STRIDE_GET_DATA(srcStride), _ss, accum);     \
-    RH_STRIDE_GET_EXTRA(dstStride)++;                                                                           \
     RH_STRIDE_CHECK_INTEGRITY(dstStride);                                                                       \
 }
 
