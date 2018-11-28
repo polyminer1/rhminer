@@ -7,9 +7,8 @@ Version 0.9.4 - Nov 25 2008
 * Fixed "no work timeout" that was exiting application instead of reconnecting to server.
 * Fixed testperformance feature so it show pure hash performance instead of raw simulation of solo/pool mining.
 * Fixed some typos
-* Fixed processpriority 2 that made Windows GUI lags. Performances may reduce, over time, if this processpriority is chosen. NOTE: New defaul processpriority is now 3.
+* Fixed processpriority 2 that made Windows GUI lags. Performances may reduce, over time, if this processpriority is chosen. NOTE: New default processpriority is now 3.
 * Added processpriority 3. All miner threads are on high priority. Give a gain on certain system. Can create GUI lags.
-* Change default 
 * Added "zero speed" watchdog. Miner will exit when speed is at zero for 60 sec
 * Added More stable hashrate
 * Added Faster work transfer time to miner threads
