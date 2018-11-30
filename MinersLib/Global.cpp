@@ -387,7 +387,7 @@ void GlobalMiningPreset::DoPerformanceTest()
             hashes[startNonce]++;
         }
     };
-    
+
     for(U32 timeoutID = 0; timeoutID < 2; timeoutID++)
     {
         U32 input[PascalHeaderSize/4];

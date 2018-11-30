@@ -211,7 +211,7 @@ void GenericMinerClient::doStratum()
 
             for(auto x = 0; x < g_DisplaySpeedTimeout; x++)
             {   
-                if (m_stratumClient->IsWorkTimedOut() && m_stratumClient->isConnected())
+                if (m_stratumClient->IsWorkTimedOut() /*&& m_stratumClient->isConnected()*/)
                 {
                     PrintOut("WorkTimeout reacched. No new work received after %u seconds.\n",  g_workTimeout);
                     if (m_stratumClient.get())

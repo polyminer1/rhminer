@@ -6,7 +6,7 @@ Support stratum and solo mining<br>
 Works on Windows 7,10 and Ubuntu 18
 
 ## Download prebuilt binaries
-**Current version is 0.9.4b** <br>
+**Current version is 1.0** <br>
 
 There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/releases/<br>
@@ -26,7 +26,7 @@ To get the number of logical cores, on you system, simply run rhminer with the -
 ```
 C:\rhminer>rhminer -completelist
 
-  rhminer v0.9.4b beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
+  rhminer v1.0 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
   Buid CPU Nov 19 2018 20:04:01
 
   Donations : Pascal account 529692-23
@@ -161,36 +161,38 @@ On Windows 7/8/10, if you get the missing OpenCL.dll error you need to download 
 ## Command line options
 ```
 General options:
-  -list                 List all gpu in the system
-  -diff                 Set local difficulyu. ex: -diff 0.832
-  -logfilename          Set the name of the log's filename. Note: the log file will be overwritten every time you start rhminer
-  -apiport              Tcp port of the remote api. Default port is 71111. Set to 0 to disable server
-  -worktimeout          work timeout. Default is 60 seconds
-  -extrapayload         An extra payload to be added when submiting solution to local wallet.
-  -displayspeedtimeout  Display mining speeds every x seconds. Default is 10
-  -processpriority      Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority. Default is 2. WARNING: Changing this value will affect GPU mining.
-  -v                    Log verbosity. From 0 to 3. 0 no log, 1 normal log, 2 include warnings. Default is 1
-  -devfee               Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.
-  -completelist         Exhaustive list of all devices in the system
-  -processorsaffinity   Force miner to only run on selected logical core processors. ex: -processorsaffinity 0,3 will make the miner run only on logical core #0 and #3. WARNING: Changing this value will affect GPU mining.
+General options:
   -maxsubmiterrors      Stop the miner when a number of consecutive submit errors occured. Default is 10 consecutive errors. This is usefull when mining into local wallet.
+  -extrapayload         An extra payload to be added when submiting solution to local wallet.
+  -apiport              Tcp port of the remote api. Default port is 71111. Set to 0 to disable server
+  -worktimeout          No new work timeout. Default is 60 seconds
+  -displayspeedtimeout  Display mining speeds every x seconds. Default is 10 
+  -logfilename          Set the name of the log's filename. Note: the log file will be overwritten every time you start rhminer
+  -processpriority      On windows only. Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority, 3=High Priority. Default is 3. WARNING: Changing this value will affect GPU mining.
+  -v                    Log verbosity. From 0 to 3. 0 no log, 1 normal log, 2 include warnings. 3 network (only in log file). Default is 1
+  -devfee               Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.
+  -list                 List all gpu in the system
+  -completelist         Exhaustive list of all devices in the system
+  -diff                 Set local difficulyu. ex: -diff 0.832
+  -processorsaffinity   On windows only. Force miner to only run on selected logical core processors. ex: -processorsaffinity 0,3 will make the miner run only on logical core #0 and #3. WARNING: Changing this value will affect GPU mining.
+  -h                    Display Help
 
 Gpu options:
-  -cpu                  Enable the use of CPU to mine. ex '-cpu -cputhread 4' will enable mining on cpu while gpu mining.
-  -cputhreads           Number of CPU miner threads when mining with CPU. ex: -cpu -cputhread 4
-  -gputhreads           Cuda thread count. ex: -gputhreads  100 launche 100 threads on selected gpu
-  -gpu                  Enable indiviaual GPU by their index. GPU not in the list will be disabled. ex: -gpu 0,3,4.
-  -kernelactivewayting  Enable active wayting on kernel run. This will raise cpu usage but bring more stability, specially when mining on multiple gpu. WARNING: This affect cpu mining
+  -cpu                  Enable the use of CPU to mine. ex '-cpu -cputhreads 4' will enable mining on cpu while gpu mining.
+  -cputhreads           Number of CPU miner threads when mining with CPU. ex: -cpu -cputhreads 4
 
 Network options:
-  -dar                  Disable auto-reconnect on connection lost. Note : The miner will exit uppon loosing connection.
-  -s                    Stratum server or wallet address:port. NOTE: You can also use http://address.xyz to connect to local wallet.
+  -dar                  Disable auto-reconnect on connection lost. Note : The miner will exit uppon loosing connection. 
+  -s                    Stratum/wallet server address:port. NOTE: You can also use http://address.xyz to connect to local wallet.
   -su                   Stratum user
   -pw                   Stratum password
   -fo                   Failover address:port for stratum or local wallet
   -fou                  Failover user for stratum of a local wallet
   -fop                  Failover password for stratum or local wallet
   -r                    Retries connection count for stratum or local wallet
+
+Debug options:
+  -testperformance      Run performance test for an amount of seconds
 ```
 
 ## Examples

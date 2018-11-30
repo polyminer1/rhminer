@@ -65,8 +65,15 @@ struct CPUInfo
 {
     string  cpuArchName;
     string  cpuBrandName;
-    bool    supportAVX2 = false;
-    bool    supportEAS = false;
+    bool    sseSupportted = false;
+    bool    sse2Supportted = false;
+    bool    sse3Supportted = false;
+    bool    ssse3Supportted = false;
+    bool    sse4_1Supportted = false;
+    bool    sse4_2Supportted = false;
+    bool    sse4aSupportted = false;
+    bool    sse5Supportted = false;
+    bool    avxSupportted = false;
     U64     avaiablelMem;
     U32     numberOfProcessors;
     size_t  activeProcessorMask;
@@ -127,6 +134,7 @@ public:
     static U32                      GetAllGpuThreadsCount(U32& enabledGpuCount);
     static void                     LoadGPUMap();
     static void                     LoadCPUInfos();
+    static void                     TestExtraInstructions();
     
     static std::vector<cl::Device>  GetDevices(std::vector<cl::Platform> const& _platforms, unsigned _platformId);
     static std::vector<cl::Platform>GetPlatforms();

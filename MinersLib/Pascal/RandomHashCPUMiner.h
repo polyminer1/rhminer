@@ -54,7 +54,7 @@ protected:
 
     //generic CPU mining
     virtual PrepareWorkStatus PrepareWork(const PascalWorkSptr& workTempl, bool reuseCurrentWP = false);
-    virtual void SendWorkPackageToKernels(PascalWorkPackage* wp);
+    virtual void SendWorkPackageToKernels(PascalWorkPackage* wp, bool requestPause = false);
     virtual void QueueKernel();
     virtual void AddHashCount(U64 hashes);
     virtual U64 GetHashRatePerSec();

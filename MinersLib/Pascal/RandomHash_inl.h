@@ -417,6 +417,7 @@ inline void CUDA_SYM(RH_STRIDEARRAY_CLONE)(U8* strideArrayVar, U8* strideArrayVa
     *((U64*)acc8_ptr) = acc8_buf;       \
 }
 
+extern bool g_isSSE41Supported;
 inline void CUDA_SYM_DECL(Transfo0)(U8* nextChunk, U32 size, U8* workBytes)
 {
     U32 rndState = _CM(MurmurHash3_x86_32_Fast)((const void *)nextChunk,size, 0);
@@ -451,55 +452,57 @@ inline void CUDA_SYM_DECL(Transfo0)(U8* nextChunk, U32 size, U8* workBytes)
     RH_Accum_8_Finish(nextChunk);
 #else
 #ifdef RHMINER_PLATFORM_CPU
-    if (size <= 128 && (size_t(nextChunk)&0x0f)==0)
+    if (size <= 128 && (size_t(nextChunk)&0x0f)==0 && g_isSSE41Supported)
     {
         //load in mmx reg
         __m128i r0,r1,r2,r3,r4,r5,r6,r7;
         switch(size/16)
         {
             case 8:
-            case 7: r7 = RH_MM_LOAD128 ((__m128i *)(nextChunk+7*sizeof(__m128i)));
+            case 7: r0 = RH_MM_LOAD128 ((__m128i *)(nextChunk+0*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
+                    r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
+                    r5 = RH_MM_LOAD128 ((__m128i *)(nextChunk+5*sizeof(__m128i)));
                     r6 = RH_MM_LOAD128 ((__m128i *)(nextChunk+6*sizeof(__m128i)));
+                    r7 = RH_MM_LOAD128 ((__m128i *)(nextChunk+7*sizeof(__m128i)));
+                    break;
+            case 6: r0 = RH_MM_LOAD128 ((__m128i *)(nextChunk+0*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
+                    r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
                     r5 = RH_MM_LOAD128 ((__m128i *)(nextChunk+5*sizeof(__m128i)));
-                    r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
-                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
-                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
-                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
-                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
+                    r6 = RH_MM_LOAD128 ((__m128i *)(nextChunk+6*sizeof(__m128i)));
                     break;
-            case 6: r6 = RH_MM_LOAD128 ((__m128i *)(nextChunk+6*sizeof(__m128i)));
+            case 5: r0 = RH_MM_LOAD128 ((__m128i *)(nextChunk+0*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
+                    r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
                     r5 = RH_MM_LOAD128 ((__m128i *)(nextChunk+5*sizeof(__m128i)));
+                    break;
+            case 4: r0 = RH_MM_LOAD128 ((__m128i *)(nextChunk+0*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
                     r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
+                    break;
+            case 3: r0 = RH_MM_LOAD128 ((__m128i *)(nextChunk+0*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
+                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
                     r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
+                    break;
+            case 2: r0 = RH_MM_LOAD128 ((__m128i *)(nextChunk+0*sizeof(__m128i)));
+                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
                     r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
-                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
-                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
                     break;
-            case 5: r5 = RH_MM_LOAD128 ((__m128i *)(nextChunk+5*sizeof(__m128i)));
-                    r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
-                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
-                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
+            case 1: r0 = RH_MM_LOAD128 ((__m128i *)(nextChunk+0*sizeof(__m128i)));
                     r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
-                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
                     break;
-            case 4: r4 = RH_MM_LOAD128 ((__m128i *)(nextChunk+4*sizeof(__m128i)));
-                    r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
-                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
-                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
-                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
+            case 0: r0 = RH_MM_LOAD128 ((__m128i *)(nextChunk+0*sizeof(__m128i)));
                     break;
-            case 3: r3 = RH_MM_LOAD128 ((__m128i *)(nextChunk+3*sizeof(__m128i)));
-                    r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
-                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
-                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
-                    break;
-            case 2: r2 = RH_MM_LOAD128 ((__m128i *)(nextChunk+2*sizeof(__m128i)));
-                    r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
-                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
-            case 1: r1 = RH_MM_LOAD128 ((__m128i *)(nextChunk+1*sizeof(__m128i)));
-                    r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); 
-                    break;
-            case 0: r0 = RH_MM_LOAD128((__m128i *)(nextChunk)); break;
             default: RHMINER_ASSERT(false);
         }
 

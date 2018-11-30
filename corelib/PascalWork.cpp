@@ -277,7 +277,7 @@ void PascalWorkPackage::UpdateHeader()
     // 512 -> 314bytes
     if (m_coinbase1.length() != 180)
     {
-        RHMINER_EXIT_APP("Private key length is to long. Please chose a mining key with encryption type secp256k1.\n");
+        RHMINER_EXIT_APP("Private key length is too long. Please chose a mining key with encryption type secp256k1.\n");
     }
     
     string headerStr;

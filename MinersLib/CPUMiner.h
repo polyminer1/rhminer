@@ -30,6 +30,7 @@ struct CPUKernelData
         }                         m_header;
         RH_ALIGN(64) U8           m_targetFull[32];
         RH_ALIGN(64) U64          m_target;
+        RH_ALIGN(64) U64          m_requestPause;
         RH_ALIGN(64) U8           m_workID[64];
         RH_ALIGN(64) U64          m_nonce2;
         RH_ALIGN(64) U64          m_startNonce;
@@ -38,15 +39,12 @@ struct CPUKernelData
         RH_ALIGN(64) U8           m_work2[256];       //temp swapb buffer
     };
     
-    static const int PackagesCount = 16;
+    static const int PackagesCount = 4;
     RH_ALIGN(64) U64             m_hashes = 0;
     RH_ALIGN(64) DataPackage     m_packages[PackagesCount];
     RH_ALIGN(64) U32             m_abortThread = 0;
-    //RH_ALIGN(64) U32             m_signalPause = 0;
-    //RH_ALIGN(64) U32             m_signalNewWork = 0; //one way
     RH_ALIGN(64) U64             m_isSolo;
     RH_ALIGN(64) U64             m_packageID = 0;
     RH_ALIGN(64) U32             m_id;               //id in the array of cpu kernels
-    std::thread*                 m_thread;
-    
+    std::thread*                 m_thread;    
 };

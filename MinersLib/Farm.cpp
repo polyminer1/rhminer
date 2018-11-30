@@ -329,7 +329,7 @@ void Farm::AddAcceptedSolution(int gpuAbsIndex)
 void Farm::AddRejectedSolution(int gpuAbsIndex) 
 { 
     m_farmData.m_solutionStats.rejected(gpuAbsIndex); 
-
+    
     if (m_farmData.m_lastRejectedTimeMS &&
         (TimeGetMilliSec() - m_farmData.m_lastRejectedTimeMS) > 5 * 60000)
     {
@@ -338,10 +338,11 @@ void Farm::AddRejectedSolution(int gpuAbsIndex)
     else
     {
         m_farmData.m_consecutiveRejectedCount++;
-        m_farmData.m_lastRejectedTimeMS = TimeGetMilliSec();
         if (m_farmData.m_consecutiveRejectedCount >= (U32)g_maxConsecutiveSubmitErrors)
         {
             RHMINER_EXIT_APP("To many consecutive submit errors.");
         }
     }
+    m_farmData.m_lastRejectedTimeMS = TimeGetMilliSec();
+
 }
