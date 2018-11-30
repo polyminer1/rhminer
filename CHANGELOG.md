@@ -6,8 +6,8 @@ Version 1.0 - 30 Nov 2018
 * Fixed error where miners was rejecting shares due to wrong work package data.
 * Fixed 'Exit on too many rejected shares' that was not working properly
 * Added SSe detection
-* Fixed connection error whent coinotron and f2pool randomly closing socket.
-* Mitor memory optimizations
+* Fixed connection error when coinotron and f2pool randomly closing socket.
+* Minor memory optimizations
 
 Version 0.9.4 - Nov 27 2018
 * Fixed wrong hashrate on linux. (a thread-concurency bug made H/S show-up higer on linux.) 
