@@ -33,6 +33,7 @@ extern bool g_useGPU;
 
 using boost::asio::ip::tcp;
 
+
 StratumClient::StratumClient(const StratumInit& initData )
 	: Worker("Net"),
       m_socket(m_io_service),
@@ -107,6 +108,9 @@ void StratumClient::SetFailover(string const & host, string const & port, string
 
 void StratumClient::Write(tcp::socket& socket, boost::asio::streambuf& buff)
 {
+    if (!m_connected)
+        return;
+
     try
     {
         size_t size = buff.size();
@@ -122,7 +126,9 @@ void StratumClient::Write(tcp::socket& socket, boost::asio::streambuf& buff)
     catch (std::exception const& _e) 
     {
         RHMINER_PRINT_EXCEPTION_EX("Network Error", _e.what());
-        Reconnect(3000);
+        //Reconnect(3000);
+        m_socket.close(); 
+        m_io_service.reset();
     }
 }
 
@@ -359,6 +365,10 @@ void StratumClient::WorkLoop()
                     if (response.back() == '\r')
                         response = response.substr(0, response.length() - 1);
 
+                    //handle coinotron's invalid request
+                    if (response.find("\"Invalid Request\"") != string::npos)
+                        throw RH_Exception("Invalid Request");
+
                     if (response.front() == '{' && response.back() == '}')
                     {
                         Json::Value responseObject;
@@ -385,6 +395,7 @@ void StratumClient::WorkLoop()
         {
             if (!m_devFeeConnectionMode)
                 RHMINER_PRINT_EXCEPTION_EX("Network Error",  _e.what());
+            
             Reconnect(3000);
         }
         catch (...) 
@@ -437,6 +448,7 @@ void StratumClient::CallMiningSubscribeMethod()
 void StratumClient::OnPostConnect()
 {
     m_nextWorkDifficulty = GlobalMiningPreset::I().m_localDifficulty;
+    m_lastReceivedCommandTime = TimeGetMilliSec();
 
     m_nonce2 = GetNewNonce2();
     {
@@ -835,7 +847,7 @@ void StratumClient::RespondMiningSubmit(Json::Value& responseObject, U64 gpuInde
     {
         if (!GlobalMiningPreset::I().IsInDevFeeMode())
         {
-            PrintOutCritical("Share rejected by %s. Reason :%s\n\n", m_active->HostDescr(), errorStr.c_str());
+            PrintOutCritical("Share REJECTED by %s. Reason :%s\n\n", m_active->HostDescr(), errorStr.c_str());
             m_farm->AddRejectedSolution((U32)gpuIndex);
         }
     }
@@ -990,7 +1002,7 @@ void StratumClient::ProcessMiningNotifySolo(Json::Value& jsondata)
         {
             //NOTE: there is a bug in the wallet where it will resent the last submited payload in the next mining notify. 
             //      If this error recure more than 2 times in a row, just restart the wallet.
-            RHMINER_EXIT_APP("Error. Deamon/Wallet miner name is to long. Set a name under 26 caracters.\nNOTE, if this error persist, just restart the demaon/wallet.");
+            RHMINER_EXIT_APP("Error. Deamon/Wallet miner name is too long. Set a name under 26 caracters.\nNOTE, if this error persist, just restart the demaon/wallet.");
         }
         else
         {
@@ -1246,6 +1258,9 @@ void StratumClient::CallSubmit(SolutionSptr solution)
             return;
         }
     }
+
+    if (!m_connected)
+        return;
 
     string params;
     PascalWorkPackage* cbwp = solution->m_work.get();

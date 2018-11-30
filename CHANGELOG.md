@@ -1,9 +1,15 @@
 # rhminer update and bugfix history
 
-Version 0.9.4b - Nov 28 2008
+Version 1.0 - 30 Nov 2018
 * Fixed network error with coinotron and f2pool where miner was in limbo after pool disconnected.
+* Fixed miner not starting on cpu without SSe4.1
+* Fixed error where miners was rejecting shares due to wrong work package data.
+* Fixed 'Exit on too many rejected shares' that was not working properly
+* Added SSe detection
+* Fixed connection error whent coinotron and f2pool randomly closing socket.
+* Mitor memory optimizations
 
-Version 0.9.4 - Nov 27 2008
+Version 0.9.4 - Nov 27 2018
 * Fixed wrong hashrate on linux. (a thread-concurency bug made H/S show-up higer on linux.) 
 * Minor code optimizations (up to 5% on certain system, more when not mining on all cores)
 * Fix failover server feature
@@ -19,7 +25,7 @@ Version 0.9.4 - Nov 27 2008
 * Change Speed output to show SMA20 of past raw speed readings
 
 
-Version 0.9.3 - Nov 20 2008
+Version 0.9.3 - Nov 20 2018
 * Graceful handling of recurrent assert (m_fullHeader.size() == PascalHeaderSize)
 * Add work timeout so miner exits if pool or wallet is stalled. see -worktimeout option.
 * better handling of wallet/pool disconnection
@@ -28,7 +34,7 @@ Version 0.9.3 - Nov 20 2008
 * Devfee watchdog timer to assert devfee time in all possible situations
 * Updated windows/linux script example. Now linux script works properly.
 
-Version 0.9.2 - Nov 13 2008
+Version 0.9.2 - Nov 13 2018
 * Fixed processproprity bug on windows
 * Clarify and update documentation
 * change -disabledevfee to -devfee so good souls can donate more than 1%

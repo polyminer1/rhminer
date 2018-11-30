@@ -81,13 +81,24 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
     U64 oldID = 0;
     while(!kernelData->m_abortThread)
     {
-        RHMINER_RETURN_ON_EXIT_FLAG();        
-        U32 packageID = AtomicGet(kernelData->m_packageID);
+        RHMINER_RETURN_ON_EXIT_FLAG();
+        U64 packageID = AtomicGet(kernelData->m_packageID);
         CPUKernelData::DataPackage* packageData = &kernelData->m_packages[packageID % CPUKernelData::PackagesCount];
 
+        //handle internal pause
         if (oldID != packageID && paused)
+        {
             paused = false;
+        }
         oldID = packageID;
+
+        //handle pause request from ::Pause()
+        if (packageData->m_requestPause)
+        {
+            //PrintOut("--> Request: Pause\n");
+            packageData->m_requestPause = 0;
+            paused = true;
+        }
 
         if (!paused)
         {
@@ -121,23 +132,19 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
                 work[7] = RH_swap_u32(tmp[0]);
                 if (IsHashLessThan_32(work, packageData->m_targetFull))
                 {
-                    if (packageID == AtomicGet(kernelData->m_packageID))
-                    {
-                        std::vector<U64> foundNonce;
+                    std::vector<U64> foundNonce;
 #ifdef RH_FORCE_PASCAL_V3_ON_CPU
-                        foundNonce.push_back(gidBE);
+                    foundNonce.push_back(gidBE);
 #else
-                        foundNonce.push_back(m_randomHashArray[kernelData->m_id].m_startNonce);
+                    foundNonce.push_back(m_randomHashArray[kernelData->m_id].m_startNonce);
 #endif              
-                        SolutionSptr solPtr = MakeSubmitSolution(foundNonce, true);
-                        m_farm.submitProof(solPtr);
+                    SolutionSptr solPtr = MakeSubmitSolution(foundNonce, true);
+                    m_farm.submitProof(solPtr);
 
-                        //pause all solutions until next package in solo
-                        if (kernelData->m_isSolo)
-                        {
-                            PrintOut("--> Pausing work...\n");
-                            paused = true;
-                        }
+                    //pause all solutions until next package in solo
+                    if (kernelData->m_isSolo)
+                    {
+                        paused = true;
                     }
                 }
             }
@@ -205,15 +212,15 @@ PrepareWorkStatus RandomHashCPUMiner::PrepareWork(const PascalWorkSptr& workTemp
     }
     else if (workStatus == PrepareWork_NewWork)
     {
-
-        SendWorkPackageToKernels(m_currentWp.get());
+        PascalWorkSptr wp = m_currentWp;
+        SendWorkPackageToKernels(wp.get(), false);
     }
     
     m_isPaused = 0;
     return workStatus;
 }
 
-void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp)
+void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp, bool requestPause)
 {
     // makeup CPU work pakcage
     const U32 target = m_currentWp->GetDeviceTargetUpperBits();
@@ -221,9 +228,11 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp)
     for (auto& data : m_cpuKernels)
     {
         data->m_isSolo = wp->m_isSolo;
-        U64 nextPackage = (AtomicGet(data->m_packageID) + 1) % CPUKernelData::PackagesCount;
-        CPUKernelData::DataPackage* kernelData = &data->m_packages[nextPackage];
-
+        U64 nextPackage = (AtomicGet(data->m_packageID) + 1);
+        CPUKernelData::DataPackage* kernelData = &data->m_packages[nextPackage % CPUKernelData::PackagesCount ];
+        
+        memset(kernelData, 0, sizeof(CPUKernelData::DataPackage));
+        kernelData->m_requestPause = !!requestPause;
         kernelData->m_headerSize = wp->m_fullHeader.size();
         memcpy(kernelData->m_header.asU8, &wp->m_fullHeader[0], wp->m_fullHeader.size());
         RHMINER_ASSERT(wp->m_fullHeader.size() <= sizeof(kernelData->m_header.asU8));
@@ -238,6 +247,7 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp)
         
         RHMINER_ASSERT(wp->m_jobID.length() < sizeof(kernelData->m_workID)-1);
         memcpy(&kernelData->m_workID[0], wp->m_jobID.c_str(), wp->m_jobID.length()+1);
+        kernelData->m_workID[wp->m_jobID.length()] = 0;
 
         //set next wp
         AtomicSet(data->m_packageID, nextPackage);
@@ -252,7 +262,10 @@ void RandomHashCPUMiner::PauseCpuKernel()
         return;
     }
     
-    m_isPaused = true;
+    //send pause package !
+    PascalWorkSptr wp = m_currentWp;
+    SendWorkPackageToKernels(wp.get(), true);
+    m_isPaused = 1;
 }
 
 void RandomHashCPUMiner::Pause()

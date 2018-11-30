@@ -89,13 +89,7 @@
     template<unsigned i>
     inline U32 _mm_extract_epi32_( __m128i V)
     {
-        //convert __m128i to __m128
-        //__m128 x = _mm_castsi128_ps(V);
-
-        // shuffle V so that the element that you want is moved to the least-
-        // significant element of the vector (V[0])
         V = _mm_shuffle_epi32(V, _MM_SHUFFLE(i, i, i, i));
-        // return the value in V[0]
         return (U32)_mm_cvtsi128_si32(V);
     }
 

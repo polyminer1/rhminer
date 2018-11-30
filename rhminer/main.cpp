@@ -100,7 +100,6 @@ int main(int argc, char** argv)
         }
     }
 
-
     GlobalMiningPreset::I().Initialize(argv, argc);
 
     bool displayHelp = false;
