@@ -320,7 +320,7 @@ void CUDA_SYM_DECL(RandomHash_Expand)(RandomHash_State* state, RH_StridePtr inpu
     U32 seed = _CM(RandomHash_Checksum)(input);
     _CM(RandomHash_Reseed)(state->m_rndGenExpand, seed);
     size_t sizeExp = inputSize + ExpansionFactor * RH_M;
-
+    
     RH_StridePtr output = input;
 
     S64 bytesToAdd = sizeExp - inputSize;    
@@ -340,26 +340,20 @@ void CUDA_SYM_DECL(RandomHash_Expand)(RandomHash_State* state, RH_StridePtr inpu
         }
 
         RH_ASSERT(nextChunk + nextChunkSize < output + RH_StrideSize);
-        _CM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(nextChunk, outputPtr, nextChunkSize); 
-        RH_STRIDE_CHECK_INTEGRITY(output);
-
         U32 random = _CM(GetNextRnd)(&state->m_rndGenExpand);
-
         U8* workBytes = state->m_workBytes;
         U32 r = random % 8;
         RH_ASSERT((nextChunkSize & 1) == 0);
-
         switch(r)
         {
-            case 0: _CM(Transfo0)(nextChunk, nextChunkSize,  workBytes);break;
-            case 1: _CM(Transfo1)(nextChunk, nextChunkSize,  workBytes);break;
-            case 2: _CM(Transfo2)(nextChunk, nextChunkSize,  workBytes);break;
-            case 3: _CM(Transfo3)(nextChunk, nextChunkSize,  workBytes);break;
-            case 4: _CM(Transfo4)(nextChunk, nextChunkSize,  workBytes);break; 
-            case 5: _CM(Transfo5)(nextChunk, nextChunkSize,  workBytes);break;
-            case 6: _CM(Transfo6)(nextChunk, nextChunkSize,  workBytes);break;
-            case 7: _CM(Transfo7)(nextChunk, nextChunkSize,  workBytes);break;
-
+            case 0: _CM(Transfo0_2)(nextChunk, nextChunkSize,  outputPtr);break;
+            case 1: _CM(Transfo1_2)(nextChunk, nextChunkSize,  outputPtr);break;
+            case 2: _CM(Transfo2_2)(nextChunk, nextChunkSize,  outputPtr);break;
+            case 3: _CM(Transfo3_2)(nextChunk, nextChunkSize,  outputPtr);break;
+            case 4: _CM(Transfo4_2)(nextChunk, nextChunkSize,  outputPtr);break; 
+            case 5: _CM(Transfo5_2)(nextChunk, nextChunkSize,  outputPtr);break;
+            case 6: _CM(Transfo6_2)(nextChunk, nextChunkSize,  outputPtr);break;
+            case 7: _CM(Transfo7_2)(nextChunk, nextChunkSize,  outputPtr);break;
         }
 
         RH_STRIDE_GET_SIZE(output) += nextChunkSize;

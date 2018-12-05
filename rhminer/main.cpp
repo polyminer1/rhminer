@@ -15,7 +15,6 @@
 /// @file
 /// @copyright Polyminer1, QualiaLibre
 
-
 #include "precomp.h"
 #include "BuildInfo.h"
 #include "ClientManager.h"

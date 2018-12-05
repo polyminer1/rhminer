@@ -383,6 +383,7 @@ void StratumClient::WorkLoop()
                         else
                         {
                             PrintOut("Error. Parsing response failed: %s\n", reader.getFormattedErrorMessages().c_str());
+                            throw RH_Exception("Stratum.Json");
                         }
                     }
                 }

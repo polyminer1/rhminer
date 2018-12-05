@@ -104,6 +104,7 @@
       <MultiProcessorCompilation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</MultiProcessorCompilation>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(CudaToolkitDir)/include;..\jsoncpp-1.8.0\include;$(BOOST_ROOT);..\</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_WIN32_WINNT=0x0601;_DEBUG;_CONSOLE;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</BufferSecurityCheck>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -176,6 +177,7 @@
       <Include>./;../../common/inc;../MinersLib/</Include>
       <Defines>WIN32;</Defines>
       <TargetMachinePlatform Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">64</TargetMachinePlatform>
+      <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">false</GPUDebugInfo>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release_Volta'">

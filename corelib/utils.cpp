@@ -21,7 +21,6 @@
 #include <sys/stat.h>
 
 #ifdef _WIN32_WINNT
-
 #include <io.h>
 #include <direct.h>
 #include <time.h>
@@ -31,7 +30,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <stdarg.h> 
+#include <stdarg.h>
+#include <mm_malloc.h>
 
 #if !defined(_WIN32_WINNT)
 #define OutputDebugStringA(...) 
@@ -421,8 +421,8 @@ void RH_SetThreadPriority(RH_ThreadPrio prio)
     {
         case RH_ThreadPrio_Normal:  setpriority(PRIO_PROCESS, 0, 0); break;
         case RH_ThreadPrio_Low:     setpriority(PRIO_PROCESS, 0, -5); break;
-        case RH_ThreadPrio_High:    setpriority(PRIO_PROCESS, 0, 10); break;
-        case RH_ThreadPrio_RT:      setpriority(PRIO_PROCESS, 0, 15); break;
+        case RH_ThreadPrio_High:    setpriority(PRIO_PROCESS, 0, 20); break;
+        case RH_ThreadPrio_RT:      setpriority(PRIO_PROCESS, 0, 25); break;
     }
 #endif
 }
@@ -776,40 +776,18 @@ double le256todouble(const void *target)
 void* RH_SysAlloc(size_t s)
 {
 #ifdef _WIN32_WINNT
-    /*
-    NOTE : ----->  Virtual alloc is slower (large page or not), use malloc instead   <-------
-    //SIZE_T iLargePageMin = GetLargePageMinimum();
-    DWORD flags = MEM_COMMIT | MEM_RESERVE;
-    size_t lpm = GetLargePageMinimum();
-    if (bigPage && lpm)
-    {
-        flags |= MEM_LARGE_PAGES;
-        s = RHMINER_CEIL(s, lpm);
-    }
-
-    void* allocPtr = VirtualAlloc(NULL, s, flags, PAGE_READWRITE);
-    RHMINER_ASSERT(allocPtr);
-    return allocPtr;*/
     return _aligned_malloc(s, 4096);
 #else
-    //TODO: use _mm_malloc
-    const int ALIGNVAL = 4096;
-    void* ptr = malloc(s + ALIGNVAL + sizeof(size_t));
-    size_t ptrAli = ((size_t)ptr) + ALIGNVAL-(((size_t)ptr) % ALIGNVAL);
-    U8* ptrAliBack = ((U8*)ptrAli) - sizeof(size_t);
-    *(size_t*)ptrAliBack = (size_t)ptr;
-    return (void*)ptrAli;
+    return _mm_malloc( s, 4096 );
 #endif
 }
 
 void RH_SysFree(void* ptr)
 {
 #ifdef _WIN32_WINNT
-    //VirtualFree(ptr, 0, MEM_RELEASE);
     _aligned_free(ptr);
 #else
-    size_t* ptrAliBack = (size_t*)(((U8*)ptr) - sizeof(size_t));
-    free((void*)*ptrAliBack);
+    _mm_free(ptr);
 #endif    
 }
 
