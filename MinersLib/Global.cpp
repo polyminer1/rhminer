@@ -32,7 +32,9 @@ RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_logFileName, "");
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_useCPU, false);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_cpuMinerThreads, 1);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformance, 0);
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformanceThreads, 0);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 3)
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_disableFastTransfo, false);
 
 bool g_useGPU = false;
 
@@ -95,7 +97,6 @@ GlobalMiningPreset::GlobalMiningPreset()
         }
     });
 #endif //RH_COMPILE_CPU_ONLY
-
     CmdLineManager::GlobalOptions().RegisterValue("devfee", "General", "Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.", [&](const string& val)
     {
         if (val == "0" || val == "0.0")
@@ -367,14 +368,17 @@ void GlobalMiningPreset::DoPerformanceTest()
     mersenne_twister_state rnd;
     _CM(merssen_twister_seed)(0xF923A401, &rnd);
     
-    const size_t ThreadCount = GpuManager::CpuInfos.numberOfProcessors;
+    if (g_testPerformanceThreads == 0 || g_testPerformanceThreads > GpuManager::CpuInfos.numberOfProcessors)
+        g_testPerformanceThreads = GpuManager::CpuInfos.numberOfProcessors;
+        
+    const size_t ThreadCount = g_testPerformanceThreads;
     RandomHash_State* g_threadsData = new RandomHash_State[ThreadCount];
     RandomHash_CreateMany(&g_threadsData, ThreadCount);
     U32 nonce2 = 0;
     
     PrintOut("CPU: %s\n", GpuManager::CpuInfos.cpuBrandName.c_str());
     PrintOut("Testing raw cpu performance for %d sec on %d threads\n", g_testPerformance, ThreadCount);
-
+    
     U64 timeout[] = { 10 * 1000, g_testPerformance * 1000 };
     std::vector<U64> hashes;
     hashes.resize(ThreadCount);

@@ -26,7 +26,9 @@ RHMINER_COMMAND_LINE_DECLARE_GLOBAL_STRING("logfilename", g_logFileName, "Genera
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("cpu", g_useCPU, "Gpu", "Enable the use of CPU to mine. ex '-cpu -cputhreads 4' will enable mining on cpu while gpu mining.");
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("cputhreads", g_cpuMinerThreads, "Gpu", "Number of CPU miner threads when mining with CPU. ex: -cpu -cputhreads 4", 0, S32_Max);
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("testperformance", g_testPerformance, "Debug", "Run performance test for an amount of seconds", 0, 120)
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("testperformancethreads", g_testPerformanceThreads, "Debug", "Amount of threads to use for performance test", 0, 256)
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("processpriority", g_setProcessPrio, "General", "On windows only. Set miner's process priority. 0=Background Process, 1=Low Priority, 2=Normal Priority, 3=High Priority. Default is 3. WARNING: Changing this value will affect GPU mining.", 0, 10);
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("disablefasttransfo", g_disableFastTransfo, "General", "Disable fast transfo. This can help old cpu go faster.");
 
 class FarmFace;
 

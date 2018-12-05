@@ -1,5 +1,10 @@
 # rhminer update and bugfix history
 
+Version 1.1 - 30 Nov 2018
+* Optimization up to 7% faster on cuda (Tested on gtx 1070 8gb)
+* Optimization up to 5% faster on cpu (Tested on Xenon and i5 7th)
+* Fixed "unknown error" when disconnected from pool
+
 Version 1.0 - 30 Nov 2018
 * Fixed network error with coinotron and f2pool where miner was in limbo after pool disconnected.
 * Fixed miner not starting on cpu without SSe4.1

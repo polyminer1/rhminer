@@ -78,7 +78,7 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
     U32 gid = (U32)KernelOffsetManager::Increment(workWindow) - workWindow;
     U32 endFrame = gid + workWindow;
     bool paused = false;
-    U64 oldID = 0;
+    U64 oldID = U64_Max;
     while(!kernelData->m_abortThread)
     {
         RHMINER_RETURN_ON_EXIT_FLAG();
@@ -90,22 +90,20 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
         {
             paused = false;
         }
-        oldID = packageID;
 
         //handle pause request from ::Pause()
         if (packageData->m_requestPause)
         {
-            //PrintOut("--> Request: Pause\n");
             packageData->m_requestPause = 0;
             paused = true;
         }
-
+        
         if (!paused)
         {
-            if (g_disableCachedNonceReuse == true || 
-                (g_disableCachedNonceReuse == false && memcmp(m_randomHashArray[kernelData->m_id].m_cachedHheader, packageData->m_header.asU8, PascalHeaderSize - 4) != 0))
+            if (g_disableCachedNonceReuse == true ||
+                (g_disableCachedNonceReuse == false && oldID != packageID))
             {
-                RandomHash_SetHeader(&m_randomHashArray[kernelData->m_id], packageData->m_header.asU8, (U32)packageData->m_nonce2); //copy header
+                RandomHash_SetHeader(&m_randomHashArray[kernelData->m_id], packageData->m_header.asU8, (U32)packageData->m_nonce2); //copy header                
             }
 
     #ifdef RH_FORCE_PASCAL_V3_ON_CPU
@@ -159,6 +157,7 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
         {
             CpuSleep(20);
         }
+        oldID = packageID;
         kernelData->m_hashes++;
     }
     AtomicSet(kernelData->m_abortThread, U32_Max);

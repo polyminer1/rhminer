@@ -298,13 +298,14 @@ U32 CUDA_SYM_DECL(RandomHash_ChecksumArray)(RH_StridePtrArray inputs)
 	return csum;
 }
 
+extern bool g_disableFastTransfo;
 void CUDA_SYM_DECL(RandomHash_Expand)(RandomHash_State* state, RH_StridePtr input, int round, int ExpansionFactor/*, RH_StridePtr Result*/)
 {
     U32 inputSize = RH_STRIDE_GET_SIZE(input);
     U32 seed = _CM(RandomHash_Checksum)(input);
     _CM(RandomHash_Reseed)(state->m_rndGenExpand, seed);
     size_t sizeExp = inputSize + ExpansionFactor * RH_M;
-
+    
     RH_StridePtr output = input;
 
     S64 bytesToAdd = sizeExp - inputSize;    
@@ -324,26 +325,40 @@ void CUDA_SYM_DECL(RandomHash_Expand)(RandomHash_State* state, RH_StridePtr inpu
         }
 
         RH_ASSERT(nextChunk + nextChunkSize < output + RH_StrideSize);
-        _CM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(nextChunk, outputPtr, nextChunkSize); 
-        RH_STRIDE_CHECK_INTEGRITY(output);
-
         U32 random = _CM(GetNextRnd)(&state->m_rndGenExpand);
-
-        U8* workBytes = state->m_workBytes;
         U32 r = random % 8;
         RH_ASSERT((nextChunkSize & 1) == 0);
 
-        switch(r)
+        if (g_disableFastTransfo)
         {
-            case 0: _CM(Transfo0)(nextChunk, nextChunkSize,  workBytes);break;
-            case 1: _CM(Transfo1)(nextChunk, nextChunkSize,  workBytes);break;
-            case 2: _CM(Transfo2)(nextChunk, nextChunkSize,  workBytes);break;
-            case 3: _CM(Transfo3)(nextChunk, nextChunkSize,  workBytes);break;
-            case 4: _CM(Transfo4)(nextChunk, nextChunkSize,  workBytes);break; 
-            case 5: _CM(Transfo5)(nextChunk, nextChunkSize,  workBytes);break;
-            case 6: _CM(Transfo6)(nextChunk, nextChunkSize,  workBytes);break;
-            case 7: _CM(Transfo7)(nextChunk, nextChunkSize,  workBytes);break;
-
+            U8* workBytes = state->m_workBytes;
+            _CM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(nextChunk, outputPtr, nextChunkSize); 
+            RH_STRIDE_CHECK_INTEGRITY(output);
+            switch(r)
+            {
+                case 0: _CM(Transfo0)(nextChunk, nextChunkSize,  workBytes); break;
+                case 1: _CM(Transfo1)(nextChunk, nextChunkSize,  workBytes); break;
+                case 2: _CM(Transfo2)(nextChunk, nextChunkSize,  workBytes); break; 
+                case 3: _CM(Transfo3)(nextChunk, nextChunkSize,  workBytes); break;
+                case 4: _CM(Transfo4)(nextChunk, nextChunkSize,  workBytes); break; 
+                case 5: _CM(Transfo5)(nextChunk, nextChunkSize,  workBytes); break;
+                case 6: _CM(Transfo6)(nextChunk, nextChunkSize); break;
+                case 7: _CM(Transfo7)(nextChunk, nextChunkSize); break;
+            }
+        }
+        else
+        {
+            switch(r)
+            {
+                case 0: _CM(Transfo0_2)(nextChunk, nextChunkSize,  outputPtr); break;
+                case 1: _CM(Transfo1_2)(nextChunk, nextChunkSize,  outputPtr); break;
+                case 2: _CM(Transfo2_2)(nextChunk, nextChunkSize,  outputPtr); break;
+                case 3: _CM(Transfo3_2)(nextChunk, nextChunkSize,  outputPtr); break;
+                case 4: _CM(Transfo4_2)(nextChunk, nextChunkSize,  outputPtr); break;
+                case 5: _CM(Transfo5_2)(nextChunk, nextChunkSize,  outputPtr); break; 
+                case 6: _CM(Transfo6_2)(nextChunk, nextChunkSize,  outputPtr); break;
+                case 7: _CM(Transfo7_2)(nextChunk, nextChunkSize,  outputPtr); break;
+            }
         }
 
         RH_STRIDE_GET_SIZE(output) += nextChunkSize;
@@ -396,10 +411,11 @@ inline void CUDA_SYM_DECL(RandomHash_start)(RandomHash_State* state, U32 in_roun
 inline void CUDA_SYM_DECL(RandomHash_Phase_1_push)(RandomHash_State* state, int in_round)
 {
     if (in_round == RH_N && !g_disableCachedNonceReuse)
-    {        
+    {
         RH_ASSERT((RH_STRIDE_GET_SIZE(state->m_data[RH_N].in_blockHeader) <= PascalHeaderSize));
-        U32* headPtr = (U32*)RH_STRIDE_GET_DATA(state->m_data[RH_N].in_blockHeader);
-        U32* tailPtr = headPtr + (RH_STRIDE_GET_SIZE(state->m_data[RH_N].in_blockHeader)/4) - 1;
+        U32* headPtr = (U32*)RH_STRIDE_GET_DATA(state->m_data[RH_N].in_blockHeader);        
+
+        U32* tailPtr = headPtr + (RH_STRIDE_GET_SIZE(state->m_data[RH_N].in_blockHeader)/4) - 1; 
         U32* cachedtailPtr = (U32*)(state->m_cachedHheader + PascalHeaderSize - 4);
 
         if (*headPtr == *(U32*)(state->m_cachedHheader))
@@ -889,7 +905,7 @@ CUDA_DECL_KERNEL void CUDA_SYM(RandomHash_Init)(RandomHash_State* allStates, U8*
     
     (*(U32*)(state->m_data[0].roundInput)) = PascalHeaderSize;
     _CM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(RH_STRIDE_GET_DATA(state->m_data[0].roundInput), &state->m_header[0], PascalHeaderSize); 
-    
+
     RH_STRIDE_INIT(state->m_workBytes);
 
     if (RH_STRIDEARRAY_GET_SIZE(state->m_cachedOutputs) && !g_disableCachedNonceReuse)

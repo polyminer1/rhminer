@@ -46,9 +46,7 @@ void ClientManager::Initialize()
     {
         GlobalMiningPreset::I().RegisterDevCredentials(
             {
-                "hashplaza.org\t1379",
-                /*"pasc-us-east1.nanopool.org\t15555",
-                "pasc-us-west1.nanopool.org\t15555"*/
+                "hashplaza.org\t1379"
              },
              { "523057-58.0.rig",
                "529692-23.0.rig"
