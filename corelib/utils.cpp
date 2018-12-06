@@ -778,7 +778,13 @@ void* RH_SysAlloc(size_t s)
 #ifdef _WIN32_WINNT
     return _aligned_malloc(s, 4096);
 #else
-    return _mm_malloc( s, 4096 );
+    //return _mm_malloc( s, 4096 );
+    const int ALIGNVAL = 4096;
+    void* ptr = malloc(s + ALIGNVAL + sizeof(size_t));
+    size_t ptrAli = ((size_t)ptr) + ALIGNVAL-(((size_t)ptr) % ALIGNVAL);
+    U8* ptrAliBack = ((U8*)ptrAli) - sizeof(size_t);
+    *(size_t*)ptrAliBack = (size_t)ptr;
+    return (void*)ptrAli;
 #endif
 }
 
@@ -787,7 +793,9 @@ void RH_SysFree(void* ptr)
 #ifdef _WIN32_WINNT
     _aligned_free(ptr);
 #else
-    _mm_free(ptr);
+    //_mm_free(ptr);
+    size_t* ptrAliBack = (size_t*)(((U8*)ptr) - sizeof(size_t));
+    free((void*)*ptrAliBack);
 #endif    
 }
 
