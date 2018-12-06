@@ -41,7 +41,7 @@ struct PascalWorkPackage
     ~PascalWorkPackage();
     PascalWorkPackage* Clone();
 
-    void    Init(const string& job, const h256& prevHash, const string& coinbase1, const string& coinbase2, const string& nTime, bool cleanWork, const string& nonce1, U32 nonce2Size, U64 extranonce);
+    void    Init(const string& job, const h256& prevHash, const string& coinbase1, const string& coinbase2, const string& nTime, bool cleanWork, const string& nonce1, U32 nonce2Size, U64 extranonce, const string& server);
     bool    Eval(PascalSolution* solPtr);
     void    ComputeWorkDiff(double& diff);
     bool    IsSame(PascalWorkPackage* work);
@@ -73,6 +73,7 @@ struct PascalWorkPackage
     unsigned        m_nonce2Size = 0; 
     bool            m_clean = false;
     U64             m_nonce2_64 = 0;
+    string          m_server;
     
     //solo stuff
     bool            m_isSolo = false;

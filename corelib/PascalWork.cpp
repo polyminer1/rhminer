@@ -59,6 +59,7 @@ PascalWorkPackage::PascalWorkPackage(const PascalWorkPackage& c)
     m_clean = c.m_clean;
     m_nonce2_64 = c.m_nonce2_64;
     m_isSolo = c.m_isSolo;
+    m_server = c.m_server;
 }
 
 U64 PascalSolution::GetCurrentEvaluatingNonce()
@@ -74,7 +75,7 @@ void PascalSolution::SetCurrentEvaluatingNonceIndex(U32 i)
 }
 
 
-void PascalWorkPackage::Init(const string& job, const h256& prevHash, const string& coinbase1, const string& coinbase2, const string& nTime, bool cleanWork, const string& nonce1, U32 nonce2Size, U64 extranonce)
+void PascalWorkPackage::Init(const string& job, const h256& prevHash, const string& coinbase1, const string& coinbase2, const string& nTime, bool cleanWork, const string& nonce1, U32 nonce2Size, U64 extranonce, const string& server)
 {
     m_prev_hash = prevHash;
     m_jobID = job;
@@ -86,6 +87,7 @@ void PascalWorkPackage::Init(const string& job, const h256& prevHash, const stri
     m_clean = cleanWork;
     m_nonce1 = nonce1;
     m_nonce2Size = nonce2Size;
+    m_server = server;
 }
 
 

@@ -1,6 +1,10 @@
 # rhminer update and bugfix history
 
-Version 1.1 - 30 Nov 2018
+Version 1.1.1 - 6 dec 2018
+* Critical Fix for memory corruption on Linux
+* Fixed cross server shares submission
+
+Version 1.1 - 5 dec 2018
 * Optimization up to 7% faster on cuda (Tested on gtx 1070 8gb)
 * Optimization up to 5% faster on cpu (Tested on Xenon and i5 7th)
 * Fixed "unknown error" when disconnected from pool

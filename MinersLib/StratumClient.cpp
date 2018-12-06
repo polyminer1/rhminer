@@ -669,8 +669,7 @@ bool StratumClient::ProcessMiningNotify(Json::Value& params)
 
         {
             PascalWorkSptr newWork = InstanciateWorkPackage();
-            newWork->Init(job, h256(prevHash), coinbase1, coinbase2, nTime, cleanWork, m_nonce1, m_nonce2Size, m_extraNonce);
-           
+            newWork->Init(job, h256(prevHash), coinbase1, coinbase2, nTime, cleanWork, m_nonce1, m_nonce2Size, m_extraNonce, m_active->host);
 
             SendWorkToMiners(newWork);
         }
@@ -1032,7 +1031,7 @@ void StratumClient::ProcessMiningNotifySolo(Json::Value& jsondata)
 
         //send work to miners
         PascalWorkSptr newWork = InstanciateWorkPackage();
-        newWork->Init(toHex(++m_soloJobId), h256("0000000000000000000000000000000000000000000000000000000000000000"), coinbase1, coinbase2, nTime, cleanFlag, m_nonce1, m_nonce2Size, m_extraNonce);
+        newWork->Init(toHex(++m_soloJobId), h256("0000000000000000000000000000000000000000000000000000000000000000"), coinbase1, coinbase2, nTime, cleanFlag, m_nonce1, m_nonce2Size, m_extraNonce, m_active->host);
         newWork->m_soloTargetPow = soloTargetPow;
         SendWorkToMiners(newWork);
     }
@@ -1266,6 +1265,10 @@ void StratumClient::CallSubmit(SolutionSptr solution)
     string params;
     PascalWorkPackage* cbwp = solution->m_work.get();
     RHMINER_ASSERT(cbwp);
+
+    //prevent cross-over share submissions
+    if (m_active->host != cbwp->m_server)
+        return;
 
     U64 currentNonce = solution->GetCurrentEvaluatingNonce();
     RHMINER_ASSERT(currentNonce <= U32_Max);

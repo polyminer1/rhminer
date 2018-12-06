@@ -950,3 +950,4 @@ void RandomHash_Search(RandomHash_State* in_state, U8* out_hash, U32 startNonce)
     RH_CALL_ALL_KERNEL_BLOCKS
     RandomHash_Finalize(allStates, out_hash);
 }
+

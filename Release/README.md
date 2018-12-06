@@ -17,35 +17,35 @@ Download here : https://github.com/polyminer1/rhminer/releases/<br>
 Windows MD5 : 
 -------------------------------- 
 MD5 for rhminer.exe CPU is 
-d6009b7ede966a0642586fe7fb3c66ea
+2ba8d45d2b0f34c5a2090821be5d910b
 -------------------------------- 
 MD5 for rhminer.exe Kepler is 
-ad74e797f5c1633aae4843a75d574753
+e10ce3d0d09194fdf23e18ac8baee17c
 -------------------------------- 
 MD5 for rhminer.exe Maxwell is 
-8100694466c4c889887933a06dd061fa
+eea41923f613292f1893f424386f272e
 -------------------------------- 
 MD5 for rhminer.exe Pascal is 
-b08594262bec75964b58b1885a4d2f42
+a47f97dead9e969b4afe8003aa6c38ed
 -------------------------------- 
 MD5 for rhminer.exe Volta is 
-d3714a65b3011a64dd1b92a71f0ea1df
+3399ee9597cffc6eab949b79cd1d545c
 -------------------------------- 
  
 Linux MD5 
 -------------------------------
 MD5 for rhminer for CPU is :
-3bcd2c982a49e03637ab5503a00acbc0
+215894906b4ee31ea8bdca6a219759b1
 -------------------------------
 MD5 for rhminer for Kepler is :
-97f2554fe8ebc88b1c7c9bd764179b49
+bb8d60a7560c58b4f578ea7d3f5f69e7
 -------------------------------
 MD5 for rhminer for Maxwell is :
-6a0bef630b462ea82612e8d071a560cd
+39dc8b7ed0e8bdc2f58f226001e9e435
 -------------------------------
 MD5 for rhminer for Pascal is :
-1c17e5abdc12e96b32ca110b8a7614f5
+7909c8f5566b878a46a1471ce45b85f2
 -------------------------------
 MD5 for rhminer for Volta is :
-9eb6939c4fbe0111d71831bdef2d6213
+9f2cb95148ca7b1360805588ccc196e4
 ``` 
