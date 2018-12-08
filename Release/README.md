@@ -1,6 +1,6 @@
 # rhminer binaries 
 
-**Current version is 1.1** <br>
+**Current version is 1.1.1** <br>
 
 
 Prebuilt binaries for the PascalCoin RandomHash miner.<br> 
