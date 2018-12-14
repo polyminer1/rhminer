@@ -42,8 +42,13 @@ struct RH_StrideArrayStruct
     U8  dummy[(RH_IDEAL_ALIGNMENT/2) - 8];
     MurmurHash3_x86_32_State accum;
     U8  dummy2[(RH_IDEAL_ALIGNMENT/2) - sizeof(MurmurHash3_x86_32_State)];
+#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+    U8* strides[RH_StrideArrayCount + 1];
+#else
     U8* strides[RH_StrideArrayCount];
+#endif
 };
+
 #define RH_StrideArrayStruct_GetAccum(strideArray) (&((RH_StrideArrayStruct*)strideArray)->accum)
 
 //--------------------------------------------------------------------------------------------------
@@ -184,9 +189,8 @@ void CUDA_SYM(RandomHash_DestroyMany)(RandomHash_State* stateArray, U32 count)
 
 void CUDA_SYM(AllocateArray)(U8*& arrayData, int count)
 {
-    U32 size = sizeof(RH_StrideArrayStruct);
-    _CM(RandomHash_Alloc)((void**)&arrayData, size);
-    PLATFORM_MEMSET(arrayData, 0, size);
+    _CM(RandomHash_Alloc)((void**)&arrayData, sizeof(RH_StrideArrayStruct));
+    PLATFORM_MEMSET(arrayData, 0, sizeof(RH_StrideArrayStruct));
 
     U8* oldArray = arrayData;
     RH_StrideArrayStruct hostArray;
@@ -341,7 +345,7 @@ void CUDA_SYM_DECL(RandomHash_Expand)(RandomHash_State* state, RH_StridePtr inpu
 
         RH_ASSERT(nextChunk + nextChunkSize < output + RH_StrideSize);
         U32 random = _CM(GetNextRnd)(&state->m_rndGenExpand);
-        U8* workBytes = state->m_workBytes;
+        //U8* workBytes = state->m_workBytes;
         U32 r = random % 8;
         RH_ASSERT((nextChunkSize & 1) == 0);
         switch(r)
@@ -1121,8 +1125,12 @@ __host__ void cuda_randomhash_create(uint32_t blocks, uint32_t threadsPerBlock, 
     }
 }
 
+#ifndef RHMINER_DEBUG_RANDOMHASH_UNITTEST_CUDA
 __host__ void cuda_randomhash_init(uint32_t* input, U32 nonce2)
 {
+    //init nonce to ZERO, each thread uses gid as the nonce
+    input[PascalHeaderNoncePosV4(PascalHeaderSize) / 4] = 0;
+
     for(int i=0; i < g_threadsDataSize; i++)
     {
         CUDA_SYM(RandomHash_SetHeader)(&g_threadsData[i], (U8*)input, nonce2);
@@ -1132,14 +1140,14 @@ __host__ void cuda_randomhash_init(uint32_t* input, U32 nonce2)
 
 __host__ void cuda_randomhash_search(uint32_t blocks, uint32_t threadsPerBlock, cudaStream_t stream, uint32_t* input, uint32_t* output, U32 startNonce)
 {  
-    RHMINER_ASSERT((threadsPerBlock*blocks == g_threadsDataSize));
-    
+    RHMINER_ASSERT((threadsPerBlock*blocks == g_threadsDataSize));    
     RandomHash_State* allStates = g_threadsData;
 
     CUDA_SYM(RandomHash_Init)<<<threadsPerBlock, blocks>>>(allStates, (uint8_t*)output, startNonce);
     RH_CALL_ALL_KERNEL_BLOCKS
     CUDA_SYM(RandomHash_Finalize)<<<threadsPerBlock, blocks>>>(allStates, (uint8_t*)output);
 }
+#endif
 
 #endif //RH_COMPILE_CPU_ONLY
 

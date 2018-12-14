@@ -124,6 +124,7 @@ extern "C" {
 		uint8_t  buf[2 * BLAKE2S_BLOCKBYTES];
 		size_t   buflen;
 		uint8_t  last_node;
+        uint8_t  _pading[7];
 	} blake2s_state ;
 #pragma pack(pop)
 

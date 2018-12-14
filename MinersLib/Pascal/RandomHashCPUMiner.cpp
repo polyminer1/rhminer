@@ -115,10 +115,10 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
             //set start nonce here
             RandomHash_Search(&m_randomHashArray[kernelData->m_id], (U8*)packageData->m_work1, gid);
     #endif            
-            if (RH_swap_u32(*(U32*)packageData->m_work1) <= packageData->m_target)
+            U32* work = (uint32_t *)packageData->m_work1;
+            if (RH_swap_u32(*work) <= packageData->m_target)
             {
                 //Swapb256
-                U32 *work = (uint32_t *)packageData->m_work1;
                 U32 tmp[4] = {work[0], work[1], work[2], work[3]};
                 work[0] = RH_swap_u32(work[7]);            
                 work[1] = RH_swap_u32(work[6]);

@@ -90,17 +90,15 @@ inline void CUDA_SYM_DECL(RadiogatunRoundFunction)(uint32_t* a, uint32_t* mill, 
 
 void CUDA_SYM_DECL(RandomHash_RadioGatun32)(RH_StridePtr roundInput, RH_StridePtr output)
 {
-    RH_ALIGN(64) uint32_t mill[19];
-    uint32_t a[19];
-    RH_ALIGN(64) uint32_t belt[13 * 3];
+    RH_ALIGN(64) uint32_t mill[/*19*/20];
+    RH_ALIGN(64) uint32_t a[19];
+    RH_ALIGN(64) uint32_t belt[/*13 * 3*/40];
     int32_t  len = (int32_t)RH_STRIDE_GET_SIZE(roundInput);
     uint32_t *inData = (uint32_t *)RH_STRIDE_GET_DATA(roundInput);
     uint32_t blockCount = len / RADIOGATUN32_BLOCK_SIZE;
     //init
-    memset(mill, 0, sizeof(mill));
-
-    for (uint32_t i = 0; i < 13; i++)
-        memset(&belt[i * 3], 0, 3 * sizeof(uint32_t));
+    RH_memzero_of16(mill, sizeof(mill));
+    RH_memzero_of16(belt, sizeof(belt));
 
     //finish 0 (pre)
     uint32_t pre = len % RADIOGATUN32_BLOCK_SIZE;
@@ -113,7 +111,7 @@ void CUDA_SYM_DECL(RandomHash_RadioGatun32)(RH_StridePtr roundInput, RH_StridePt
     while (blockCount > 0)
     {
         RH_ALIGN(64) uint32_t  data[RADIOGATUN32_BLOCK_SIZE];
-        memcpy(data, inData, 12);
+        memcpy(data, inData, RADIOGATUN32_BLOCK_SIZE);
         uint32_t i = 0;
         while (i < 3)
         {

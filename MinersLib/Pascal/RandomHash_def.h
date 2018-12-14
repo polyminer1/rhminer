@@ -25,8 +25,8 @@
   #else
     #include <immintrin.h>
   #endif
-#endif
 
+#endif
 
 #define RH_DISABLE_RH_ASSERTS
 #define RH_ENABLE_OPTIM_STRIDE_ARRAY_MURMUR3
@@ -34,7 +34,9 @@
 
 #ifdef RHMINER_DEBUG
     #undef RH_DISABLE_RH_ASSERTS
+    #define RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
 #endif
+
 
 #ifdef RANDOMHASH_CUDA
     //Cache re-use does not work on cuda. Kernels gets out of sync and driver fails.
@@ -82,6 +84,7 @@
                                 (dst)[3] = op((src)[3]); \
                                 (dst)[4] = op((src)[4]); \
                                 (dst)[5] = op((src)[5]);} \
+
 
 #ifdef RHMINER_PLATFORM_CPU
 
@@ -141,6 +144,12 @@
     #define ROTL32(x,y)	_rotl((x),(y))
     #define ROTL64(x,y)	_rotl64((x),(y))
     #define ROTR64(x,y)	_rotr64((x),(y))
+    #define ROTL_epi32(m_tmp, m, count) {\
+            m_tmp = m; \
+            m = _mm_slli_epi32(m,count); \
+            m_tmp = _mm_srli_epi32(m_tmp,(32-count)); \
+            m = _mm_or_si128(m,m_tmp);}
+
 
     #define BIG_CONSTANT(x) (x)
     #define KERNEL_LOG(...) PrintOutCritical(__VA_ARGS__)
@@ -201,8 +210,118 @@
     #define ROTL64(x,y)	rotl64((x),(y))
 
     #define BIG_CONSTANT(x) (x##LLU)
+#endif
+
+
+//--------------------------------------------------------------
+#define RH_memzero_8(ptr, size)             \
+    {                                       \
+        RH_ASSERT((size_t(ptr) % 8) == 0);  \
+        RH_ASSERT((size) == 8);             \
+        U64* buf = static_cast<U64*>((void*)(ptr));               \
+        *buf = 0;                           \
+    }
+
+#if !defined(RANDOMHASH_CUDA)
+    #define RH_memzero_16(ptr, size)            \
+    {                                           \
+        RH_ASSERT((size_t(ptr) % 32) == 0);     \
+        RH_ASSERT((size) == 16);                \
+        __m128i xmm = _mm_set1_epi8((char)0);   \
+        RH_MM_STORE128((__m128i *)ptr, xmm);    \
+    }
+
+    #define RH_memzero_32(ptr, size)  \
+    { \
+        RH_ASSERT((size_t(ptr) % 32) == 0); \
+        RH_ASSERT((size) == 32); \
+        __m128i xmm = _mm_set1_epi8((char)0); \
+        RH_MM_STORE128(((__m128i *)ptr)+0, xmm); \
+        RH_MM_STORE128(((__m128i *)ptr)+1, xmm); \
+    }
+
+    #define RH_memzero_64(ptr, size)  \
+    { \
+        RH_ASSERT((size_t(ptr) % 32) == 0); \
+        RH_ASSERT(size == 64); \
+        __m128i xmm = _mm_set1_epi8((char)0); \
+        RH_MM_STORE128(((__m128i *)ptr)+0, xmm); \
+        RH_MM_STORE128(((__m128i *)ptr)+1, xmm); \
+        RH_MM_STORE128(((__m128i *)ptr)+2, xmm); \
+        RH_MM_STORE128(((__m128i *)ptr)+3, xmm); \
+    }
+    
+
+    #define RH_memzero_of16(ptr, s)              \
+    {                                            \
+        RH_ASSERT((size_t(ptr) % 32) == 0);      \
+        RH_ASSERT((s % 16) == 0);             \
+        __m128i xmm = _mm_set1_epi8((char)0);    \
+        __m128i * buf = (__m128i *)ptr;          \
+        size_t size = s / 16;                    \
+        while (size)                             \
+        {                                        \
+            RH_MM_STORE128(buf, xmm);            \
+            buf++;                               \
+            size--;                              \
+        }                                        \
+    }
+
+#else
+    #define RH_memzero_16(ptr, size) \
+    { \
+        RH_ASSERT((size_t(ptr) % 32) == 0);  \
+        RH_ASSERT((size) == 16);  \
+        ((U64*)ptr)[0] = 0; \
+        ((U64*)ptr)[1] = 0; \
+    }
+
+    #define RH_memzero_32(ptr, size)  \
+    { \
+        RH_ASSERT((size_t(ptr) % 32) == 0); \
+        RH_ASSERT((size) == 32); \
+        ((U64*)ptr)[0] = 0; \
+        ((U64*)ptr)[1] = 0; \
+        ((U64*)ptr)[2] = 0; \
+        ((U64*)ptr)[3] = 0; \
+    }
+
+    #define RH_memzero_64(ptr, size)  \
+    { \
+        RH_ASSERT((size_t(ptr) % 32) == 0); \
+        RH_ASSERT(size == 64); \
+        ((U64*)ptr)[0] = 0; \
+        ((U64*)ptr)[1] = 0; \
+        ((U64*)ptr)[2] = 0; \
+        ((U64*)ptr)[3] = 0; \
+        ((U64*)ptr)[4] = 0; \
+        ((U64*)ptr)[5] = 0; \
+        ((U64*)ptr)[6] = 0; \
+        ((U64*)ptr)[7] = 0; \
+    }
+
+
+    #define RH_memzero_of16 RH_memzero_of8 
 
 #endif
+
+    #define RH_memzero_of8(ptr, s)   \
+    {                                \
+        RH_ASSERT((size_t(ptr) % 32) == 0); \
+        RH_ASSERT((s % 8) == 0); \
+        U64* buf = (U64*)ptr;        \
+        size_t size = s / 8;         \
+        while (size)                 \
+        {                            \
+            *buf = 0;                \
+            buf++;                   \
+            size--;                  \
+        }                            \
+    }
+
+
+//--------------------------------------------------------------
+
 
 #define RHMINER_T64(x)    ((x) & uint64_t(0xFFFFFFFFFFFFFFFF))
 
@@ -258,14 +377,14 @@ uint32_t ReverseBytesUInt32(const uint32_t value)
     }                                                                                  \
     {                                                                                  \
 		int32_t padindex;                                                              \
-        uint8_t pad[72];                                                               \
+        RH_ALIGN(64) uint8_t pad[80];                                                  \
 		                                                                               \
 		if (len < 56)                                                                  \
 			padindex = 56 - len;                                                       \
 		else                                                                           \
 			padindex = 120 - len;                                                      \
                                                                                        \
-        PLATFORM_MEMSET(pad, 0, sizeof(pad));                                          \
+        RH_memzero_of16(pad, sizeof(pad));                                              \
 		pad[0] = 0x80;                                                                 \
         bits = BE_LE_CONVERT(bits);                                                    \
 		ReadUInt64AsBytesLE(bits, pad+padindex);                                       \

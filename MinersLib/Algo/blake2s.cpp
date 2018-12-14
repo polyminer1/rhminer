@@ -169,7 +169,6 @@ int blake2s_init( blake2s_state *S, const uint8_t outlen )
 	store48( &P->node_offset, 0 );
 	P->node_depth    = 0;
 	P->inner_length  = 0;
-	// memset(P->reserved, 0, sizeof(P->reserved) );
 	memset( P->salt,     0, sizeof( P->salt ) );
 	memset( P->personal, 0, sizeof( P->personal ) );
 	return blake2s_init_param( S, P );
@@ -191,7 +190,6 @@ int blake2s_init_key( blake2s_state *S, const uint8_t outlen, const void *key, c
 	store48( &P->node_offset, 0 );
 	P->node_depth    = 0;
 	P->inner_length  = 0;
-	// memset(P->reserved, 0, sizeof(P->reserved) );
 	memset( P->salt,     0, sizeof( P->salt ) );
 	memset( P->personal, 0, sizeof( P->personal ) );
 

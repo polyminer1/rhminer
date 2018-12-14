@@ -18,6 +18,7 @@
 #include "MinersLib/Pascal/RandomHash_def.h"
 
 #ifdef RHMINER_PLATFORM_CPU
+extern bool g_isSSE41Supported;
 
 //IDEAL : src, dst and n are 32bytes aligned
 inline void memcpy_uncached_load_sse41_SPILL(void *dest, const void *src, size_t n)
@@ -259,66 +260,39 @@ inline void CUDA_SYM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(U8 *pDst, U8 *pSrc, size_
 #ifdef RH_ENABLE_OPTIM_STRIDE_ARRAY_MURMUR3
 
 CUDA_DECL_DEVICE
-inline void CUDA_SYM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(U8* strideArray, U32 elementIdx)
-{
-    RH_ASSERT(( (size_t)strideArray % 8) == 0);
-
+void CUDA_SYM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(U8* strideArray, U32 elementIdx)
+{    
     RH_StridePtr lstride = RH_STRIDEARRAY_GET(strideArray, elementIdx);
-    S32 n = (RH_STRIDE_GET_SIZE(lstride) / sizeof(U64)) * sizeof(U64);
-    U32 m = RH_STRIDE_GET_SIZE(lstride) % sizeof(U64);
+    U32 size = RH_STRIDE_GET_SIZE(lstride);
     lstride = RH_STRIDE_GET_DATA(lstride);
+
+    RH_MUR3_BACKUP_STATE(RH_StrideArrayStruct_GetAccum(strideArray));
+    back_i = 0;   
+    RH_ASSERT(back_idx != 0xDEADBEEF)                        
+    RH_ASSERT(back_idx == 0);
+
+    register uint32_t h1 = back_h1;
+    RH_ASSERT(size >= sizeof(U64));
+    RH_ASSERT(( (size_t)strideArray % 8) == 0);
+    S32 n = (size / sizeof(U64)) * sizeof(U64);
+    U32 m = size % sizeof(U64);    
     RH_StridePtr lstride_end = lstride + n;
     U64 r0;
-    RH_MUR3_BACKUP_STATE(RH_StrideArrayStruct_GetAccum(strideArray));
     back_totalLen += n;
-    register uint32_t h1 = back_h1;                                   
     while (lstride != lstride_end)
     {
         r0 = *(U64*)(lstride);
-        RH_ASSERT(back_idx != 0xDEADBEEF)                        
-        back_i = 0;                                              
-        if (back_idx)                                            
-        { 
-            register U32 len = 8;                                          
-            while(len)                                           
-            {                                                    
-                while (back_idx < 4 && len)                      
-                {                                                
-                    U32 b = (U8)(r0 >> (back_i*8));         
-                    back_buf &= ~(0xFF << (back_idx*8));         
-                    back_buf |= (b << (back_idx*8));             
-                    back_idx++;                                  
-                    len--;                                       
-                    back_i++;                                    
-                }                                                
-                if (back_idx == 4)                               
-                {                                                
-                    MURMUR3_BODY(back_buf)                       
-                    back_idx = 0;                                
-                }                                                
-            }                                                    
-        }                                                        
-        else                                                     
-        {             
-            U32 block;
-            //1
-            block = (U32)(r0);       
-            MURMUR3_BODY(block);                             
-            //2
-            block = (U32)(r0 >> 32);       
-            MURMUR3_BODY(block);                             
-        }                                                        
-                                                                     
+        MURMUR3_BODY((U32)(r0));
+        MURMUR3_BODY((U32)(r0 >> 32));                                                           
         lstride += sizeof(U64);        
     }
-    back_h1 = h1;                                            
-
+    back_h1 = h1;
     if (m)
     {
-        r0 = *((U64 *)(lstride));
+        U64 r0 = *((U64 *)(lstride));
         INPLACE_M_MurmurHash3_x86_32_Update_8(r0, m); 
     }
-    
+
     RH_MUR3_RESTORE_STATE(RH_StrideArrayStruct_GetAccum(strideArray));
 }
 
@@ -417,7 +391,6 @@ inline void CUDA_SYM(RH_STRIDEARRAY_CLONE)(U8* strideArrayVar, U8* strideArrayVa
     *((U64*)acc8_ptr) = acc8_buf;       \
 }
 
-extern bool g_isSSE41Supported;
 inline void CUDA_SYM_DECL(Transfo0)(U8* nextChunk, U32 size, U8* workBytes)
 {
     U32 rndState = _CM(MurmurHash3_x86_32_Fast)((const void *)nextChunk,size, 0);
@@ -851,8 +824,8 @@ inline void CUDA_SYM_DECL(Transfo3_2)(U8* nextChunk, U32 size, U8* outputPtr)
 
 inline void CUDA_SYM_DECL(Transfo4)(U8* nextChunk, U32 size, U8* workBytes)
 {
-    RH_ALIGN(64) U32 sizeIsOdd = size % 2;
-    RH_ALIGN(64) U32 halfSize = size >> 1;
+    U32 sizeIsOdd = size % 2;
+    U32 halfSize = size >> 1;
 #ifdef RH_ENABLE_OPTIM_EXPAND_ACCUM8
     int left = 0;
     int right = halfSize + sizeIsOdd;
@@ -896,8 +869,8 @@ inline void CUDA_SYM_DECL(Transfo4)(U8* nextChunk, U32 size, U8* workBytes)
 
 inline void CUDA_SYM_DECL(Transfo4_2)(U8* nextChunk, U32 size, U8* outputPtr)
 {
-    RH_ALIGN(64) U32 sizeIsOdd = size % 2;
-    RH_ALIGN(64) U32 halfSize = size >> 1;
+    U32 sizeIsOdd = size % 2;
+    U32 halfSize = size >> 1;
 
     int left = 0;
     int right = halfSize + sizeIsOdd;
@@ -955,8 +928,9 @@ inline void CUDA_SYM_DECL(Transfo5_2)(U8* nextChunk, U32 size, U8* outputPtr)
         nextChunk[i] = outputPtr[itt] ^ outputPtr[itt + 1];
         itt += 2;
         //second half
-        nextChunk[i+halfSize + sizeIsOdd] = outputPtr[i] ^ outputPtr[ritt--];
+        nextChunk[i+halfSize + sizeIsOdd] = outputPtr[i] ^ outputPtr[ritt];
         i++;
+        ritt--;
     }
 
     if (sizeIsOdd)
@@ -965,7 +939,7 @@ inline void CUDA_SYM_DECL(Transfo5_2)(U8* nextChunk, U32 size, U8* outputPtr)
 
 inline void CUDA_SYM_DECL(Transfo6)(U8* nextChunk, U32 size)
 {
-    RH_ALIGN(64) U32 i = 0;
+    U32 i = 0;
 #ifdef RH_ENABLE_OPTIM_EXPAND_ACCUM8
     
     U8* work = nextChunk;
@@ -1002,10 +976,10 @@ inline void CUDA_SYM_DECL(Transfo6)(U8* nextChunk, U32 size)
     }
     while(nextChunk < end)
     {
-        RH_ALIGN(64) U8 b;
-        RH_ALIGN(64) U64 res = 0;
-        RH_ALIGN(64) U64 buf = *(U64*)nextChunk;
-        RH_ALIGN(64) U32 localSize = size - i;
+        U8 b;
+        U64 res = 0;
+        U64 buf = *(U64*)nextChunk;
+        U32 localSize = size - i;
         
         //UNROLL
         b = (U8)(buf);
@@ -1045,10 +1019,9 @@ inline void CUDA_SYM_DECL(Transfo6)(U8* nextChunk, U32 size)
 #endif
 }
 
-
 inline void CUDA_SYM_DECL(Transfo6_2)(U8* nextChunk, U32 size, U8* source)
 {
-    RH_ALIGN(64) U32 i = 0;
+    U32 i = 0;
 #ifdef __CUDA_ARCH__
     while(i < size)
     {
@@ -1066,9 +1039,10 @@ inline void CUDA_SYM_DECL(Transfo6_2)(U8* nextChunk, U32 size, U8* source)
     }
     while(nextChunk < end)
     {
+
         U8 b;
-        U64 res = 0;
-        U64 buf = *(U64*)source;
+        U64 res = 0; 
+        U64 buf = *(U64*)source;    
         U32 localSize = size - i;
         
         //UNROLL
@@ -1096,6 +1070,7 @@ inline void CUDA_SYM_DECL(Transfo6_2)(U8* nextChunk, U32 size, U8* source)
         b = (U8)(buf >> (7<<3));
         b = ROTL8(b, localSize); localSize--;
         res |= ((U64)(b) << (U64)(7 << 3));
+
         i += 8;
         *(U64*)nextChunk = res;
         nextChunk += 8;
@@ -1113,7 +1088,7 @@ inline void CUDA_SYM_DECL(Transfo6_2)(U8* nextChunk, U32 size, U8* source)
 
 inline void CUDA_SYM_DECL(Transfo7)(U8* nextChunk, U32 size)
 {
-    RH_ALIGN(64) U32 i = 0;
+    U32 i = 0;
 #ifdef RH_ENABLE_OPTIM_EXPAND_ACCUM8
     U8* work = nextChunk;
     //Align chunkPtr
@@ -1148,10 +1123,10 @@ inline void CUDA_SYM_DECL(Transfo7)(U8* nextChunk, U32 size)
     }
     while(nextChunk < end)
     {
-        RH_ALIGN(64) U8 b;
-        RH_ALIGN(64) U64 res = 0;
-        RH_ALIGN(64) U64 buf = *(U64*)nextChunk;
-        RH_ALIGN(64) U32 localSize = size - i;
+        U8 b;
+        U64 res = 0;
+        U64 buf = *(U64*)nextChunk;
+        U32 localSize = size - i;
 
         //UNROLL
         b = (U8)(buf);
@@ -1193,7 +1168,7 @@ inline void CUDA_SYM_DECL(Transfo7)(U8* nextChunk, U32 size)
 
 inline void CUDA_SYM_DECL(Transfo7_2)(U8* nextChunk, U32 size, U8* source)
 {
-    RH_ALIGN(64) U32 i = 0;
+    U32 i = 0;
 #ifdef __CUDA_ARCH__
     while(i < size)
     {

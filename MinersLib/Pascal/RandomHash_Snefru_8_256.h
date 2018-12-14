@@ -703,7 +703,7 @@ void CUDA_SYM_DECL(RandomHash_Snefru_8_256)(RH_StridePtr roundInput, RH_StridePt
 {
     // init
     RH_ALIGN(64) uint32_t state[SNEFRU_size];
-    memset(state, 0, SNEFRU_size * sizeof(uint32_t));
+    RH_memzero_32(state, sizeof(state));
 
     int32_t len = (int32_t)RH_STRIDE_GET_SIZE(roundInput);
     uint64_t bits = len * 8;
@@ -726,7 +726,7 @@ void CUDA_SYM_DECL(RandomHash_Snefru_8_256)(RH_StridePtr roundInput, RH_StridePt
 		padindex = SNEFRU_BlockSize - pos - 8;
 
     RH_ALIGN(64) uint32_t pad[SNEFRU_BlockSize*2];
-    memset(pad, 0, sizeof(pad));
+    RH_memzero_of16(pad, sizeof(pad));
 
 	bits = ReverseBytesUInt64(bits);
 

@@ -221,7 +221,8 @@
       <OutputFile>$(OutDir)/cudalib.exe</OutputFile>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_61,sm_61</CodeGeneration>
+      <CodeGeneration>
+      </CodeGeneration>
       <AdditionalOptions>-Xcompiler "/wd 4819" %(AdditionalOptions)</AdditionalOptions>
       <Include>./;../../common/inc;../MinersLib/</Include>
       <Defines>WIN32;</Defines>

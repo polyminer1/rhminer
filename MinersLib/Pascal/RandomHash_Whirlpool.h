@@ -403,7 +403,7 @@ void CUDA_SYM_DECL(RandomHash_WhirlPool)(RH_StridePtr roundInput, RH_StridePtr o
     const uint32_t Whirlpool_BlockSize = 64;
     const uint32_t Whirlpool_HashSize = 64;
     RH_ALIGN(64) uint64_t state[8];
-    memset(state, 0, sizeof(state));
+    RH_memzero_64(state, sizeof(state));
 
     //body
     int32_t len = (int32_t)RH_STRIDE_GET_SIZE(roundInput);
@@ -428,7 +428,8 @@ void CUDA_SYM_DECL(RandomHash_WhirlPool)(RH_StridePtr roundInput, RH_StridePtr o
 		else
 			padindex = 56 - len;
 
-        memset(pad, 0, sizeof(pad));
+        RH_memzero_of16(pad, sizeof(pad));
+
         pad[0] = 0x80;
         bits = ReverseBytesUInt64(bits);
         ReadUInt64AsBytesLE(bits, pad+padindex);

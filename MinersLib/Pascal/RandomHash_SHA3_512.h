@@ -2620,8 +2620,8 @@ void CUDA_SYM_DECL(_RandomHash_SHA3_512)(RH_StridePtr roundInput, RH_StridePtr o
     const uint64_t BlockSize = 200 - (int32_t(hashsize) * 2);
     
     //init
-    RH_ALIGN(64) uint64_t state[25];
-	memset(state, 0, 25 * sizeof(uint64_t));
+    RH_ALIGN(64) uint64_t state[/*25*/26];
+    RH_memzero_of16(state, sizeof(state));
 
 	state[1] = uint64_t(-1);
 	state[2] = uint64_t(-1);

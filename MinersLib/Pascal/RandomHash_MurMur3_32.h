@@ -376,7 +376,7 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(__m128i chunk128, uint32
     back_h1 = h1;                                                                   \
 }
 #endif
-
+ 
 void CUDA_SYM_DECL(MurmurHash3_x86_32_Update)( const uint8_t* data, int len, MurmurHash3_x86_32_State* state)
 {
     RH_ASSERT(state->idx != 0xDEADBEEF)

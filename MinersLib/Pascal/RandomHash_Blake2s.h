@@ -200,10 +200,17 @@ void CUDA_SYM_DECL(RandomHash_blake2s)(RH_StridePtr roundInput, RH_StridePtr out
     P->node_offset[5] = 0;
 	P->node_depth    = 0;
 	P->inner_length  = 0;
-	memset( P->salt,     0, sizeof( P->salt ) ); 
-	memset( P->personal, 0, sizeof( P->personal ) );
 
-    memset(&S, 0, sizeof( blake2s_state ) );
+#if defined(_WIN32_WINNT) || defined(__CUDA_ARCH__)
+    RH_memzero_8(P->salt, sizeof( P->salt ))
+    RH_memzero_8(P->personal, sizeof( P->personal ) );
+#else
+    memset(P->salt, 0, sizeof( P->salt ));
+    memset(P->personal, 0, sizeof( P->personal ) );
+#endif
+
+    RH_memzero_of16(&S, sizeof( blake2s_state ) );    
+
 	for( int i = 0; i < 8; ++i ) S.h[i] = blake2s_IV[i];
 
 	uint32_t *p = ( uint32_t * )( P );
