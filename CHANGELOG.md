@@ -1,5 +1,9 @@
 # rhminer update and bugfix history
 
+Version 1.2 - 13 dec 2018
+* Major optimization on cuda miner (+32% on gtx 1070 8gb, +37% on gtx 1060 3gb, +40% on gtx 950)
+* Simple optimization on Linux. Up to 5% depending on the cpu
+
 Version 1.1.1 - 6 dec 2018
 * Critical Fix for memory corruption on Linux
 * Fixed cross server shares submission

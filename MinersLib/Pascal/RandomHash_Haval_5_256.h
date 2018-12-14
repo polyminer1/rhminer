@@ -275,12 +275,12 @@
    HAVAL_STEP(n, 5, s1, s0, s7, s6, s5, s4, s3, s2, HAVAL_INW(25), (0xC1A94FB6)); \
    HAVAL_STEP(n, 5, s0, s7, s6, s5, s4, s3, s2, s1, HAVAL_INW(15), (0x409F60C4)); \
 
-typedef struct {
+struct RH_ALIGN(64) RH_sph_haval_context {
 	unsigned char buf[128];    /* first field, for alignment */
 	uint32_t s0, s1, s2, s3, s4, s5, s6, s7;
 	unsigned passes;
 	uint64_t count;
-} RH_sph_haval_context;
+};
 
 
 void CUDA_SYM_DECL(RandomHash_Haval_5_256)(RH_StridePtr roundInput, RH_StridePtr output)

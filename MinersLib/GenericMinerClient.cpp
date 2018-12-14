@@ -213,7 +213,7 @@ void GenericMinerClient::doStratum()
             {   
                 if (m_stratumClient->IsWorkTimedOut() /*&& m_stratumClient->isConnected()*/)
                 {
-                    PrintOut("WorkTimeout reacched. No new work received after %u seconds.\n",  g_workTimeout);
+                    PrintOut("WorkTimeout reached. No new work received after %u seconds.\n",  g_workTimeout);
                     if (m_stratumClient.get())
                         m_stratumClient->CloseConnection();
                     else

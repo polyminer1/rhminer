@@ -436,8 +436,9 @@ void CUDA_SYM_DECL(RandomHash_Grindahl512)(RH_StridePtr roundInput, RH_StridePtr
     //init
     RH_ALIGN(64) uint64_t stateBuff[Grindalh_WorkSize];
     RH_ALIGN(64) uint64_t tempBuff[Grindalh_WorkSize];
-	memset(stateBuff, 0, Grindalh_WorkSize * sizeof(uint64_t));
-    memset(tempBuff, 0, Grindalh_WorkSize * sizeof(uint64_t));
+    RH_memzero_of8(stateBuff, sizeof(stateBuff));
+    tempBuff[0] = 0;
+
     uint64_t* state = stateBuff;
     uint64_t* temp = tempBuff;
     
@@ -457,8 +458,9 @@ void CUDA_SYM_DECL(RandomHash_Grindahl512)(RH_StridePtr roundInput, RH_StridePtr
 	int32_t padding_size = 16 - int32_t(msgLen & 7);
 	uint64_t msg_length = (msgLen >> 3) + 1;
 
-    U8 pad[16];
-    memset(pad, 0, sizeof(pad));
+
+    RH_ALIGN(64) U8 pad[16];
+    RH_memzero_16(pad, sizeof(pad));
 	pad[0] = (U8)0x80;
 
 	msg_length = RH_swap_u64(msg_length);

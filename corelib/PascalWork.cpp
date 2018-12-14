@@ -289,7 +289,7 @@ void PascalWorkPackage::UpdateHeader()
     if (m_fullHeader.size() != PascalHeaderSize)
     {
         //sometimes the wallet send incorect package
-        throw RH_Exception("Incorect coinbase/wallet data.\n");
+        throw RH_Exception("Incorrect coinbase/wallet data.\n");
     }
 
     h32 ntime(m_ntime);

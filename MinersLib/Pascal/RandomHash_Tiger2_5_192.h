@@ -810,7 +810,8 @@ void CUDA_SYM_DECL(RandomHash_Tiger2_5_192)(RH_StridePtr roundInput, RH_StridePt
         else
             padindex = 120 - len;
 
-        memset(pad, 0, sizeof(pad));
+        RH_memzero_of8(pad, sizeof(pad));
+
         pad[0] = 0x80;
         ReadUInt64AsBytesLE(bits, pad + padindex);
 
