@@ -36,13 +36,14 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <sys/sysinfo.h>
 #endif
 
 #define RHMINER_MAKE_ARCH_NAME(devname, gpuToken, archname, var) if (stristr(devname.c_str(), gpuToken)) {var = string(gpuToken) + "_" + archname;}
 
 std::vector<GpuManager::GPUInfos>  GpuManager::Gpus;
 CPUInfo                            GpuManager::CpuInfos;
-bool                               g_isSSE41Supported = false;
+bool                               g_isSSE3Supported = false;
 
 GpuManager::GpuManager()
 {
@@ -257,11 +258,7 @@ void GpuManager::listDevices()
 #endif //RH_COMPILE_CPU_ONLY
     
     //list cpu
-    for (U32 i = 0; i < GpuManager::Gpus.size(); ++i)
-    {
-        if (GpuManager::Gpus[i].gpuType == GpuType_CPU)
-            printf("CPU : %s with %d logical cores\n", GpuManager::Gpus[i].description.c_str(), GpuManager::Gpus[i].maxCU);
-    }
+    printf("CPU : %s with %d logical cores on %d physical cores\n", CpuInfos.cpuBrandName.c_str(), CpuInfos.numberOfProcessors, CpuInfos.numberOfCores);
    
     exit(0);
 }
@@ -288,6 +285,24 @@ U32 GpuManager::GetEnabledGPUCount()
     }
 
     return cnt;
+}
+
+void GpuManager::SetPostCommandLineOptions()
+{
+    if (g_memoryBoostLevel == RH_OPT_UNSET)
+    {
+        g_memoryBoostLevel = CpuInfos.numberOfCores == CpuInfos.numberOfProcessors ? 0 : 1; //enable boost on hyperthreads cpu
+    }
+
+#ifdef RHMINER_ENABLE_SSE4
+    if (g_sseOptimization > 2)
+        g_sseOptimization = 2;
+#else
+    if (g_sseOptimization)
+        PrintOut("SSE4 not available in this binary. -sseboost option ignored. \n");
+    g_sseOptimization = 0;
+    PrintOut("Detecting old-gen cpu.\n");
+#endif
 }
 
 void GpuManager::LoadGPUMap() 
@@ -560,6 +575,30 @@ bool GpuManager::SetupGPU()
         }
     }
 
+    if (g_memoryBoostLevel)
+        PrintOutCritical("Enabling Memory boost.\n");
+
+    if (g_sseOptimization)
+    {
+        const char* ss[] = {"", "SSE4.1", "AVX2"};
+        PrintOutCritical("Enbling %s optimizations.\n", ss[g_sseOptimization]);
+        PrintOutCritical("\n");
+        PrintOutCritical("*** WARNING *** This option can make the miner slower on some CPU. Test for 2 minutes and compare, before using it.\n");
+        PrintOutCritical("\n");
+
+        if (CpuInfos.sse4_1Supportted == false && g_sseOptimization == 1)
+        {
+            PrintOut("SSE4.1 not supported on this cpu.\n");
+            exit(-1);
+        }
+
+        if (/*CpuInfos.avxSupportted == false && */g_sseOptimization == 2)
+        {
+            PrintOut("AVX2 not supported yet.\n");
+            exit(-1);
+        }
+    }
+
     return atleaseone;
 }
 
@@ -618,6 +657,56 @@ unsigned long long _xgetbv(unsigned int index)
 	);
 	return ((unsigned long long)edx << 32) | eax;
 }
+#else
+// Helper function to count set bits in the processor mask.
+DWORD CountSetBits(ULONG_PTR bitMask)
+{
+    DWORD LSHIFT = sizeof(ULONG_PTR)*8 - 1;
+    DWORD bitSetCount = 0;
+    ULONG_PTR bitTest = (ULONG_PTR)1 << LSHIFT;    
+    DWORD i;
+    
+    for (i = 0; i <= LSHIFT; ++i)
+    {
+        bitSetCount += ((bitMask & bitTest)?1:0);
+        bitTest/=2;
+    }
+
+    return bitSetCount;
+}
+
+void GetPhysicalCoreCount(U32& processorCoreCount, U32& logicalProcessorCount)
+{
+    BOOL done = FALSE;
+    PSYSTEM_LOGICAL_PROCESSOR_INFORMATION buffer = NULL;
+    PSYSTEM_LOGICAL_PROCESSOR_INFORMATION ptr = NULL;
+    DWORD returnLength = 0;
+    processorCoreCount = 0;
+    logicalProcessorCount = 0;
+    DWORD byteOffset = 0;
+
+    GetLogicalProcessorInformation(NULL, &returnLength);
+    RHMINER_ASSERT(returnLength);
+    buffer = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)malloc(returnLength);
+    DWORD rc = GetLogicalProcessorInformation(buffer, &returnLength);
+    RHMINER_ASSERT(rc == 1);
+    ptr = buffer;
+
+    while (byteOffset + sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION) <= returnLength) 
+    {
+        if (ptr->Relationship == RelationProcessorCore)
+        {
+            processorCoreCount++;
+
+            // A hyperthreaded core supplies more than one logical processor.
+            logicalProcessorCount += CountSetBits(ptr->ProcessorMask);
+        }
+        byteOffset += sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+        ptr++;
+    }
+
+    free(buffer);
+}
 
 #endif
 
@@ -661,10 +750,19 @@ void GpuManager::TestExtraInstructions()
 		CpuInfos.sse5Supportted = cpuinfo[2] & (1 << 11) || false;
 	}
     
-    g_isSSE41Supported = CpuInfos.sse4_1Supportted;
+    g_isSSE3Supported = CpuInfos.sse3Supportted;
     PrintOutSilent("SSe3   supported : %s\n", CpuInfos.sse3Supportted ? "Yes" : "No");
     PrintOutSilent("SSe4.1 supported : %s\n", CpuInfos.sse4_1Supportted ? "Yes" : "No");
     PrintOutSilent("avx    supported : %s\n", CpuInfos.avxSupportted ? "Yes" : "No");	
+
+#if defined(RHMINER_ENABLE_SSE4)
+    if (!CpuInfos.sse4_1Supportted)
+    {
+        PrintOutCritical("SSE4 is not supported by this CPU. Please use rhminer for oldgen cpu\n");
+        exit( 1);
+    }
+
+#endif
 }
 
 void GpuManager::LoadCPUInfos()
@@ -672,7 +770,7 @@ void GpuManager::LoadCPUInfos()
 #ifdef _WIN32_WINNT
     SYSTEM_INFO siSysInfo;
     GetSystemInfo(&siSysInfo); 
-    CpuInfos.numberOfProcessors = siSysInfo.dwNumberOfProcessors;
+    GetPhysicalCoreCount(CpuInfos.numberOfCores, CpuInfos.numberOfProcessors);
     CpuInfos.activeProcessorMask = (size_t)siSysInfo.dwActiveProcessorMask;
     CpuInfos.allocationGranularity = siSysInfo.dwAllocationGranularity;
     CpuInfos.cpuArchName = "CPU";
@@ -712,23 +810,38 @@ void GpuManager::LoadCPUInfos()
     string brand = CPUBrandString;
 #else
     CpuInfos.numberOfProcessors = sysconf(_SC_NPROCESSORS_ONLN);
+    CpuInfos.numberOfCores = 0;
     CpuInfos.allocationGranularity = 1024*64;
     CpuInfos.avaiablelMem =  sysconf(_SC_PAGESIZE) * sysconf(_SC_AVPHYS_PAGES);
     CpuInfos.cpuBrandName = "x64";
-    
+
     string line;
     string brand;
     ifstream finfo("/proc/cpuinfo");
-    while(getline(finfo,line)) {
+    while(getline(finfo,line)) 
+    {
         stringstream str(line);
         string itype;
         string info;
-        if ( getline( str, itype, ':' ) && getline(str,info) && itype.substr(0,10) == "model name" ) 
-	{
+        
+        //model name      : Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz
+        if ( brand.length() == 0 && getline( str, itype, ':' ) && getline(str, info) && itype.substr(0,10) == "model name" ) 
+        {
         	brand = info;
-            break;
+        }
+        
+        //cpu cores       : 4
+        if ( CpuInfos.numberOfCores == 0 && getline( str, itype, ':' ) && getline(str, info) && itype.substr(0,9) == "cpu cores" ) 
+        {
+            CpuInfos.numberOfCores = ToUInt(TrimString(info));
         }
     }    
+    
+    if (!CpuInfos.numberOfCores)
+    {
+        CpuInfos.numberOfCores = sysconf(_SC_NPROCESSORS_ONLN);
+        PrintOutCritical("Error. Cannot read cpu core count. Defaulting physical core count to %d\n", sysconf(_SC_NPROCESSORS_ONLN));
+    }
 
 #endif
     brand = TrimString(brand);
@@ -743,4 +856,6 @@ void GpuManager::LoadCPUInfos()
     CpuInfos.cpuBrandName = brand;
 
     TestExtraInstructions();
+
+    PrintOutSilent("%s with %d logical cores on %d physical cores\n", CpuInfos.cpuBrandName.c_str(), CpuInfos.numberOfProcessors, CpuInfos.numberOfCores);
 }

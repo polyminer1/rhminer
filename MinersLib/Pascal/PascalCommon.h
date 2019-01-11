@@ -34,5 +34,5 @@ const static U32 PascalHeaderNoncePosV3  = (PascalHeaderSize-4);
 
 #define RH_CheckerSize          (sizeof(U64))
 #define RH_WorkSize             RH_StrideSize 
-#define RH_IDEAL_ALIGNMENT      64  //NOTE : optimiz -> This should be changed for CUDA (some gpu are 256 bytes align, TODO: test ! )
+#define RH_IDEAL_ALIGNMENT      64  
 

@@ -66,8 +66,14 @@ inline int CUDA_SYM_DECL(blake2s_compress_SSE2)( blake2s_state *S, const uint8_t
 	for( size_t i = 0; i < 16; ++i )
 		m[i] = load32_SSE2( block + i * sizeof( m[i] ) );
 
-	for( size_t i = 0; i < 8; ++i )
-		v[i] = S->h[i];
+    v[0] = S->h[0];
+    v[1] = S->h[1];
+    v[2] = S->h[2];
+    v[3] = S->h[3];
+    v[4] = S->h[4];
+    v[5] = S->h[5];
+    v[6] = S->h[6];
+    v[7] = S->h[7];
 
 	v[ 8] = blake2s_IV[0];
 	v[ 9] = blake2s_IV[1];
@@ -191,7 +197,7 @@ void CUDA_SYM_DECL(RandomHash_blake2s)(RH_StridePtr roundInput, RH_StridePtr out
 	P->key_length    = 0;
 	P->fanout        = 1;
 	P->depth         = 1;
-	store32_SSE2( &P->leaf_length, 0 );  //TODO: Optimiz
+	store32_SSE2( &P->leaf_length, 0 ); 
     P->node_offset[0] = 0;
     P->node_offset[1] = 0;
     P->node_offset[2] = 0;

@@ -15,7 +15,7 @@
 /// @copyright Polyminer1
 
 #include "precomp.h" 
-#ifndef RH_COMPILE_CPU_ONLY
+#if !defined(RH_COMPILE_CPU_ONLY) && 0
 
 #include "MinersLib/Pascal/RandomHash.h"
 #include "MinersLib/Pascal/RandomHash_MurMur3_32.h"  
@@ -93,8 +93,6 @@ inline void CUDA_SYM(RH_StrideArrayReset)(RH_StridePtrArray strideArrayVar)
 
     static_assert(sizeof(void*) == sizeof(U64), "Incorrect ptr size");
 
-    for (int i = 0; i < RH_StrideArrayCount; i++)
-        arr->strides[i] = 0;    
 }
 
 CUDA_DECL_HOST_AND_DEVICE
@@ -104,7 +102,6 @@ inline RH_StridePtr CUDA_SYM(RH_StrideArrayAllocOutput)(RandomHash_State* state)
     state->m_stridesAllocIndex++;
     RH_ASSERT(state->m_stridesAllocIndex < RH_TOTAL_STRIDES_INSTANCES);
     RH_ASSERT( (((size_t)stride) % 32) == 0);
-    _CM(RH_StrideArrayReset(stride));
     return stride;
 }
 
@@ -127,12 +124,12 @@ void CUDA_DECL_HOST_AND_DEVICE CUDA_SYM(RandomHash_RoundDataInit)(RH_RoundData* 
 
     if (GetParentRoundOutputCount(round))
     {
-        RH_STRIDEARRAY_RESET(rd->parenAndNeighbortOutputs);
+        RH_STRIDEARRAY_RESET(rd->parenAndNeighbortOutputs[0]);
     }
 
-    if (rd->otherNonceHeader && round > 0)
+    if (rd->otherNonceHeaders && round > 0)
     { 
-        RH_STRIDE_INIT(rd->otherNonceHeader);
+        RH_STRIDE_INIT(rd->otherNonceHeaders);
     }
 
     RH_ASSERT(rd->roundInput);
@@ -218,7 +215,7 @@ void CUDA_SYM(RandomHash_RoundDataAlloc)(RH_RoundData* rd, int round)
         
     if (GetParentRoundOutputCount(round))
     {
-        _CM(AllocateArray)(rd->parenAndNeighbortOutputs, GetParentRoundOutputCount(round));
+        _CM(AllocateArray)(rd->parenAndNeighbortOutputs[0], GetParentRoundOutputCount(round));
     }
     
     _CM(RandomHash_Alloc)((void**)&rd->roundInput, RH_StrideSize);
@@ -226,7 +223,7 @@ void CUDA_SYM(RandomHash_RoundDataAlloc)(RH_RoundData* rd, int round)
 
     if (round > 0) 
     {
-        _CM(RandomHash_Alloc)((void**)&rd->otherNonceHeader, RH_StrideSize);
+        _CM(RandomHash_Alloc)((void**)&rd->otherNonceHeaders, RH_StrideSize);
         RH_CUDA_ERROR_CHECK();
     }    
 }
@@ -249,10 +246,13 @@ void CUDA_SYM(RandomHash_Create)(RandomHash_State* state)
     _CM(RandomHash_RoundDataAlloc)(&state->m_data[4], 4);
     _CM(RandomHash_RoundDataAlloc)(&state->m_data[5], 5);
     
+    /*
     _CM(RandomHash_Alloc)((void**)&state->m_cachedHheader, PascalHeaderSize);
     PLATFORM_MEMSET(state->m_cachedHheader, 0, PascalHeaderSize);
+    */
 
-    _CM(AllocateArray)(state->m_cachedOutputs, GetRoundOutputCount(5));
+    //_CM(AllocateArray)(state->m_cachedOutputs, GetRoundOutputCount(5));
+    state->m_isCachedOutputs = false;
 
     cudaMemcpy(deviceState, state, sizeof(RandomHash_State), cudaMemcpyHostToDevice);
     RH_CUDA_ERROR_CHECK();
@@ -273,8 +273,8 @@ void CUDA_SYM(RandomHash_CreateMany)(RandomHash_State** outPtr, U32 count)
 void CUDA_SYM(RandomHash_RoundDataUnInit)(RH_RoundData* rd, int round)
 {
     _CM(RandomHash_Free)(rd->roundOutputs);
-    _CM(RandomHash_Free)(rd->parenAndNeighbortOutputs);
-    _CM(RandomHash_Free)(rd->otherNonceHeader);
+    _CM(RandomHash_Free)(rd->parenAndNeighbortOutputs[0]);
+    _CM(RandomHash_Free)(rd->otherNonceHeaders);
     _CM(RandomHash_Free)(rd->roundInput);
 }
 
@@ -299,7 +299,7 @@ inline void CUDA_SYM_DECL(RandomHash_Reseed)(mersenne_twister_state& rndGen, U32
 inline U32 CUDA_SYM_DECL(RandomHash_Checksum)(RH_StridePtr input)
 {
     U32 csum  = 0;
-    csum = _CM(MurmurHash3_x86_32_Fast)((const void *)RH_STRIDE_GET_DATA(input), RH_STRIDE_GET_SIZE(input), 0);
+    csum = _CM(MurmurHash3_x86_32_Fast)(RH_STRIDE_GET_DATA(input), RH_STRIDE_GET_SIZE(input));
     return csum;
 }
     
@@ -413,7 +413,7 @@ inline void CUDA_SYM_DECL(RandomHash_Phase_1_push)(RandomHash_State* state, int 
     state->m_data[in_round-1].backup_in_blockHeader = state->m_data[in_round-1].in_blockHeader;
     state->m_data[in_round-1].in_blockHeader = state->m_data[in_round].in_blockHeader;
     state->m_data[in_round-1].backup_io_results = state->m_data[in_round-1].io_results;
-    state->m_data[in_round-1].io_results = state->m_data[in_round].parenAndNeighbortOutputs;
+    state->m_data[in_round-1].io_results = state->m_data[in_round].parenAndNeighbortOutputs[0];
 }
 
 inline void CUDA_SYM_DECL(RandomHash_Phase_1_pop)(RandomHash_State* state, int in_round)
@@ -422,33 +422,40 @@ inline void CUDA_SYM_DECL(RandomHash_Phase_1_pop)(RandomHash_State* state, int i
     state->m_data[in_round-1].io_results = state->m_data[in_round-1].backup_io_results;
 
 #ifdef RH_ENABLE_OPTIM_STRIDE_ARRAY_MURMUR3
-    MurmurHash3_x86_32_State tstate = *RH_StrideArrayStruct_GetAccum(state->m_data[in_round].parenAndNeighbortOutputs);
+    MurmurHash3_x86_32_State tstate = *RH_StrideArrayStruct_GetAccum(state->m_data[in_round].parenAndNeighbortOutputs[0]);
     U32 seed = _CM(MurmurHash3_x86_32_Finalize)(&tstate);
 
 #else
-    U32 seed = _CM(RandomHash_ChecksumArray)(state->m_data[in_round].parenAndNeighbortOutputs);
+    U32 seed = _CM(RandomHash_ChecksumArray)(state->m_data[in_round].parenAndNeighbortOutputs[0]);
 #endif
     _CM(RandomHash_Reseed)(state->m_data[in_round].rndGen, seed);
 
-    _CM(RH_STRIDEARRAY_PUSHBACK_MANY)(state->m_data[in_round].roundOutputs, state->m_data[in_round].parenAndNeighbortOutputs);
-    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].parenAndNeighbortOutputs) <= GetParentRoundOutputCount(in_round));
+    
+    /*
+    _CM(RH_STRIDEARRAY_PUSHBACK_MANY)(state->m_data[in_round].roundOutputs, state->m_data[in_round].parenAndNeighbortOutputs[0]);
+    */
+    if (RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) == 0)
+        _CM(RH_STRIDEARRAY_PUSHBACK_MANY_ALL)(state->m_data[in_round].roundOutputs, state->m_data[in_round].parenAndNeighbortOutputs[0]); 
+    else
+        _CM(RH_STRIDEARRAY_PUSHBACK_MANY_UPDATE)(state->m_data[in_round].roundOutputs, state->m_data[in_round].parenAndNeighbortOutputs[0]); 
+    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].parenAndNeighbortOutputs[0]) <= GetParentRoundOutputCount(in_round));
     RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) <= GetRoundOutputCount(in_round));
    
-    RH_STRIDEARRAY_RESET(state->m_data[in_round].parenAndNeighbortOutputs);
+    RH_STRIDEARRAY_RESET(state->m_data[in_round].parenAndNeighbortOutputs[0]);
        
 }
 
 inline void CUDA_SYM_DECL(RandomHash_Phase_2_push)(RandomHash_State* state, int in_round)
 {
-    RH_STRIDE_COPY(state->m_data[in_round].otherNonceHeader, state->m_data[in_round].in_blockHeader);
+    RH_STRIDE_COPY(state->m_data[in_round].otherNonceHeaders, state->m_data[in_round].in_blockHeader);
     U32 newNonce = _CM(GetNextRnd)(&state->m_data[in_round].rndGen);
 
-    *(U32*)(RH_STRIDE_GET_DATA(state->m_data[in_round].otherNonceHeader)+PascalHeaderNoncePosV4(PascalHeaderSize)) = newNonce;
+    *(U32*)(RH_STRIDE_GET_DATA(state->m_data[in_round].otherNonceHeaders)+PascalHeaderNoncePosV4(PascalHeaderSize)) = newNonce;
     
     state->m_data[in_round-1].backup_in_blockHeader = state->m_data[in_round-1].in_blockHeader;
-    state->m_data[in_round-1].in_blockHeader = state->m_data[in_round].otherNonceHeader;
+    state->m_data[in_round-1].in_blockHeader = state->m_data[in_round].otherNonceHeaders;
     state->m_data[in_round-1].backup_io_results = state->m_data[in_round-1].io_results;
-    state->m_data[in_round-1].io_results = state->m_data[in_round].parenAndNeighbortOutputs;
+    state->m_data[in_round-1].io_results = state->m_data[in_round].parenAndNeighbortOutputs[0];
 }
 
 
@@ -457,15 +464,22 @@ void CUDA_SYM_DECL(RandomHash_Phase_2_pop)(RandomHash_State* state, int in_round
     state->m_data[in_round-1].in_blockHeader = state->m_data[in_round-1].backup_in_blockHeader;
     state->m_data[in_round-1].io_results = state->m_data[in_round-1].backup_io_results;
 
-    RH_ASSERT( RH_STRIDE_GET_SIZE(state->m_data[in_round].roundOutputs) + RH_STRIDE_GET_SIZE(state->m_data[in_round].parenAndNeighbortOutputs) < GetRoundOutputCount(in_round) );
+    RH_ASSERT( RH_STRIDE_GET_SIZE(state->m_data[in_round].roundOutputs) + RH_STRIDE_GET_SIZE(state->m_data[in_round].parenAndNeighbortOutputs[0]) < GetRoundOutputCount(in_round) );
     
-    _CM(RH_STRIDEARRAY_PUSHBACK_MANY)(state->m_data[in_round].roundOutputs, state->m_data[in_round].parenAndNeighbortOutputs);
-    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].parenAndNeighbortOutputs) <= GetParentRoundOutputCount(in_round));
+    /*
+    _CM(RH_STRIDEARRAY_PUSHBACK_MANY)(state->m_data[in_round].roundOutputs, state->m_data[in_round].parenAndNeighbortOutputs[0]);
+    */
+    if (RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) == 0)
+        _CM(RH_STRIDEARRAY_PUSHBACK_MANY_ALL)(state->m_data[in_round].roundOutputs, state->m_data[in_round].parenAndNeighbortOutputs[0]);
+    else
+        _CM(RH_STRIDEARRAY_PUSHBACK_MANY_UPDATE)(state->m_data[in_round].roundOutputs, state->m_data[in_round].parenAndNeighbortOutputs[0]);
+
+    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].parenAndNeighbortOutputs[0]) <= GetParentRoundOutputCount(in_round));
     RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) <= GetRoundOutputCount(in_round));
 
     _CM(RandomHash_Compress)(state, state->m_data[in_round].roundOutputs, state->m_data[in_round].roundInput);
 
-    RH_STRIDEARRAY_RESET(state->m_data[in_round].parenAndNeighbortOutputs);
+    RH_STRIDEARRAY_RESET(state->m_data[in_round].parenAndNeighbortOutputs[0]);
 }
 
 inline void CUDA_SYM_DECL(RandomHash_Phase_init)(RandomHash_State* state, int in_round)
@@ -573,7 +587,7 @@ inline void CUDA_SYM_DECL(RandomHash_end)(RandomHash_State* state, int in_round)
     #endif
 
     RH_STRIDEARRAY_RESET(state->m_data[in_round].io_results);
-    _CM(RH_STRIDEARRAY_PUSHBACK_MANY)(state->m_data[in_round].io_results, state->m_data[in_round].roundOutputs); 
+    _CM(RH_STRIDEARRAY_PUSHBACK_MANY_ALL)(state->m_data[in_round].io_results, state->m_data[in_round].roundOutputs); 
     
     RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) <= GetRoundOutputCount(in_round));
 }
@@ -581,7 +595,7 @@ inline void CUDA_SYM_DECL(RandomHash_end)(RandomHash_State* state, int in_round)
 inline void CUDA_SYM_DECL(RandomHash_FirstCall_push)(RandomHash_State* state, int in_round)
 {
     state->m_data[5].in_blockHeader = state->m_data[0].roundInput;     //blockHerader
-    state->m_data[5].io_results = state->m_data[0].parenAndNeighbortOutputs;       //allOutputs
+    state->m_data[5].io_results = state->m_data[0].parenAndNeighbortOutputs[0];       //allOutputs
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------
@@ -594,6 +608,8 @@ inline void CUDA_SYM_DECL(RandomHash_FirstCall_push)(RandomHash_State* state, in
                                         RH_B##N \
                                     }
 
+//temporary commented
+/*
 #define RH_B0         cuda_RandomHash_FirstCall_push(state, 5); \
                       cuda_RandomHash_Phase_init(state, 5);     \
                       cuda_RandomHash_Phase_1_push(state, 5);   \
@@ -1032,7 +1048,7 @@ RH_CALL_KERNEL_BLOCK(58) \
 RH_CALL_KERNEL_BLOCK(59) \
 RH_CALL_KERNEL_BLOCK(60) \
 RH_CALL_KERNEL_BLOCK(61) \
-
+*/
 
 //-------------------------------------------------------------------------------------------------------------------------------------
 //
@@ -1144,10 +1160,21 @@ __host__ void cuda_randomhash_search(uint32_t blocks, uint32_t threadsPerBlock, 
     RandomHash_State* allStates = g_threadsData;
 
     CUDA_SYM(RandomHash_Init)<<<threadsPerBlock, blocks>>>(allStates, (uint8_t*)output, startNonce);
-    RH_CALL_ALL_KERNEL_BLOCKS
+
+    //Temporary commented
+    //RH_CALL_ALL_KERNEL_BLOCKS
     CUDA_SYM(RandomHash_Finalize)<<<threadsPerBlock, blocks>>>(allStates, (uint8_t*)output);
 }
 #endif
+#else
+
+#ifdef _DEBUG
+__host__ void cuda_randomhash_create(uint32_t blocks, uint32_t threadsPerBlock, uint32_t* input, U32 deviceID) {}
+void cuda_RandomHash_SetTarget(uint64_t target){}
+__host__ void cuda_randomhash_init(uint32_t* input, U32 nonce2){}
+__host__ void cuda_randomhash_search(uint32_t blocks, uint32_t threadsPerBlock, cudaStream_t stream, uint32_t* input, uint32_t* output, U32 startNonce){}
+#endif
+
 
 #endif //RH_COMPILE_CPU_ONLY
 

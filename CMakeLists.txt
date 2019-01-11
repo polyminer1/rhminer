@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 option(RH_DEBUG_TARGET "Compile in Debug" OFF)
 option(RH_CPU_ONLY "Compile only cpu code" OFF)
 option(RH_CUDA_ARCH "Cuda architecture name" Maxwell)
+option(RH_NO_SSE4 "Disable sse4 optimizations" OFF)
 
 if(RH_CPU_ONLY)
 	project(rhminer)
@@ -12,7 +13,16 @@ else()
 endif(RH_CPU_ONLY)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+
+if(RH_NO_SSE4)
+	message(STATUS "Disabling SSe4 intrinsics")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+	set(RH_CUDA_ARCH CPU_OLDGEN)
+	add_definitions(-DRHMINER_NO_SSE4)
+else()
+	message(STATUS "ENABLING SSe4 intrinsics")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -msse4.1")
+endif(RH_NO_SSE4)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake")
 

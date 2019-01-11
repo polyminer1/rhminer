@@ -1,5 +1,13 @@
 # rhminer update and bugfix history
 
+Version 1.3 - 11 Jan 2019
+*Major CPU optimizations. Up to 260% on some CPU
+* +155% on Xeon E52665
+* +260% on Intel i5 2th gen
+* +195% on Intel i5 4th gen 
+* +250% on Intel Core 2 
+* New commandline option -sseboost. This option will give up to 10% on some cpu. BUT can also make it slower on other. TEST it before using it, to assert it gives a boost to your cpu.
+
 Version 1.2 - 13 dec 2018
 * Major optimization on cuda miner (+32% on gtx 1070 8gb, +37% on gtx 1060 3gb, +40% on gtx 950)
 * Simple optimization on Linux. Up to 5% depending on the cpu

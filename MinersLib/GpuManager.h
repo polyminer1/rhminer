@@ -75,7 +75,8 @@ struct CPUInfo
     bool    sse5Supportted = false;
     bool    avxSupportted = false;
     U64     avaiablelMem;
-    U32     numberOfProcessors;
+    U32     numberOfProcessors; //counting hyperthreads
+    U32     numberOfCores;
     size_t  activeProcessorMask;
     U32     allocationGranularity;
     U64     UserSelectedCores = 0x0;  //mask used by SetProcessAffinityMask when application starts
@@ -135,6 +136,7 @@ public:
     static void                     LoadGPUMap();
     static void                     LoadCPUInfos();
     static void                     TestExtraInstructions();
+    static void                     SetPostCommandLineOptions();
     
     static std::vector<cl::Device>  GetDevices(std::vector<cl::Platform> const& _platforms, unsigned _platformId);
     static std::vector<cl::Platform>GetPlatforms();

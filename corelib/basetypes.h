@@ -88,6 +88,9 @@
     #define CUDA_NOT_ONLY(X) X
 #endif
 
+#ifndef RHMINER_NO_SSE4
+    #define RHMINER_ENABLE_SSE4
+#endif
 
 #if defined(_DEBUG)
     #ifndef RHMINER_DEBUG
@@ -122,9 +125,9 @@
 #define RHMINER_ALIGN_PTR(type, Ptr, Ofs)          ((type) RHMINER_FLOOR((size_t)(Ptr), Ofs))
 #define RHMINER_DIFF_PTR(First, Second)            ((size_t) (((size_t)(First)) - (size_t)(Second)))
 #define RHMINER_ROUND(Val, Align)                  (((Val) + (Align-1)) & ~(Align-1))
-#define RHMINER_CEIL(size,to)	                    (((size)+ (to)-1) &~((to)-1))
-#define RHMINER_ALIGN(Val, Align)	                (((Val / Align) + 1)*Align)
-#define RHMINER_FLOOR(Val, Align)                  ((Val) & ~(Align - 1))
+#define RHMINER_CEIL(size,to)	                   (((size)+ (to)-1) &~((to)-1))
+#define RHMINER_ALIGN(Val, Align)	               ((((Val) / (Align)) + 1)*(Align))
+#define RHMINER_FLOOR(Val, Align)                  ((Val) & ~((Align) - 1))
 
 #ifdef _DEBUG
   #ifdef _WIN32_WINNT

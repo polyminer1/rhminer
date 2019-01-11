@@ -130,11 +130,16 @@ void CUDA_SYM_DECL(RandomHash_blake2b)(RH_StridePtr roundInput, RH_StridePtr out
     RH_ALIGN(64) sph_blake2b_ctx ctx;
     RH_STRIDE_SET_SIZE(output, outlen);
     
-    //TODO: optimiz
-	for (i = 0; i < 8; i++)             // state, "param block"
-		ctx.h[i] = blake2b_iv[i];
-
-	ctx.h[0] ^= 0x01010000 ^ (0 << 8) ^ outlen;
+    // state, "param block"		
+    ctx.h[0] = blake2b_iv[0];
+    ctx.h[0] ^= 0x01010000 ^ (0 << 8) ^ outlen;
+    ctx.h[1] = blake2b_iv[1];
+    ctx.h[2] = blake2b_iv[2];
+    ctx.h[3] = blake2b_iv[3];
+    ctx.h[4] = blake2b_iv[4];
+    ctx.h[5] = blake2b_iv[5];
+    ctx.h[6] = blake2b_iv[6];
+    ctx.h[7] = blake2b_iv[7];
 
 	ctx.t[0] = 0;                      // input count low word
 	ctx.t[1] = 0;                      // input count high word

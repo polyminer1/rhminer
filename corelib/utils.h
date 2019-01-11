@@ -47,6 +47,7 @@ typedef std::vector<string> StringVec;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CPU and Threads
 inline void CpuSleep(unsigned ms) {std::this_thread::sleep_for(std::chrono::milliseconds(ms));}
+extern void CpuYield();
 extern U32 AtomicAdd(U32& x, U32 val);
 extern U64 AtomicAdd(U64& x, U64 val);
 extern U32 AtomicIncrement(U32& x);

@@ -44,9 +44,11 @@
 
     #define RH_TOTAL_STRIDES_INSTANCES ((RH_StrideArrayCount+1))
 #else
-    #define RH_TOTAL_STRIDES_INSTANCES ((RH_StrideArrayCount+1)*2)
+    #define RH_TOTAL_STRIDES_INSTANCES (RH_StrideArrayCount+1)
 #endif
 
+//#define RH_STRIDE_BANK_SIZE (RH_StrideSize * RH_TOTAL_STRIDES_INSTANCES)
+#define RH_STRIDE_BANK_SIZE 5033984
 
 #define RH_GET_MEMBER_POS(STRUCT, MEMBER)  (size_t)(void*)&((STRUCT*)0)->MEMBER
 
@@ -88,40 +90,26 @@
 
 #ifdef RHMINER_PLATFORM_CPU
 
-#if !defined(_WIN32_WINNT)
-    template<unsigned i>
-    inline U32 _mm_extract_epi32_( __m128i V)
-    {
-        V = _mm_shuffle_epi32(V, _MM_SHUFFLE(i, i, i, i));
-        return (U32)_mm_cvtsi128_si32(V);
-    }
+template<unsigned i>
+inline U32 _mm_extract_epi32_( __m128i V)
+{
+    V = _mm_shuffle_epi32(V, _MM_SHUFFLE(i, i, i, i));
+    return (U32)_mm_cvtsi128_si32(V);
+}
 
-    #define _mm_extract_epi32_M(chunk128, i) (_mm_extract_epi32_<i>(chunk128))
-#else
-    #define _mm_extract_epi32_M _mm_extract_epi32
-#endif
-
-
-#ifdef RHMINER_RANDOMHASH_RHMINER_SSE4
-    #define RH_MM_LOAD128           _mm_stream_load_si128
-    #define RH_MM_STORE128          _mm_storeu_si128
-    #define TH_MM_STREAM_STORE128   _mm_stream_si128
-    #define RH_MM_BARRIER           _mm_sfence
-#else
-    #define RH_MM_LOAD128           _mm_loadu_si128
-    #define RH_MM_STORE128          _mm_storeu_si128
-    #define TH_MM_STREAM_STORE128   _mm_storeu_si128
-    #define RH_MM_BARRIER           void
-#endif
+#define RH_MM_LOAD128           _mm_loadu_si128
+#define RH_MM_STORE128          _mm_storeu_si128
+#define TH_MM_STREAM_STORE128   _mm_storeu_si128
+#define RH_MM_BARRIER           void
 
 #ifndef RotateLeft8
-#define _rotr8(x,n)	(((x) >> (n)) | ((x) << (8 - (n))))
-#define _rotl8(x,n)	(((x) << (n)) | ((x) >> (8 - (n))))
+#define _rotr8(x,n)	    ((U8)(((x) >> (n)) | ((x) << (8 - (n)))))
+#define _rotl8(x,n)	    ((U8)(((x) << (n)) | ((x) >> (8 - (n)))))
 #endif
 
 #ifndef RotateLeft32
-#define _rotr(x,n)	(((x) >> (n)) | ((x) << (32 - (n))))
-#define _rotl(x,n)	(((x) << (n)) | ((x) >> (32 - (n))))
+#define _rotr(x,n)	    ((((x) >> (n)) | ((x) << (32 - (n)))))
+#define _rotl(x,n)	    ((((x) << (n)) | ((x) >> (32 - (n)))))
 #define _rotr64(x,n)	(((x) >> (n)) | ((x) << (64 - (n))))
 #define _rotl64(x,n)	(((x) << (n)) | ((x) >> (64 - (n))))
 #endif

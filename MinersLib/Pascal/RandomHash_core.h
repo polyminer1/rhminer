@@ -54,12 +54,18 @@ typedef U8* RH_StridePtr;
 typedef U8* RH_StridePtrArray;
 
 #ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-    #define RH_STRIDE_INIT(strideVar)                        {*(U64*)((strideVar)+RH_StrideSize-RH_CheckerSize) = (U64)0xAABBCCDDEEFF5577LLU;}
-    #define RH_STRIDE_CHECK_INTEGRITY(strideVar)             RH_ASSERT(*(U64*)((strideVar)+RH_StrideSize-RH_CheckerSize) == (U64)0xAABBCCDDEEFF5577LLU);
-    #define RH_STRIDEARRAY_INIT(strideArrayVar)              {((RH_StrideArrayStruct*)strideArrayVar)->strides[RH_StrideArrayCount] = (U8*)(void*)0xAABBCCDDEEFF5577LLU;}
-    #define RH_STRIDEARRAY_CHECK_INTEGRITY(strideArrayVar)   RH_ASSERT(((RH_StrideArrayStruct*)strideArrayVar)->strides[RH_StrideArrayCount] == (U8*)(void*)0xAABBCCDDEEFF5577LLU);
+    #define RH_STRIDE_GET_INDEX(strideVar)                  ((RH_StrideStruct*)(strideVar))->index
+    #define RH_STRIDE_SET_INDEX(strideVar, val)             {((RH_StrideStruct*)(strideVar))->index = val;}
+    //#define RH_STRIDE_INIT_INTEGRITY(strideVar)       {*(U64*)((strideVar)+RH_StrideSize-RH_CheckerSize) = (U64)0xAABBCCDDEEFF5577LLU;}
+    //#define RH_STRIDE_CHECK_INTEGRITY(strideVar)      RH_ASSERT(*(U64*)((strideVar)+RH_StrideSize-RH_CheckerSize) == (U64)0xAABBCCDDEEFF5577LLU);
+    #define RH_STRIDE_INIT_INTEGRITY(strideVar)         {U64* ic = (U64*)((strideVar)+RH_IDEAL_ALIGNMENT+RH_STRIDE_GET_SIZE(strideVar)); *ic = (U64)0xAABBCCDDEEFF5577LLU;}
+    #define RH_STRIDE_CHECK_INTEGRITY(strideVar)        {RH_ASSERT(*(U64*)((strideVar)+RH_IDEAL_ALIGNMENT+RH_STRIDE_GET_SIZE(strideVar)) == (U64)0xAABBCCDDEEFF5577LLU);}
+    //#define RH_STRIDEARRAY_INIT(strideArrayVar)              {((RH_StrideArrayStruct*)strideArrayVar)->strides[RH_StrideArrayCount] = (U8*)(void*)0xAABBCCDDEEFF5577LLU;}
+    //#define RH_STRIDEARRAY_CHECK_INTEGRITY(strideArrayVar)   RH_ASSERT(((RH_StrideArrayStruct*)strideArrayVar)->strides[RH_StrideArrayCount] == (U8*)(void*)0xAABBCCDDEEFF5577LLU);
 #else
-    #define RH_STRIDE_INIT(strideVar)              {}
+    #define RH_STRIDE_GET_INDEX(strideVar)                  (0)
+    #define RH_STRIDE_SET_INDEX(strideVar, val)             {}
+    #define RH_STRIDE_INIT_INTEGRITY(strideVar)              {}
     #define RH_STRIDE_CHECK_INTEGRITY(strideVar)   {}
     #define RH_STRIDEARRAY_INIT(strideArrayVar) {}
     #define RH_STRIDEARRAY_CHECK_INTEGRITY(strideArrayVar) {}
@@ -68,14 +74,11 @@ typedef U8* RH_StridePtrArray;
 struct RH_StrideStruct
 {
     U32 size;
-    U32 maxSize  : 16;
-    U32 dummy    : 16;
+    U32 index;
 };
 
-#define RH_STRIDE_GET_SIZE(strideVar)                    (*(U32*)(strideVar))
-#define RH_STRIDE_SET_SIZE(strideVar, val)               {(*(U32*)(strideVar)) = (U32)(val);}
-#define RH_STRIDE_GET_MAXSIZE(strideVar)                 ((RH_StrideStruct*)(strideVar))->maxSize
-#define RH_STRIDE_SET_MAXSIZE(strideVar, val)            {((RH_StrideStruct*)(strideVar))->maxSize = val;}
+#define RH_STRIDE_GET_SIZE(strideVar)                   (*(U32*)(strideVar))
+#define RH_STRIDE_SET_SIZE(strideVar, val)              {(*(U32*)(strideVar)) = (U32)(val);}
 
 #define RH_STRIDE_RESET(strideVar)                       {RH_StrideStruct* p = reinterpret_cast<RH_StrideStruct*>(strideVar); p->size = (U32)0;}
 #define RH_STRIDE_GET_DATA(strideVar)                    (((U8*)(strideVar)) + RH_IDEAL_ALIGNMENT)
@@ -84,7 +87,8 @@ struct RH_StrideStruct
 #define RH_STRIDEARRAY_GET_SIZE(strideArrayVar)         (*(U32*)(strideArrayVar))
 #define RH_STRIDEARRAY_SET_SIZE(strideArrayVar, val)    (*(U32*)(strideArrayVar)) = (val);
 #define RH_STRIDEARRAY_GET_MAXSIZE(strideArrayVar)      reinterpret_cast<RH_StrideArrayStruct*>((void*)strideArrayVar)->maxSize
-#define RH_STRIDEARRAY_RESET(strideArrayVar)            _CM(RH_StrideArrayReset)(strideArrayVar);
+#define RH_STRIDEARRAY_GET_EXTRA(strideArrayVar, member)        reinterpret_cast<RH_StrideArrayStruct*>((void*)strideArrayVar)->member
+#define RH_STRIDEARRAY_RESET(strideArrayVar)            _CM(RH_StrideArrayReset)(strideArrayVar)
 #define RH_STRIDEARRAY_GET(strideArrayVar, idx)         reinterpret_cast<RH_StrideArrayStruct*>((void*)strideArrayVar)->strides[idx]
 
 
@@ -109,13 +113,6 @@ struct RH_StrideStruct
         U32 _as = RH_STRIDEARRAY_GET_SIZE(strideArrayVar)++;                    \
         RH_ASSERT(_as < RH_STRIDEARRAY_GET_MAXSIZE(strideArrayVar));            \
         ((RH_StrideArrayStruct*)(strideArrayVar))->strides[_as] = (stride);     \
-    }
-
-    #define RH_STRIDEARRAY_PUSHBACK_NO_ACCUM(strideArrayVar, stride)            \
-    {                                                                           \
-        U32 _as = RH_STRIDEARRAY_GET_SIZE(strideArrayVar)++;                    \
-        RH_ASSERT(_as < RH_STRIDEARRAY_GET_MAXSIZE(strideArrayVar));            \
-        ((RH_StrideArrayStruct*)strideArrayVar)->strides[_as] = (stride);       \
     }
 
 #else
@@ -154,7 +151,7 @@ struct RH_StrideStruct
     _CM(RH_STRIDE_MEMCPY_ALIGNED_SIZE128)(dstStride, srcStride, _ss + RH_IDEAL_ALIGNMENT);   \
     RH_STRIDE_CHECK_INTEGRITY(dstStride);                                                    \
 }
-
+/*
 #ifdef RH_ENABLE_OPTIM_STRIDE_ARRAY_MURMUR3
 #define RH_STRIDE_COPY_ACCUM(dstStride, srcStride, accum)                                                       \
 {                                                                                                               \
@@ -164,8 +161,8 @@ struct RH_StrideStruct
     _CM(RH_INPLACE_MEMCPY_128_A)(RH_STRIDE_GET_DATA(dstStride), RH_STRIDE_GET_DATA(srcStride), _ss, accum);     \
     RH_STRIDE_CHECK_INTEGRITY(dstStride);                                                                       \
 }
-
 #endif
+*/
 
 
 //common for the 3 RIPEMD
