@@ -175,7 +175,7 @@ const char* GetOutputDecoration(const char* szBuffer)
         const char* str;
         char const* tname = getThreadName();
 #ifdef _DEBUG
-        str = FormatString("%-5s %llu  %s", tname, TimeGetMilliSec(), szBuffer);
+        str = FormatString("%-5s %-9llu  %s", tname, TimeGetMilliSec(), szBuffer);
 #else
         char tstr[64];
         GetSysTimeStrF(tstr, sizeof(tstr), "%H:%M:%S");
@@ -450,6 +450,17 @@ void SetThreadPriority_EXT(void* threadNativeHandle)
     RHMINER_ASSERT(ertCode == 0);  
 #endif
 }
+
+void CpuYield()
+{ 
+#ifdef _WIN32_WINNT
+    Yield();
+#else
+    pthread_yield();
+#endif
+}
+
+    
 
 //--------------------------------
 void GetSysTimeStrF(char* buf, size_t buffSize, const char* frmt, bool addMillisec)
@@ -776,7 +787,10 @@ double le256todouble(const void *target)
 void* RH_SysAlloc(size_t s)
 {
 #ifdef _WIN32_WINNT
-    return _aligned_malloc(s, 4096);
+    void* ptr;
+    
+    ptr = _aligned_malloc(s, 4096);
+    return ptr;
 #else
     //return _mm_malloc( s, 4096 );
     const int ALIGNVAL = 4096;
@@ -791,7 +805,8 @@ void* RH_SysAlloc(size_t s)
 void RH_SysFree(void* ptr)
 {
 #ifdef _WIN32_WINNT
-    _aligned_free(ptr);
+    //_aligned_free(ptr);
+    VirtualFree(ptr, 0, MEM_RELEASE);
 #else
     //_mm_free(ptr);
     size_t* ptrAliBack = (size_t*)(((U8*)ptr) - sizeof(size_t));

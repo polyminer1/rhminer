@@ -24,9 +24,6 @@ RandomHashCPUMiner::RandomHashCPUMiner(FarmFace& _farm, unsigned globalWorkMult,
     GenericCLMiner(_farm, globalWorkMult, localWorkSize, gpuIndex),
     m_firstKernelCycleDone(false, false)
 {
-#ifdef RH_DISABLE_NONCE_REUSE_AND_CACHE
-    g_disableCachedNonceReuse = true;
-#endif
 }
 
 RandomHashCPUMiner::~RandomHashCPUMiner()
@@ -100,8 +97,7 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
         
         if (!paused)
         {
-            if (g_disableCachedNonceReuse == true ||
-                (g_disableCachedNonceReuse == false && oldID != packageID))
+            if (oldID != packageID)
             {
                 RandomHash_SetHeader(&m_randomHashArray[kernelData->m_id], packageData->m_header.asU8, (U32)packageData->m_nonce2); //copy header                
             }

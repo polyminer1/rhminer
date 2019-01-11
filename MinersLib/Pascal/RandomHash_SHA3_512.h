@@ -2662,8 +2662,21 @@ void CUDA_SYM_DECL(_RandomHash_SHA3_512)(RH_StridePtr roundInput, RH_StridePtr o
 
     //get the hash result IN BE
     dataPtr = (uint64_t*)RH_STRIDE_GET_DATA(output);
+    uint64_t* statePtr = state;    
     RH_STRIDE_SET_SIZE(output, hashsize);
-    copy8(dataPtr, state);
+    RH_ASSERT(hashsize == 32 || hashsize == 48 || hashsize == 64);
+    switch(hashsize)
+    {
+        case 64 : *dataPtr++ = *statePtr++;
+                  *dataPtr++ = *statePtr++;
+        case 48 : *dataPtr++ = *statePtr++;
+                  *dataPtr++ = *statePtr++;
+        case 32 : *dataPtr++ = *statePtr++;
+                  *dataPtr++ = *statePtr++;
+                  *dataPtr++ = *statePtr++;
+                  *dataPtr++ = *statePtr++;
+    }
+    
 } 
 
 

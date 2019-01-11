@@ -58,7 +58,7 @@ int main(int argc, char** argv)
     printf("  Build %s (CUDA SDK %d.%d) %s %s\n\n", RH_BUILD_TYPE, CUDART_VERSION/1000, (CUDART_VERSION % 1000)/10, __DATE__, __TIME__);
 #else
     printf("\n  rhminer v%s beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)\n", RH_PROJECT_VERSION);
-    printf("  Build %s %s %s\n\n", RH_BUILD_TYPE, __DATE__, __TIME__);
+    printf("  Build %s %s %s \n\n", RH_BUILD_TYPE, __DATE__, __TIME__);
 #endif    
 
 	printf("  Donations : Pascal account 529692-23 \n");
@@ -81,6 +81,7 @@ int main(int argc, char** argv)
         printf("WSAStartup() failed with Error. %d\n", iResult);
         return 1;
     }
+    
 #endif
 
     // Set env vars controlling GPU driver behavior.
@@ -116,8 +117,16 @@ int main(int argc, char** argv)
     if (displayHelp || argc == 1)
         DisplayHelp(CmdLineManager::GlobalOptions()); //exit app
 
+    GpuManager::SetPostCommandLineOptions();
+
     KernelOffsetManager::Reset(0);
 
+#if defined(_DEBUG) || 0
+    extern void RunUnitTests();
+    RunUnitTests();
+    return 0;
+#endif
+    
 #ifdef _WIN32_WINNT
     if (g_setProcessPrio == 0)
     {

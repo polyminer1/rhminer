@@ -140,7 +140,7 @@ void CmdLineManager::Merge(const CmdLineManager& src)
 
 void CmdLineManager::List()
 {
-    strings cat = {"General", "Gpu", "Network"};
+    strings cat = {"General", "Optimizations", "Gpu", "Network"};
     for (const auto& o : m_options)
     {
         if (std::find(cat.begin(), cat.end(), o.cathegory) == cat.end())
@@ -153,7 +153,11 @@ void CmdLineManager::List()
         {
             if (o.cathegory == c)
             {
-                printf("  -%-20s %s\n", o.symbol.c_str(), o.descr.c_str());
+                printf("  -%-20s ", o.symbol.c_str());
+                strings lines = GetTokens(o.descr, ".");
+                printf("%s. \n", lines[0].c_str());
+                for(int i=1; i < lines.size(); i++)
+                    printf("                       %s. \n", lines[i].c_str());
             }
         }
     }

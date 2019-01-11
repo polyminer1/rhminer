@@ -33,9 +33,9 @@ RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_useCPU, false);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_cpuMinerThreads, 1);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformance, 0);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformanceThreads, 0);
-RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 3)
-RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_disableFastTransfo, false);
-
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 3);
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_memoryBoostLevel, RH_OPT_UNSET);
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_sseOptimization, 0); 
 bool g_useGPU = false;
 
 const U64 t1M = 1000 * 60;
@@ -97,29 +97,7 @@ GlobalMiningPreset::GlobalMiningPreset()
         }
     });
 #endif //RH_COMPILE_CPU_ONLY
-    CmdLineManager::GlobalOptions().RegisterValue("devfee", "General", "Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.", [&](const string& val)
-    {
-        if (val == "0" || val == "0.0")
-            m_devfeePercent = 0.0f;
-        else
-        {
-            for(auto c : val)
-            {
-                if (!((c >= '0' && c <= '9') || c == '.'))
-                {
-                    m_devfeePercent = 1.0f;
-                    return;
-                }
-            }
-            m_devfeePercent = ToFloat(val);
 
-            if (m_devfeePercent > 50.0f)
-                m_devfeePercent = 50.0f;
-            
-            if (m_devfeePercent < 1.0f)
-                m_devfeePercent = 1.0f;
-        }
-    });
     CmdLineManager::GlobalOptions().RegisterFlag("list", "General", "List all gpu in the system", [&]() 
     {
         GpuManager::listGPU(); 
@@ -188,7 +166,7 @@ void GlobalMiningPreset::SetStratumInfo(const string& val)
 
 void GlobalMiningPreset::Initialize(char** argv, int argc)
 {
-    CmdLineManager::GlobalOptions().RegisterValue("s", "Network", "Stratum/wallet server address:port. NOTE: You can also use http://address.xyz to connect to local wallet.", [&](const string& val) 
+    CmdLineManager::GlobalOptions().RegisterValue("s", "Network", "Stratum/wallet server address:port. NOTE: You can also use http://address to connect to local wallet.", [&](const string& val) 
     { 
         SetStratumInfo(val); 
     });
@@ -200,7 +178,7 @@ void GlobalMiningPreset::Initialize(char** argv, int argc)
     CmdLineManager::GlobalOptions().RegisterValue("fop", "Network", "Failover password for stratum or local wallet", [&](const string& val) { m_presets.m_fpass = val; });
     CmdLineManager::GlobalOptions().RegisterValue("r", "Network", "Retries connection count for stratum or local wallet", [&](const string& val) { m_presets.m_maxFarmRetries = ToInt(val); });
     
-    CmdLineManager::GlobalOptions().RegisterValueMultiple("diff", "General", "Set local difficulyu. ex: -diff 0.832", [&](const string& val)
+    CmdLineManager::GlobalOptions().RegisterValueMultiple("diff", "General", "Set local difficulyu. ex: -diff 999", [&](const string& val)
     { 
         m_localDifficulty = ToFloat(val);
         if (m_localDifficulty != 0.0f)
@@ -385,7 +363,7 @@ void GlobalMiningPreset::DoPerformanceTest()
     hashes.resize(ThreadCount);
 
     auto kernelFunc = [&](RandomHash_State* allStates, U32 startNonce, U64 to)
-    {       
+    {
         while (TimeGetMilliSec() < to)
         {
             RandomHash_Search(allStates, out_hash, startNonce);
@@ -399,7 +377,6 @@ void GlobalMiningPreset::DoPerformanceTest()
         for (int i = 0; i < PascalHeaderSize / 4; i++)
             input[i] = _CM(merssen_twister_rand)(&rnd);
 
-        //match DUDA thread #0
         input[PascalHeaderNoncePosV4(PascalHeaderSize) / 4] = 0;
 
         //NOTE: the header must allready be in device mem (via SetWork)
@@ -436,7 +413,7 @@ void GlobalMiningPreset::DoPerformanceTest()
     U64 hashCnt = 0;
     for (auto h : hashes)
         hashCnt += h;
-    PrintOut("RandomHash speed is %.2f H/S \n", hashCnt / (float)g_testPerformance);
+    PrintOut("RandomHash speed is %.2f H/S\n", hashCnt / (float)g_testPerformance);
 
     exit(0);
 }

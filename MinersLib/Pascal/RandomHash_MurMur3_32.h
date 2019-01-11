@@ -69,7 +69,7 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Init)(uint32_t seed, MurmurHash3_x8
             h1 = h1 * 5 + MurmurHash3_x86_32_c3; } 
 
 
-
+/*
 #define INPLACE_M_MurmurHash3_x86_32_Update_1(chunk8)  \
 {                                                      \
     RH_ASSERT(back_idx != 0xDEADBEEF)                \
@@ -86,6 +86,47 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Init)(uint32_t seed, MurmurHash3_x8
     }                                                  \
     back_h1 = h1;                                      \
 }
+*/
+
+#define INPLACE_M_MurmurHash3_x86_32_Update_1(chunk8)  \
+{                                                      \
+    RH_ASSERT(back_idx != 0xDEADBEEF)                \
+    RH_ASSERT(back_idx != 4);                        \
+    back_totalLen++;                                   \
+    back_buf &= ~(0xFF << (back_idx*8));               \
+    back_buf |= (chunk8 << (back_idx*8));              \
+    back_idx++;                                        \
+    if (back_idx == 4)                                 \
+    {                                                  \
+        back_buf *= MurmurHash3_x86_32_c1; \
+        back_buf = ROTL32(back_buf, 15); \
+        back_buf *= MurmurHash3_x86_32_c2; \
+        back_h1 ^= back_buf; \
+        back_h1 = ROTL32(back_h1, 13); \
+        back_h1 = back_h1 * 5 + MurmurHash3_x86_32_c3; \
+        back_idx = 0;                                  \
+        back_buf = 0; \
+    }                                                  \
+}
+
+#define INPLACE_M_MurmurHash3_x86_32_Update_1_NL(b)         \
+{                                                           \
+    U32 chunk8 = b;                                         \
+    chunk8 = chunk8 << (back_idx * 8);                      \
+    back_buf |= chunk8;                                     \
+    back_idx++;                                             \
+    if (back_idx == 4)                                      \
+    {                                                       \
+        back_buf *= MurmurHash3_x86_32_c1;                  \
+        back_buf = ROTL32(back_buf, 15);                    \
+        back_buf *= MurmurHash3_x86_32_c2;                  \
+        back_h1 ^= back_buf;                                \
+        back_h1 = ROTL32(back_h1, 13);                      \
+        back_h1 = back_h1 * 5 + MurmurHash3_x86_32_c3;      \
+        back_idx = 0;                                       \
+        back_buf = 0;                                       \
+    }                                                       \
+}
 
 
 
@@ -93,6 +134,7 @@ void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 chunk64, uint32_t len, Murmu
 {
     RH_ASSERT(len < S32_Max);
     RH_ASSERT(state->idx != 0xDEADBEEF)
+    RH_ASSERT(len <= sizeof(U64));
 
     state->totalLen += len;
     uint32_t h1 = state->h1;
@@ -123,7 +165,6 @@ void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 chunk64, uint32_t len, Murmu
     else
     {
         const int nblocks = len >> 2;
-        //TODO: optimiz - UNROLL 2 !!!
         while (i < nblocks)
         {
             U32 block = (U32)(chunk64 >> (i*32));   //TODO: Manage endianness
@@ -214,6 +255,7 @@ void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 chunk64, uint32_t len, Murmu
 
 #ifdef RANDOMHASH_CUDA
 
+/*
 inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(uint4 data, uint32_t len, MurmurHash3_x86_32_State* state)
 {
     U64 r0, r1;
@@ -227,9 +269,10 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(uint4 data, uint32_t len
     else
         _CM(MurmurHash3_x86_32_Update_8)(r0, len, state);
 }
+*/
 
 #else
-
+/*
 #define RH_M3_GET_BYTE(chunk128, n, b, d)                               \
         d = ((n) & 0x7)*8;                                              \
         switch((n)>>2)                                                  \
@@ -375,6 +418,8 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_16)(__m128i chunk128, uint32
     }                                                                               \
     back_h1 = h1;                                                                   \
 }
+
+*/
 #endif
  
 void CUDA_SYM_DECL(MurmurHash3_x86_32_Update)( const uint8_t* data, int len, MurmurHash3_x86_32_State* state)
@@ -432,7 +477,7 @@ void CUDA_SYM_DECL(MurmurHash3_x86_32_Update)( const uint8_t* data, int len, Mur
     const uint32_t * blocks = (const uint32_t *)(data + a_index);
     while (i < nblocks)
     {
-        MURMUR3_BODY(blocks[i]);  //TODO: optimiz use 64 bit reg with 1 slr in 2 steps
+        MURMUR3_BODY(blocks[i]);
         i++;
     }
 
@@ -488,15 +533,67 @@ inline uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Finalize)( MurmurHash3_x86_32_S
 #ifdef _DEBUG
     state->idx = 0xDEADBEEF;
 #endif
+    
+    return h1;
+}
+
+uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const U8* key, int len)
+{
+    //const uint8_t * data = (const uint8_t*)key;
+    RH_ASSERT((size_t(key)% 8) == 0);
+    uint32_t h1=0;
+
+    //----------
+    // body    
+    S32 n = (len / sizeof(U64)) * sizeof(U64);
+    U32 m = len % sizeof(U64);
+    const U8* keyEnd = key + n;
+    U64 r0; 
+    while (key != keyEnd)
+    {
+        r0 = *(U64*)(key);
+        MURMUR3_BODY((U32)(r0));
+        MURMUR3_BODY((U32)(r0 >> 32));
+        key += sizeof(U64);
+    }
+
+    if (m >= 4)
+    {
+        MURMUR3_BODY(*((U32*)key));
+        key += 4;
+    }
+
+    //----------
+    // tail / finish
+    uint32_t k1 = 0;
+    switch (len & 3)
+    {
+    case 3: k1 ^= key[2] << 16;
+    case 2: k1 ^= key[1] << 8;
+    case 1: k1 ^= key[0];
+        k1 *= MurmurHash3_x86_32_c1; 
+        k1 = ROTL32(k1, 15); 
+        k1 *= MurmurHash3_x86_32_c2; 
+        h1 ^= k1;
+    };
+    
+    //----------
+    h1 ^= len;
+
+    h1 ^= h1 >> 16;
+    h1 *= MurmurHash3_x86_32_c4;
+    h1 ^= h1 >> 13;
+    h1 *= MurmurHash3_x86_32_c5;
+    h1 ^= h1 >> 16;
 
     return h1;
 }
 
-
-uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const void * key, int len, uint32_t h1)
+/*
+uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const void * key, int len)
 {
     const uint8_t * data = (const uint8_t*)key;
-
+    uint32_t h1 = 0;
     //----------
     // body    
     int i = 0;
@@ -534,8 +631,9 @@ uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const void * key, int len, uint3
     h1 *= MurmurHash3_x86_32_c5;
     h1 ^= h1 >> 16;
 
+    extern thread_local U32 _n;
+    DebugOut("#%d = %X\n", _n++, h1);
     return h1;
 }
-
-
+*/
 #endif //RANDOM_HASH_MurMur3_32_h

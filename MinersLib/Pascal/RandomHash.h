@@ -25,19 +25,10 @@ using namespace std;
 
 struct RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_RoundData
 {
-    //Random hash variable instances (device ptrs)
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtr             roundInput;
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtr             otherNonceHeader;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) mersenne_twister_state   rndGen; 
-
-    //ptr to stride instances
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        roundOutputs;
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        parenAndNeighbortOutputs; 
-
-    //Input args pointers (Pushed/Poped)
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtr             in_blockHeader;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        parenAndNeighbortOutputs;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        io_results;
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtr             backup_in_blockHeader;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        backup_io_results;
 };
 
@@ -45,17 +36,30 @@ struct RH_ALIGN(RH_IDEAL_ALIGNMENT) RandomHash_State
 {
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U8                       m_header[PascalHeaderSize]; 
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_RoundData             m_data[RH_N+1];
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) U8                       m_workBytes[RH_WorkSize];
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U8                       m_workBytes[RH_IDEAL_ALIGNMENT+100];
     RH_ALIGN(RH_IDEAL_ALIGNMENT) mersenne_twister_state   m_rndGenCompress;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) mersenne_twister_state   m_rndGenExpand;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_startNonce;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtr             m_stridesInstances;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_stridesAllocIndex;
 
+//NOTE remove once cuda work
+#ifndef __CUDA_ARCH__
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_stridesAllocMidstateBarrier;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_stridesAllocMidstateBarrierNext;
+#endif
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_strideID; //DEBUG only
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U8                       m_roundInput[RH_IDEAL_ALIGNMENT+512];
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        m_round5Phase2PrecalcArray;
 
+//NOTE remove once cuda work
+#ifndef __CUDA_ARCH__
     //CPU ONLY
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) U8*                      m_cachedHheader;
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        m_cachedOutputs;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) bool                     m_isCachedOutputs;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) bool                     m_isNewHeader;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) bool                     m_isMidStateRound;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_midStateNonce;
+#endif    
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      CUDA_SYM(m_skipPhase1);
 };
 

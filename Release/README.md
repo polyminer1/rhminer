@@ -1,6 +1,6 @@
 # rhminer binaries 
 
-**Current version is 1.2** <br>
+**Current version is 1.3 with major optimizations** <br>
 
 
 Prebuilt binaries for the PascalCoin RandomHash miner.<br> 
@@ -17,35 +17,17 @@ Download here : https://github.com/polyminer1/rhminer/releases/<br>
 Windows MD5 : 
 -------------------------------- 
 MD5 for rhminer.exe CPU is 
-b0b6e12aa15ceaadd3c9cae96ba1edd7
+1fb0c8932e7fa945879673cb4b0cca6d
 -------------------------------- 
-MD5 for rhminer.exe Kepler is 
-a9fcae2b1720b55ae0175e936a4ff5c2
--------------------------------- 
-MD5 for rhminer.exe Maxwell is 
-ccadecb828baccc587f1582fcdab9dfd
--------------------------------- 
-MD5 for rhminer.exe Pascal is 
-9fbbb8d1698b497097673ad7f97fbd03
--------------------------------- 
-MD5 for rhminer.exe Volta is 
-6678102745bfba12206f321c5a2ca270
+MD5 for rhminer.exe CPU_OLDGEN is 
+2d4b6179c06c6b9b58e425f1cd18d582
 -------------------------------- 
  
 Linux MD5 
 -------------------------------
 MD5 for rhminer for CPU is :
-e78d5a2f0d8641f82fa267b7d3438ab8
+96556d2d9edf23ee8e7ca9c575f22ef4
 -------------------------------
-MD5 for rhminer for Kepler is :
-c62fd7498292c5b87fcb43d4f9aa1023
--------------------------------
-MD5 for rhminer for Maxwell is :
-e00acc261847116a4b9ae3eba63eea36
--------------------------------
-MD5 for rhminer for Pascal is :
-4ee95cdbd62b3c1a234a5e7491359d97
--------------------------------
-MD5 for rhminer for Volta is :
-4e47215cf9856755233fc95a8cce39e9
+MD5 for rhminer for CPU_OLDGEN is :
+3ca77225f9bd90c7387d361d759975b7
 ``` 
