@@ -789,8 +789,6 @@ inline void CUDA_SYM_DECL(RandomHash_FirstCall_push)(RandomHash_State* state, in
 
 CUDA_DECL_KERNEL void CUDA_SYM(RandomHash_Block0)(RandomHash_State* allStates)
 {
-    _hash++;
-
     CUDA_DECLARE_STATE();
     /*#define RH_B0*/     
     RandomHash_FirstCall_push(state, 5);
