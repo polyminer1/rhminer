@@ -95,32 +95,35 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 * GPU optimizations
 * curl Api for stats and control
 
-## Performances for V0.92
+## Performances for V1.3
 
-| Cpu/GPU                            |  OS        | Threads          | Speed in H/s |
-| -----------------------------------|------------|-----------------:|-------------:|
-| Gtx 1060 3gb                       | Windows 10 | 262              | 109          |  
-| Gtx 1060 6gb (mobile)              | Windows 10 | 570              | 199          |
-| Gtx 1080 11gb                      | Ubuntu     | 400              | 400          |
-| Gtx 950 2gb                        | Windows 7  | 140              | 52           |
-| i7-8750H CPU @ 3.90Hz              | Ubuntu 18  | 11               | 1217         |
-| Ryzen 1800X @ 4GHz                 | Windows 10 | 15               | 1241         |
-| Ryzen 7 2700x 4.1GHz               | Ubuntu     | ?                | 1372         |
-| Xeon x5650@ 2.67GHz                | Linux      | 24               | 716          |
-| Xeon E5 2690 @ 2.4 GHz.            | Ubuntu 18  | 24               | 1347         |
-| Xeon Platinum 8168@ 2.70GHz        | Ubuntu 18  | 32               | 3085         | 
-| i7 7700K  @ 4.2Ghz                 | Windows 10 | 8                | 945          |
-| i7-7500U CPU @ 2.70GHz             | Linux      | 400              | 339 raw      |
-| i7 4770k @ 4.5GHz. Dual chan. DDR3 | Ubuntu     | 8/10             | 1100         |
-| i7-3615QM CPU @ 2.30GHz            | Linux      | 8                | 675 raw      |
-| i7 2600K  @ 3.4Ghz                 | Windows 10 | 8                | 506          |
-| i7-4558U CPU @ 2.80GHz             | Linux Mint | 4                | 342          |
-| i5-4460 CPU @ 3.20GHz              | Windows 10 | 4                | 511          |
-| i5-3337U CPU @ 1.80GHz             | Windows 10 | 4                | 245          |
-| i5-2400 CPU @ 3.10GHz              | Ubuntu 18  | 4                | 303          |
-| i3-4030U CPU @ 1.90GHz             | Linux      | 400              | 201 raw      |
-| Core(TM) 2 Duo 6300 @ 1.86GHz      | Windows 7  | 2                | 92           |
-| Core(TM) 2 QuadCore Q6600@2.40GHz  | windows 7  | 4                | 163          |
+| Cpu/GPU                                |  OS        | Threads          | Speed in H/s |
+| ---------------------------------------|------------|-----------------:|-------------:|
+|  i5-7500 CPU @ 3.40GHz                 | Win10      |    4             |   1112       |
+|  i5-3337U CPU @ 1.80GHz                | Win10      |    4             |    417       |
+|  i5-2400 CPU @ 3.1 GHz                 | Win10      |    4             |    791       |
+|  Xeon(R) CPU W3520 @ 2.67GHz           | Win10      |    8             |    819       |
+|  Xeon(R) CPU E5-2665 0 @ 2.40GH        | Win10      |   16             |   1645       |
+|  Xeon(r) CPU E5-2630v4                 | ?          |   14             |   1900       |
+|  Xeon(r) CPU E5-2420v2 on Hyper-V      | ?          |    8             |    800       |
+|  Xeon(R) CPU X5650 @ 2.67GHz           | ?          |   24             |   2357       |
+|  Ryzen 1800x                           | Win10      |   16             |   2560       |
+|  Ryzen Threadripper 1950X              | Linux      |   32             |   **5370**   |
+|  Core(TM) 2 QuadCore Q6600 @ 2.40GHz   | Win7       |    4             |    397       |
+|  ntel Atom X7                          | ?          |    4             |    240       |
+
+
+ 
+
+## Performance for v.1.1.1 on CUDA
+
+| GPU                                    |  OS        | Threads           | Speed in H/s |
+| ---------------------------------------|------------|------------------:|-------------:|
+| Gtx 1060 3gb                           | Windows 10 |  262              | 109          |  
+| Gtx 1060 6gb (mobile)                  | Windows 10 |  570              | 199          |
+| Gtx 1080 11gb                          | Ubuntu     |  400              | 400          |
+| Gtx 950 2gb                            | Windows 7  |  140              | 52           |
+
 
 note: raw is for raw performance on all hyper-threads. This does not represent real life performance.
 
