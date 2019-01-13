@@ -97,21 +97,28 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 
 ## Performances for V1.3
 
-| Cpu/GPU                                |  OS        | Threads          | Speed in H/s |
-| ---------------------------------------|------------|-----------------:|-------------:|
-|  i5-7500 CPU @ 3.40GHz                 | Win10      |    4             |   1112       |
-|  i5-3337U CPU @ 1.80GHz                | Win10      |    4             |    417       |
-|  i5-2400 CPU @ 3.1 GHz                 | Win10      |    4             |    791       |
-|  Xeon(R) CPU W3520 @ 2.67GHz           | Win10      |    8             |    819       |
-|  Xeon(R) CPU E5-2665 0 @ 2.40GH        | Win10      |   16             |   1645       |
-|  Xeon(r) CPU E5-2630v4                 | ?          |   14             |   1900       |
-|  Xeon(r) CPU E5-2420v2 on Hyper-V      | ?          |    8             |    800       |
-|  Xeon(R) CPU X5650 @ 2.67GHz           | ?          |   24             |   2357       |
-|  Ryzen 1800x                           | Win10      |   16             |   2560       |
-|  Ryzen Threadripper 1950X              | Linux      |   32             |   **5370**   |
-|  Core(TM) 2 QuadCore Q6600 @ 2.40GHz   | Win7       |    4             |    397       |
-|  ntel Atom X7                          | ?          |    4             |    240       |
-
+| Cpu/GPU                                |  OS        | Threads      | Speed in H/s |   Extra infos                                   |
+| ---------------------------------------|------------|-------------:|-------------:|-------------------------------------------------|
+|  i5-7500 CPU @ 3.40GHz                 | Win10      |    4         |   1112       |                                                 |
+|  i5-3337U CPU @ 1.80GHz                | Win10      |    4         |    417       |                                                 |
+|  i5-2400 CPU @ 3.1 GHz                 | Win10      |    4         |    791       |                                                 |
+|  i7-4770                               | Linux      |    8         |   1070       |                                                 |
+|  i7-7700K @ 4.7 GHz                    | Ubuntu     |    8         |   2107       | dual ddr4 3200 memory                           |
+|  i7-6700K @ 4.6 GHz                    | Ubuntu     |    8         |   2054       | dual ddr4 3200 memory                           |
+|  Xeon(R) CPU W3520 @ 2.67GHz           | Win10      |    8         |    819       |                                                 |
+|  Xeon(R) CPU E5-2665 0 @ 2.40GH        | Win10      |   16         |   1645       |                                                 |
+|  Xeon(r) CPU E5-2630v4                 | ?          |   14         |   1900       |                                                 |
+|  Xeon(r) CPU E5-2420v2 on Hyper-V      | ?          |    8         |    800       |                                                 |
+|  Xeon(R) CPU X5650 @ 2.67GHz           | ?          |   24         |   2357       |                                                 |
+|  Ryzen 1800x                           | Win10      |   16         |   2560       |                                                 |
+|  Ryzen threadripper 1950X @ 3.4 Ghz    | Ubuntu     |   32         |   **5378**   | sseboost 1, Quad Channel ddr4 3200mhz memory    |
+|  Ryzen 2700 @ 3.4 GHz                  | Ubuntu     |    6         |   2856       | sseboost 1, Quad Channel ddr4 3200mhz memory    |
+|  Core(TM) 2 QuadCore Q6600 @ 2.40GHz   | Win7       |    4         |    397       |                                                 |
+|  Intel Atom X7                         | ?          |    4         |    240       |                                                 |
+|  Intel Pentium 4400 @3.3Ghz            | Win10      |    2         |    504       | dual ddr4 2400 memory                           |
+|  Intel Celeron 3930 @2.9GHz            | Win10      |    2         |    447       | mono ddr4 2400 memory                           |
+|  AMD PHENOM-II-X6 @ 3.25Ghz            | Win10      |    6         |    564       | oldgen, ddr3 memory                             |
+|  AMD PHENOM-II-X4 @ 3.6 GHz            | Ubuntu     |    4         |    460       | oldgen, ddr3 memory                             |
 
  
 
