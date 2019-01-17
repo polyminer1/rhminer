@@ -103,15 +103,17 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 |  i5-3337U CPU @ 1.80GHz                | Win10      |    4         |    417       |                                       |
 |  i5-2400 CPU @ 3.1 GHz                 | Win10      |    4         |    791       |                                       |
 |  i7-4770                               | Linux      |    8         |   1070       |                                       |
+|  i7-4770 @ 3.7 GHz                     | Win10      |    8         |   1344       | dual ddr3 1333 memory                 |
 |  i7-4770K @ 4.5 GHz                    | Kali       |    8         |   1841       |                                       |
 |  i7-7700K @ 4.7 GHz                    | Ubuntu     |    8         |   2107       | dual ddr4 3200 memory                 |
-|  i7-6700K @ 4.6 GHz                    | Ubuntu     |    8         |   2054       | dual ddr4 3200 memory                 |
+|  i7-6700K @ 4.6 GHz                    | Ubuntu     |    8         |   1755       | dual ddr4 3200 memory                 |
 |  Xeon(R) CPU W3520 @ 2.67GHz           | Win10      |    8         |    819       |                                       |
 |  Xeon(R) CPU E5-2665 0 @ 2.40GH        | Win10      |   16         |   1645       |                                       |
 |  Xeon(r) CPU E5-2630v4                 | ?          |   14         |   1900       |                                       |
 |  Xeon(r) CPU E5-2420v2 on Hyper-V      | ?          |    8         |    800       |                                       |
 |  Xeon(R) CPU X5650 @ 2.67GHz           | ?          |   24         |   2357       |                                       |
 |  Xeon 12 core ES v3 E5 @ 2.7 GHz       | Kali       |   25         |   3400       |                                       |
+|  Xeon(R) Platinum 8168 CPU @ 2.70GHz   | ?          |   32         |   **7162**   |                                       |   
 |  Ryzen 1800x                           | Win10      |   16         |   2560       |                                       |
 |  Ryzen threadripper 1950X @ 3.4 Ghz    | Ubuntu     |   32         |   **5378**   | sseboost 1, Quad Channel ddr4 3200mhz |
 |  Ryzen 2700 @ 3.4 GHz                  | Ubuntu     |    6         |   2856       | sseboost 1, Quad Channel ddr4 3200mhz |
