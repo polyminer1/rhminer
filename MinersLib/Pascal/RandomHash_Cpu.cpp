@@ -1104,7 +1104,6 @@ void RandomHash_Alloc(void** out_ptr, size_t size)
 
 void RandomHash_Search(RandomHash_State* in_state, U8* out_hash, U32 startNonce)
 {
-    _n = 0;
     RandomHash_State* allStates = in_state;
     RandomHash_Init(allStates, out_hash, startNonce);
     RH_CALL_ALL_KERNEL_BLOCKS
