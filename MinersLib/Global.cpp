@@ -97,6 +97,29 @@ GlobalMiningPreset::GlobalMiningPreset()
         }
     });
 #endif //RH_COMPILE_CPU_ONLY
+    CmdLineManager::GlobalOptions().RegisterValue("devfee", "General", "Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.", [&](const string& val)
+    {
+        if (val == "0" || val == "0.0")
+            m_devfeePercent = 0.0f;
+        else
+        {
+            for(auto c : val)
+            {
+                if (!((c >= '0' && c <= '9') || c == '.'))
+                {
+                    m_devfeePercent = 1.0f;
+                    return;
+                }
+            }
+            m_devfeePercent = ToFloat(val);
+
+            if (m_devfeePercent > 50.0f)
+                m_devfeePercent = 50.0f;
+
+            if (m_devfeePercent < 1.0f)
+                m_devfeePercent = 1.0f;
+        }
+    });
 
     CmdLineManager::GlobalOptions().RegisterFlag("list", "General", "List all gpu in the system", [&]() 
     {
