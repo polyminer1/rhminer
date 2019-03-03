@@ -1,5 +1,17 @@
 # rhminer update and bugfix history
 
+Version 1.4 - 3 march 2910
+*Major gpu optimizations:
+    Gtx 1060 3gb 280 threads +196%
+    Gtx 1070 8gb 384 threads +218%
+    gtx 950 2gb 140 threads +226% [linux]
+* Fix : On linux, rhminer stall for ever when network is lost (cable unplug or switch/router crashes). 
+* Fix : On very rare occasions, rhminer would stall at startup.
+* Fix : Opensource pool bug where work-ID stuck to the same ID, creating many invalid shares.
+* Fix : Duplicate/stale shares was high on cpu with with core count. 
+* Add -configfile option with a config.xml example
+* Add extra option (+) to -cputhreads to enable mining on more threads that system's core/hyperthreads count (ex: on a i5 with 4 core -threadcount +7 will mine on 7 threads instead of 4)
+
 Version 1.3 - 11 Jan 2019
 *Major CPU optimizations. Up to 260% on some CPU
 * +155% on Xeon E52665

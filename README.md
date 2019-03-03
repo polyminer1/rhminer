@@ -139,14 +139,13 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 
 **NOTE: I do not recommend to overclock your cpu. If you do it, it's at your own risk.**
 
-## Performance for v.1.1.1 on CUDA
+## Performance for v.1.4 on CUDA
 
-| GPU                                    |  OS        | Threads           | Speed in H/s |
-| ---------------------------------------|------------|------------------:|-------------:|
-| Gtx 1060 3gb                           | Windows 10 |  262              | 109          |  
-| Gtx 1060 6gb (mobile)                  | Windows 10 |  570              | 199          |
-| Gtx 1080 11gb                          | Ubuntu     |  400              | 400          |
-| Gtx 950 2gb                            | Windows 7  |  140              | 52           |
+| GPU                                    |  OS        | Threads      | Speed in H/s |
+| ---------------------------------------|------------|-------------:|-------------:|
+|   gtx 950 2gb                          | Windows    |    140       |    140       |
+|   Gtx 1060 3gb                         | Windows    |    280       |    305       |
+|   Gtx 1070 8gb                         | Windows    |    384       |    467       |
 
 note: raw is for raw performance on all hyper-threads. This does not represent real life performance.
 
