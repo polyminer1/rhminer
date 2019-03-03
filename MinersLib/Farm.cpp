@@ -25,6 +25,7 @@ void Farm::SetWork(PascalWorkSptr _wp)
 	Guard l(m_farmData.m_workMutex);
     if (m_farmData.m_work.get() && m_farmData.m_work->IsSame(_wp.get()))
     {
+        PrintOutWarning("Warning: Identical work package received.\n");
         //resume miners if their where paused
 	    for (auto const& m: m_miners)
         {
@@ -331,7 +332,7 @@ void Farm::AddRejectedSolution(int gpuAbsIndex)
     m_farmData.m_solutionStats.rejected(gpuAbsIndex); 
     
     if (m_farmData.m_lastRejectedTimeMS &&
-        (TimeGetMilliSec() - m_farmData.m_lastRejectedTimeMS) > 5 * 60000)
+        (TimeGetMilliSec() - m_farmData.m_lastRejectedTimeMS) > 15 * 60000)
     {
         m_farmData.m_consecutiveRejectedCount = 0;
     }

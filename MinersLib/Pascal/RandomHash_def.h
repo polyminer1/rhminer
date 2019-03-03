@@ -50,7 +50,7 @@
 //#define RH_STRIDE_BANK_SIZE (RH_StrideSize * RH_TOTAL_STRIDES_INSTANCES)
 #define RH_STRIDE_BANK_SIZE 5033984
 
-#define RH_GET_MEMBER_POS(STRUCT, MEMBER)  (size_t)(void*)&((STRUCT*)0)->MEMBER
+#define RH_GET_MEMBER_POS(STRUCT, MEMBER)  (U32)((size_t)(void*)&(((STRUCT*)0)->MEMBER))
 
 #define copy4(dst, src) {(dst)[0] = (src)[0]; \
                          (dst)[1] = (src)[1]; \
@@ -87,8 +87,7 @@
                                 (dst)[4] = op((src)[4]); \
                                 (dst)[5] = op((src)[5]);} \
 
-
-#ifdef RHMINER_PLATFORM_CPU
+#ifndef __CUDA_ARCH__
 
 template<unsigned i>
 inline U32 _mm_extract_epi32_( __m128i V)
@@ -97,10 +96,21 @@ inline U32 _mm_extract_epi32_( __m128i V)
     return (U32)_mm_cvtsi128_si32(V);
 }
 
+#if defined(RANDOMHASH_CUDA) || defined(RHMINER_NO_SSE4)
+    #define _mm_extract_epi32_M(V, I) _mm_extract_epi32_<I>(V)
+#else
+    #define _mm_extract_epi32_M(V, I) _mm_extract_epi32(V, I)
+#endif
+
+
 #define RH_MM_LOAD128           _mm_loadu_si128
 #define RH_MM_STORE128          _mm_storeu_si128
 #define TH_MM_STREAM_STORE128   _mm_storeu_si128
 #define RH_MM_BARRIER           void
+
+#endif
+
+#ifdef RHMINER_PLATFORM_CPU
 
 #ifndef RotateLeft8
 #define _rotr8(x,n)	    ((U8)(((x) >> (n)) | ((x) << (8 - (n)))))
@@ -138,7 +148,7 @@ inline U32 _mm_extract_epi32_( __m128i V)
             m_tmp = _mm_srli_epi32(m_tmp,(32-count)); \
             m = _mm_or_si128(m,m_tmp);}
 
-
+    #define RH_PREFETCH_MEM(addr) _mm_prefetch((char*)addr,_MM_HINT_T0);
     #define BIG_CONSTANT(x) (x)
     #define KERNEL_LOG(...) PrintOutCritical(__VA_ARGS__)
     #define KERNEL0_LOG(...) PrintOutCritical(__VA_ARGS__)
@@ -146,11 +156,24 @@ inline U32 _mm_extract_epi32_( __m128i V)
     #define KERNEL_GET_GID() 0
 
 #elif defined(RHMINER_PLATFORM_CUDA)
-#ifdef __CUDA_ARCH__
+    #if (defined(_MSC_VER) && defined(_WIN64)) || defined(__LP64__)
+        #define PXL_GLOBAL_PTR   "l"
+    #else
+        #define PXL_GLOBAL_PTR   "r"
+    #endif
+
+  #ifdef __CUDA_ARCH__
     #define KERNEL0_LOG(...) {if (KERNEL_GET_GID() == 0) {printf(__VA_ARGS__);}}
     #define RH_DEVICE_BARRIER() 
     #define RH_CUDA_ERROR_CHECK()
-#else
+    
+    #define RH_PREFETCH_MEM(addr) asm("prefetch.global.L1 [%0];" : : PXL_GLOBAL_PTR(addr));
+    //#define RH_PREFETCH_MEM(addr) asm("prefetchu.L1 [%0];" : : PXL_GLOBAL_PTR(addr));
+    //#define RH_PREFETCH_MEM(addr) asm("prefetch.global.L2 [%0];" : : PXL_GLOBAL_PTR(addr));
+
+  #else
+    #define RH_PREFETCH_MEM(addr)
+
     #define RH_CUDA_ERROR_CHECK() \
     {  \
         cudaError_t err = ::cudaGetLastError(); \
@@ -159,7 +182,7 @@ inline U32 _mm_extract_epi32_( __m128i V)
     }
     #define KERNEL0_LOG(...) printf(__VA_ARGS__)
     #define RH_DEVICE_BARRIER() CUDA_SAFE_CALL(cudaDeviceSynchronize())
-#endif
+  #endif
 
     #define KERNEL_LOG(...) printf(__VA_ARGS__)
 
@@ -200,6 +223,26 @@ inline U32 _mm_extract_epi32_( __m128i V)
     #define BIG_CONSTANT(x) (x##LLU)
 #endif
 
+template <typename T>
+CUDA_DECL_HOST_AND_DEVICE inline void cuSetMember(void* ptr, U32 memberPos, T VAL) 
+{
+#ifdef RANDOMHASH_CUDA
+  #ifdef __CUDA_ARCH__
+    *(T*)(((U8*)ptr) + memberPos) = VAL;
+  #else
+    cudaMemcpy((((U8*)ptr) + memberPos), &VAL, sizeof(T), cudaMemcpyHostToDevice);
+  #endif
+#else
+    *(T*)(((U8*)ptr) + memberPos) = VAL;
+#endif
+}
+
+template <typename T>
+CUDA_DECL_HOST_AND_DEVICE inline void* cuGetMemberPtr(T* ptr, U32 memberPos) 
+{
+    return (void*)(((U8*)ptr) + memberPos);
+}
+
 
 //--------------------------------------------------------------
 #define RH_memzero_8(ptr, size)             \
@@ -210,7 +253,9 @@ inline U32 _mm_extract_epi32_( __m128i V)
         *buf = 0;                           \
     }
 
+
 #if !defined(RANDOMHASH_CUDA)
+
     #define RH_memzero_16(ptr, size)            \
     {                                           \
         RH_ASSERT((size_t(ptr) % 32) == 0);     \

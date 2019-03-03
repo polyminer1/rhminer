@@ -28,7 +28,7 @@
 #include "utils.h"
 
 
-//Enable C3 on cpu only. To bootstrap the chain.
+//Enable V3 on cpu only. To bootstrap the chain.
 //#define RH_FORCE_PASCAL_V3_ON_CPU
 
 struct PascalSolution;
@@ -57,6 +57,7 @@ struct PascalWorkPackage
 
     string          m_jobID;
     string          m_ntime;   
+    U64             m_initTimeMS = 0;
     h256            m_prev_hash;
     U64             m_startNonce = 0; 
     mutable h256    m_boundary;                
@@ -74,7 +75,8 @@ struct PascalWorkPackage
     bool            m_clean = false;
     U64             m_nonce2_64 = 0;
     string          m_server;
-    
+    std::set<U64>   m_submittedNonces;
+
     //solo stuff
     bool            m_isSolo = false;
 };
@@ -87,7 +89,7 @@ struct PascalSolution
     bool                Eval() { return m_work->Eval(this);  }
         
     h256                m_calcHash;
-    std::vector<U64>    m_results; 
+    std::vector<U64>    m_results;
     U32                 m_gpuIndex = 0;
     bool                m_isFromCpuMiner = false;
     PascalWorkSptr      m_work;

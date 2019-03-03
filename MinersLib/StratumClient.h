@@ -27,12 +27,12 @@
 #include "MinersLib/Global.h"
 #include "BuildInfo.h"
     
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("dar", g_DisableAutoReconnect, "Network", "Disable auto-reconnect on connection lost. Note : The miner will exit uppon loosing connection. ")
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("maxsubmiterrors", g_maxConsecutiveSubmitErrors, "General", "Stop the miner when a number of consecutive submit errors occured. Default is 10 consecutive errors. This is usefull when mining into local wallet.", 3, 65535);
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("forcesequentialnonce", g_forceSequentialNonce, "Debug", "(For debugging purpose) Force search nonce to be sequential, starting at 0. WARNING: This will gerate alot of uncle and refused solutions.")
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("disablecachednoncereuse", g_disableCachedNonceReuse, "Debug", "(For debugging purpose) Disable RandomHash cached nonce reuse. This will lower hashrate substantially.")
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("dar", g_DisableAutoReconnect, "Network", "Disable auto-reconnect on connection lost.\nNote : The miner will exit uppon loosing connection. ")
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("maxsubmiterrors", g_maxConsecutiveSubmitErrors, "General", "Stop the miner when a number of consecutive submit errors occured.\nDefault is 10 consecutive errors.\nThis is usefull when mining into local wallet.", 3, 65535);
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("forcesequentialnonce", g_forceSequentialNonce, "Debug", "(For debugging purpose) Force search nonce to be sequential, starting at 0.\nWARNING: This will gerate alot of uncle and refused solutions.")
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("disablecachednoncereuse", g_disableCachedNonceReuse, "Debug", "(For debugging purpose) Disable RandomHash cached nonce reuse.\nThis will lower hashrate substantially.")
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_STRING("extrapayload", g_extraPayload, "General", "An extra payload to be added when submiting solution to local wallet.")
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("apiport", g_apiPort, "General", "Tcp port of the remote api. Default port is 71111. Set to 0 to disable server", 0, 32768)
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("apiport", g_apiPort, "General", "Tcp port of the remote api.\nDefault port is 7111.\nSet to 0 to disable server", 0, 32768)
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("worktimeout", g_workTimeout, "General", "No new work timeout. Default is 60 seconds", 0, 1000)
 
 using namespace std;
@@ -173,7 +173,6 @@ protected:
     U32   m_processedResponsesCount = 0;
 	Farm* m_farm;
     std::mutex m_reconnMutex;
-	mutex m_currentMutex;
 	
     boost::asio::io_service m_io_service;
 	tcp::socket             m_socket;
@@ -211,8 +210,9 @@ protected:
         U32     unixTime;
     };
     std::vector<PastWorkInfo>   m_workBacklog;
+
     std::mutex                  m_workBacklogMutex;
-    static const int            MaxBackLogCount = 6;
+    static const int            MaxBackLogCount = 12;
     
     std::mutex      m_currentWorkMutex;
     PascalWorkSptr  m_current; //these are clones of the one sent to the miners

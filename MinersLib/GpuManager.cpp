@@ -44,6 +44,7 @@
 std::vector<GpuManager::GPUInfos>  GpuManager::Gpus;
 CPUInfo                            GpuManager::CpuInfos;
 bool                               g_isSSE3Supported = false;
+bool                               g_isSSE4Supported = false;
 
 GpuManager::GpuManager()
 {
@@ -297,6 +298,12 @@ void GpuManager::SetPostCommandLineOptions()
 #ifdef RHMINER_ENABLE_SSE4
     if (g_sseOptimization > 2)
         g_sseOptimization = 2;
+
+    #if defined(RHMINER_COND_SSE4)
+    g_sseOptimization = 0;
+    #endif
+
+
 #else
     if (g_sseOptimization)
         PrintOut("SSE4 not available in this binary. -sseboost option ignored. \n");
@@ -751,17 +758,17 @@ void GpuManager::TestExtraInstructions()
 	}
     
     g_isSSE3Supported = CpuInfos.sse3Supportted;
+    g_isSSE4Supported = CpuInfos.sse4_1Supportted;
     PrintOutSilent("SSe3   supported : %s\n", CpuInfos.sse3Supportted ? "Yes" : "No");
     PrintOutSilent("SSe4.1 supported : %s\n", CpuInfos.sse4_1Supportted ? "Yes" : "No");
     PrintOutSilent("avx    supported : %s\n", CpuInfos.avxSupportted ? "Yes" : "No");	
 
-#if defined(RHMINER_ENABLE_SSE4)
+#if defined(RHMINER_ENABLE_SSE4) && !defined(RHMINER_COND_SSE4)
     if (!CpuInfos.sse4_1Supportted)
     {
         PrintOutCritical("SSE4 is not supported by this CPU. Please use rhminer for oldgen cpu\n");
         exit( 1);
     }
-
 #endif
 }
 
@@ -856,6 +863,4 @@ void GpuManager::LoadCPUInfos()
     CpuInfos.cpuBrandName = brand;
 
     TestExtraInstructions();
-
-    PrintOutSilent("%s with %d logical cores on %d physical cores\n", CpuInfos.cpuBrandName.c_str(), CpuInfos.numberOfProcessors, CpuInfos.numberOfCores);
 }

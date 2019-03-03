@@ -26,7 +26,7 @@
 #include "cuda_runtime.h"
 #endif
 
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("v", g_logVerbosity, "General", "Log verbosity. From 0 to 3. 0 no log, 1 normal log, 2 include warnings. 3 network (only in log file). Default is 1",0, 3);
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("v", g_logVerbosity, "General", "Log verbosity. From 0 to 3.\n0 no log, 1 normal log, 2 include warnings. 3 network and silent logs.\nDefault is 1",0, 3);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_logVerbosity, 1)
 bool g_ExitApplication = false;
 
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
         printf("WSAStartup() failed with Error. %d\n", iResult);
         return 1;
     }
-    
+
 #endif
 
     // Set env vars controlling GPU driver behavior.
@@ -90,15 +90,25 @@ int main(int argc, char** argv)
 	setenv("GPU_SINGLE_ALLOC_PERCENT", "100");
     rand32_reseed((U32)(TimeGetMilliSec())^0xF5E8A1C4);
 
-    //Preparse log file name cuz we need it prior init
+    //Preparse log file and config filename name cuz we need it prior init
     for (int i = 0; i < argc; i++)
     {
         if (stristr(argv[i], "logfilename") && i+1 < argc)
         {
             SetLogFileName(argv[i + 1]);
-            break;
+        }
+        
+        if (strcmp(argv[i], "-v") == 0 && i+1 < argc)
+        {
+            g_logVerbosity = ToUInt(argv[i + 1]);
+        }
+
+        if (stristr(argv[i], "configfile") && i+1 < argc)
+        {
+            CmdLineManager::LoadFromXml(argv[i + 1]);
         }
     }
+
 
     GlobalMiningPreset::I().Initialize(argv, argc);
 
@@ -121,11 +131,7 @@ int main(int argc, char** argv)
 
     KernelOffsetManager::Reset(0);
 
-#if defined(_DEBUG) || 0
-    extern void RunUnitTests();
-    RunUnitTests();
-    return 0;
-#endif
+
     
 #ifdef _WIN32_WINNT
     if (g_setProcessPrio == 0)

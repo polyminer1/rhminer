@@ -36,10 +36,10 @@ struct CPUKernelData
         RH_ALIGN(64) U64          m_startNonce;
         RH_ALIGN(64) U64          m_headerSize;
         RH_ALIGN(64) U8           m_work1[256];       //return state for RandomHash
-        RH_ALIGN(64) U8           m_work2[256];       //temp swapb buffer
+        RH_ALIGN(64) U8           m_work2[256];       
     };
     
-    static const int PackagesCount = 4;
+    static const int PackagesCount = 16;
     RH_ALIGN(64) U64             m_hashes = 0;
     RH_ALIGN(64) DataPackage     m_packages[PackagesCount];
     RH_ALIGN(64) U32             m_abortThread = 0;

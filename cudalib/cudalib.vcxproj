@@ -151,6 +151,7 @@
       <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">Speed</FavorSizeOrSpeed>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">false</BufferSecurityCheck>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -175,6 +176,8 @@
       <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">Speed</FavorSizeOrSpeed>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">false</BufferSecurityCheck>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">Full</Optimization>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -183,12 +186,14 @@
       <OutputFile>$(OutDir)/cudalib.exe</OutputFile>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_60,sm_60;compute_61,sm_61;compute_62,sm_62</CodeGeneration>
+      <CodeGeneration>compute_60,sm_60;compute_61,sm_61;compute_62,sm_62;</CodeGeneration>
       <AdditionalOptions>-Xcompiler "/wd 4819" %(AdditionalOptions)</AdditionalOptions>
       <Include>./;../../common/inc;../MinersLib/</Include>
       <Defines>WIN32;</Defines>
       <TargetMachinePlatform Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">64</TargetMachinePlatform>
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">false</GPUDebugInfo>
+      <HostDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">true</HostDebugInfo>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">O3</Optimization>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release_Volta'">
@@ -200,6 +205,7 @@
       <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">Speed</FavorSizeOrSpeed>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">false</BufferSecurityCheck>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -224,6 +230,7 @@
       <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">Speed</FavorSizeOrSpeed>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">false</BufferSecurityCheck>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -249,6 +256,7 @@
       <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Release_CPU_OLDGEN|x64'">Speed</FavorSizeOrSpeed>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Release_CPU_OLDGEN|x64'">MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Release_CPU_OLDGEN|x64'">false</BufferSecurityCheck>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release_CPU_OLDGEN|x64'">None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -274,6 +282,7 @@
       <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">Speed</FavorSizeOrSpeed>
       <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">false</BufferSecurityCheck>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -324,6 +333,9 @@
       <HostDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</HostDebugInfo>
       <Keep Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">true</Keep>
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">compute_30,sm_30;compute_35,sm_35;compute_37,sm_37;</CodeGeneration>
+      <AdditionalCompilerOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </AdditionalCompilerOptions>
+      <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">compute_61,sm_61</CodeGeneration>
     </CudaCompile>
     <CudaCompile Include="RandomHash_DEV_CUDA.cu">
       <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">WIN32;RANDOMHASH_CUDA;</Defines>

@@ -28,15 +28,17 @@
 #include "MinersLib/Pascal/RandomHashHostCudaMiner.h"
 #endif
 
-RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_logFileName, "");
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_logFileNameDummy, "");
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_configFileNameDummy, "");
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_useCPU, false);
-RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_cpuMinerThreads, 1);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformance, 0);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformanceThreads, 0);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 3);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_memoryBoostLevel, RH_OPT_UNSET);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_sseOptimization, 0); 
 bool g_useGPU = false;
+U32  g_cpuMinerThreads = 1;
+bool g_disableMaxGpuThreadSafety = false;
 
 const U64 t1M = 1000 * 60;
 const U64 t1H = t1M * 60;
@@ -115,7 +117,7 @@ GlobalMiningPreset::GlobalMiningPreset()
 
             if (m_devfeePercent > 50.0f)
                 m_devfeePercent = 50.0f;
-
+            
             if (m_devfeePercent < 1.0f)
                 m_devfeePercent = 1.0f;
         }
@@ -189,7 +191,7 @@ void GlobalMiningPreset::SetStratumInfo(const string& val)
 
 void GlobalMiningPreset::Initialize(char** argv, int argc)
 {
-    CmdLineManager::GlobalOptions().RegisterValue("s", "Network", "Stratum/wallet server address:port. NOTE: You can also use http://address to connect to local wallet.", [&](const string& val) 
+    CmdLineManager::GlobalOptions().RegisterValue("s", "Network", "Stratum/wallet server address:port.\nNOTE: You can also use http://address to connect to local wallet.", [&](const string& val) 
     { 
         SetStratumInfo(val); 
     });
@@ -208,8 +210,19 @@ void GlobalMiningPreset::Initialize(char** argv, int argc)
             PrintOut("Setting local difficulty to %.4f\n", m_localDifficulty);
     });
 
+    CmdLineManager::GlobalOptions().RegisterValueMultiple("cputhreads", "Gpu", "Number of CPU miner threads when mining with CPU. ex: -cpu -cputhreads 4.\nNOTE: adding + before thread count will disable the maximum thread count safety of one thread per core/hyperthread.\nUse this option at your own risk.", [&](const string& val)
+    {
+        string cmt = val;
+        if (cmt.length() && cmt[0] == '+')
+        {
+            g_disableMaxGpuThreadSafety = true;
+            cmt = cmt.substr(1);
+        }
 
-    CmdLineManager::GlobalOptions().RegisterValueMultiple("processorsaffinity", "General", "On windows only. Force miner to only run on selected logical core processors. ex: -processorsaffinity 0,3 will make the miner run only on logical core #0 and #3. WARNING: Changing this value will affect GPU mining.", [&](const string& val)
+        g_cpuMinerThreads = ToUInt(cmt);
+    });
+
+    CmdLineManager::GlobalOptions().RegisterValueMultiple("processorsaffinity", "General", "On windows only. Force miner to only run on selected logical core processors.\nex: -processorsaffinity 0,3 will make the miner run only on logical core #0 and #3.\nWARNING: Changing this value will affect GPU mining.", [&](const string& val)
     { 
 #ifdef _WIN32_WINNT
         CmdLineManager::GlobalOptions().PreParseSymbol("cputhreads");
@@ -258,10 +271,12 @@ bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
 {
     std::lock_guard<std::mutex> g(*devFeeMutex);
 
+    //TODO: change that to lower time, it causes sopt-mining-emails from nanopool
+
     if (TimeGetMilliSec() > m_devFeeTimer24hMS)
     {
         U64 nowMS = TimeGetMilliSec();
-        rand32_reseed((U32)(nowMS));
+        rand32_reseed((U32)(nowMS^0xB8BDA50F));
 
         m_devFeeTimer24hMS = nowMS + t24H;
         m_nextDevFeeTimesMS.clear();
@@ -274,6 +289,7 @@ bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
             nextDevTime = nowMS + GetTimeRangeRnd((15 * t1M), (55 * t1M)-devPeriod);
         
         m_nextDevFeeTimesMS.push_back(nextDevTime);
+        U32 maxItt = 0;
         while(m_nextDevFeeTimesMS.size() < 4)
         {
             int k;
@@ -288,6 +304,13 @@ bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
             } 
             if (k == (int)m_nextDevFeeTimesMS.size())
                 m_nextDevFeeTimesMS.push_back(val); 
+            
+            maxItt++;
+            if (maxItt == 1024)
+            {
+                rand32_reseed((U32)(TimeGetMilliSec()^0xF862AE69));
+                maxItt = 0;
+            }
         }
         std::sort(m_nextDevFeeTimesMS.begin(), m_nextDevFeeTimesMS.end(),[](U64&s1, U64& s2) { return s1 < s2; });
     }

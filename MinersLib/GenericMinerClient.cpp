@@ -215,9 +215,11 @@ void GenericMinerClient::doStratum()
                 {
                     PrintOut("WorkTimeout reached. No new work received after %u seconds.\n",  g_workTimeout);
                     if (m_stratumClient.get())
+#ifdef _WIN32_WINNT
                         m_stratumClient->CloseConnection();
                     else
-                        RHMINER_EXIT_APP("Not Connected\n");
+#endif
+                        RHMINER_EXIT_APP("Connection timeout.\n");
                 }
                 CpuSleep(1000);
             }
