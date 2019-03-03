@@ -90,4 +90,6 @@ inline std::size_t RH_ReadLine(SyncReadStream& s,
   boost::asio::detail::throw_error(ec, "RH_ReadLine");
   return bytes_transferred;
 }
-}}
+
+}
+}

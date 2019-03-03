@@ -319,6 +319,7 @@ void PrintOutSilent(const char *szFormat, ...)
         GlobalOutputMutex()->lock();
         const char* str = GetOutputDecoration(szBuffer);
         _PrintToLog(str);
+
 #if defined(RHMINER_DEBUG) || defined(RH_OUTPUT_TO_DEBUGGER)
         OutputDebugStringA(str);
 #endif
@@ -780,6 +781,26 @@ double le256todouble(const void *target)
 }
 
 
+
+//return U64_Max if file does not exists !!!
+U64 GetFileSize(const char* name) 
+{
+#ifdef _WIN32_WINNT
+    struct _stat64 buf;
+    if (_stat64(name, &buf) != 0)
+        return U64_Max; // error, could use errno to find out more
+
+    return buf.st_size;
+#else
+    struct stat buf;
+    if (stat(name, &buf) != 0)
+        return U64_Max; // error, could use errno to find out more
+
+    return buf.st_size;
+#endif
+} 
+
+
 ///////////////////////////////////////////////////////
 // memory
 //
@@ -813,4 +834,5 @@ void RH_SysFree(void* ptr)
     free((void*)*ptrAliBack);
 #endif    
 }
+
 

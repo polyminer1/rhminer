@@ -112,6 +112,7 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
             RandomHash_Search(&m_randomHashArray[kernelData->m_id], (U8*)packageData->m_work1, gid);
     #endif            
             U32* work = (uint32_t *)packageData->m_work1;
+            bool resetOFfset = false;
             if (RH_swap_u32(*work) <= packageData->m_target)
             {
                 //Swapb256
@@ -131,9 +132,11 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
                     foundNonce.push_back(gidBE);
 #else
                     foundNonce.push_back(m_randomHashArray[kernelData->m_id].m_startNonce);
+
 #endif              
                     SolutionSptr solPtr = MakeSubmitSolution(foundNonce, true);
                     m_farm.submitProof(solPtr);
+                    resetOFfset = true;
 
                     //pause all solutions until next package in solo
                     if (kernelData->m_isSolo)
@@ -145,6 +148,9 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
             gid++;
             if (gid == endFrame)
             {
+                if (resetOFfset)
+                    KernelOffsetManager::Reset(0);
+
                 gid = (U32)KernelOffsetManager::Increment(workWindow) - workWindow;
                 endFrame = gid + workWindow;
             }
@@ -220,10 +226,11 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp, bool re
     // makeup CPU work pakcage
     const U32 target = m_currentWp->GetDeviceTargetUpperBits();
     U32 savedNonce2 = wp->m_nonce2;
+    U64 nextPackage = 0;
     for (auto& data : m_cpuKernels)
     {
         data->m_isSolo = wp->m_isSolo;
-        U64 nextPackage = (AtomicGet(data->m_packageID) + 1);
+        nextPackage = (AtomicGet(data->m_packageID) + 1);
         CPUKernelData::DataPackage* kernelData = &data->m_packages[nextPackage % CPUKernelData::PackagesCount ];
         
         memset(kernelData, 0, sizeof(CPUKernelData::DataPackage));
@@ -247,6 +254,7 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp, bool re
         //set next wp
         AtomicSet(data->m_packageID, nextPackage);
     }
+    PrintOutSilent("Pushing package %llu as work %s to kernels\n", (nextPackage % CPUKernelData::PackagesCount), wp->m_jobID.c_str());
 }
 
 void RandomHashCPUMiner::PauseCpuKernel()

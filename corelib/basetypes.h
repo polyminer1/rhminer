@@ -88,7 +88,8 @@
     #define CUDA_NOT_ONLY(X) X
 #endif
 
-#ifndef RHMINER_NO_SSE4
+
+#if !defined(RHMINER_NO_SSE4) || defined(RHMINER_COND_SSE4)
     #define RHMINER_ENABLE_SSE4
 #endif
 

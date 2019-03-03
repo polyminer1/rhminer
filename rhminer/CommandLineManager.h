@@ -19,6 +19,7 @@
 #pragma once
 
 #include "corelib/utils.h"
+#include <json/reader.h>
 using namespace std;
 
 //define a global var as {VAR_NAME} that is registered in the command line manager from pre-main scope
@@ -90,7 +91,8 @@ public:
     void RegisterValueMultiple(const string& symbol, const string& cathegory, const string& descriptor, ValFunc f);
     void RegisterFlag(const string& symbol, const string& cathegory, const string& descriptor, FlagFunc f);
     void List();
-    
+    static void LoadFromXml(const char* configFile);
+
     bool Parse(int argc, char** argv, bool exitOnError = true);
     bool Parse(const strings& strList , bool exitOnError = true);
     bool PreParseSymbol(const char* symbol);
@@ -101,6 +103,8 @@ public:
 private:
     static int m_argc;
     static char** m_argv;
+    static Json::Value m_xmlCommandLineConfig;
+
     struct CmdLineManagerOption
     {
         CmdLineManagerOption() = default;
@@ -129,6 +133,8 @@ private:
     void LoadGlobals();
     bool ProcessSymbol(const string& symb, int& i);
     int  ParseInternal(const char* specificSymbol = 0, bool exitOnError = true);
+    int  ParseInternalCMD(const char* specificSymbol = 0, bool exitOnError = true);
+    int  ParseInternalXML(const char* specificSymbol = 0, bool exitOnError = true);    
 
     std::vector<CmdLineManagerOption> m_options;
 };

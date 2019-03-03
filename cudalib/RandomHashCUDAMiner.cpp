@@ -99,7 +99,9 @@ bool RandomHashCUDAMiner::Init(const CudaWorkPackage& work, const CudaMinerValue
 
     CUDA_SET_DEVICE();
 	CUDA_SAFE_CALL(cudaSetDeviceFlags(0));
-	CUDA_SAFE_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+	//CUDA_SAFE_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+    //CUDA_SAFE_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferEqual));
+    
 
     if (m_outputBuffer)
     {

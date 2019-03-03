@@ -42,6 +42,7 @@ PascalWorkPackage::PascalWorkPackage(const PascalWorkPackage& c)
 {
     m_jobID = c.m_jobID;
     m_ntime = c.m_ntime;
+    m_initTimeMS = c.m_initTimeMS;
     m_prev_hash = c.m_prev_hash;
     m_startNonce = c.m_startNonce;
     m_boundary = c.m_boundary;
@@ -88,6 +89,7 @@ void PascalWorkPackage::Init(const string& job, const h256& prevHash, const stri
     m_nonce1 = nonce1;
     m_nonce2Size = nonce2Size;
     m_server = server;
+    m_initTimeMS = TimeGetMilliSec();
 }
 
 
@@ -190,7 +192,8 @@ extern void PascalHashV3(void *state, const void *input);
 bool PascalWorkPackage::IsSame(PascalWorkPackage* work)
 {
     RHMINER_ASSERT(m_fullHeader.size())
-    return (m_ntime == work->m_ntime && 
+    return (m_jobID == work->m_jobID && 
+            m_ntime == work->m_ntime && 
             m_fullHeader == work->m_fullHeader);
 }
 

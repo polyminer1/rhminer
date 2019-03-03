@@ -22,6 +22,10 @@
 #include "corelib/boostext.h"
 #include "corelib/miniweb.h"
 
+#ifndef _WIN32_WINNT
+#include <sys/socket.h>
+#endif
+
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_DisableAutoReconnect, false);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_maxConsecutiveSubmitErrors, 10);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_forceSequentialNonce, false)
@@ -304,7 +308,9 @@ void StratumClient::Disconnect()
 
 	m_connected = false;
 	m_running = false;
+
 	m_socket.close();
+
 }
 
 string StratumClient::ReadLineFromServer()
@@ -629,7 +635,8 @@ void StratumClient::SendWorkToMiners(PascalWorkSptr wp)
     //print status
     string ids = wp->m_jobID;
     U64 ts = ToUIntX(wp->m_ntime);    
-    PrintOutCritical("Received new Work %s. Work target 0x%s (diff %s)\n", ids.c_str(), toHex(wp->GetDeviceTargetUpperBits()).c_str(), DiffToStr((float)wp->m_workDiff));
+
+    PrintOutCritical("Received new Work %s. Difficulty is %s)\n", ids.c_str(), DiffToStr((float)wp->m_workDiff));
 
     //Propagate the workpackage to all miners
     m_farm->SetWork(InstanciateWorkPackage(&wp));
@@ -707,6 +714,7 @@ void StratumClient::InitializeWP(PascalWorkSptr wp)
         m_previous = m_current;
         m_current = InstanciateWorkPackage(&wp);
     }
+    m_current->m_submittedNonces.clear();
 
     wp->m_nonce2 = m_nonce2;
 
@@ -1230,6 +1238,18 @@ bool StratumClient::Submit(SolutionSptr solution)
         U64 currentNonce = solution->GetCurrentEvaluatingNonce();
         if (currentNonce)
         {
+            {
+                Guard g(m_currentWorkMutex); 
+                if (m_current->m_submittedNonces.find(currentNonce) != m_current->m_submittedNonces.end())
+                {
+                    m_farm->AddFailedSolution(solution->m_gpuIndex);
+                    PrintOut("Nonce %X on %s is DUPLICATE. Submit aborted.\n", currentNonce, GpuManager::Gpus[solution->m_gpuIndex].gpuName.c_str());
+                    continue;
+                }
+                else
+                    m_current->m_submittedNonces.insert(currentNonce);
+            }
+
             bool res = solution->Eval();
             if (res)
             { 

@@ -21,7 +21,7 @@
 
 using namespace std;
 
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("displayspeedtimeout", g_DisplaySpeedTimeout, "General", "Display mining speeds every x seconds. Default is 10 ", 0, S32_Max)
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("displayspeedtimeout", g_DisplaySpeedTimeout, "General", "Display mining speeds every x seconds.\nDefault is 10", 0, S32_Max)
 
 class BaseMinerClient: public Worker
 {

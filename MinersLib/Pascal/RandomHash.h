@@ -30,6 +30,7 @@ struct RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_RoundData
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        parenAndNeighbortOutputs;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        io_results;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        backup_io_results;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      first_round_consume;
 };
 
 struct RH_ALIGN(RH_IDEAL_ALIGNMENT) RandomHash_State
@@ -43,24 +44,17 @@ struct RH_ALIGN(RH_IDEAL_ALIGNMENT) RandomHash_State
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtr             m_stridesInstances;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_stridesAllocIndex;
 
-//NOTE remove once cuda work
-#ifndef __CUDA_ARCH__
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_stridesAllocMidstateBarrier;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_stridesAllocMidstateBarrierNext;
-#endif
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_strideID; //DEBUG only
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U8                       m_roundInput[RH_IDEAL_ALIGNMENT+512];
     RH_ALIGN(RH_IDEAL_ALIGNMENT) RH_StridePtrArray        m_round5Phase2PrecalcArray;
 
-//NOTE remove once cuda work
-#ifndef __CUDA_ARCH__
-    //CPU ONLY
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) bool                     m_isCachedOutputs;
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) bool                     m_isNewHeader;
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) bool                     m_isMidStateRound;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_isCachedOutputs;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_isNewHeader;
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_isMidStateRound;
     RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_midStateNonce;
-#endif    
-    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      CUDA_SYM(m_skipPhase1);
+    RH_ALIGN(RH_IDEAL_ALIGNMENT) U32                      m_skipPhase1;
 };
 
 //External API functions

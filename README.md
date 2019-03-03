@@ -6,7 +6,7 @@ Support stratum and solo mining<br>
 Works on Windows 7,10 and Ubuntu 18
 
 ## Download prebuilt binaries
-**Current version is 1.3 with major optimizations** <br>
+**Current version is 1.4** <br>
 
 There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/releases/<br>
@@ -26,7 +26,7 @@ To get the number of logical cores, on you system, simply run rhminer with the -
 ```
 C:\rhminer>rhminer -completelist
 
-  rhminer v1.3 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
+  rhminer v1.4 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
   Buid CPU Nov 19 2018 20:04:01
 
   Donations : Pascal account 529692-23
@@ -97,6 +97,7 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 
 ## Performances for V1.3
 
+
 | Cpu/GPU                                |  OS        | Threads      | Speed in H/s |   Extra infos                         |
 | ---------------------------------------|------------|-------------:|-------------:|---------------------------------------|
 |  i5-7500 CPU @ 3.40GHz                 | Win10      |    4         |   1112       |                                       |
@@ -137,7 +138,6 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 |  AMD PHENOM-II-X4 @ 3.6 GHz            | Ubuntu     |    4         |    460       | oldgen, ddr3 memory                   |
 
 **NOTE: I do not recommend to overclock your cpu. If you do it, it's at your own risk.**
- 
 
 ## Performance for v.1.1.1 on CUDA
 
@@ -147,7 +147,6 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 | Gtx 1060 6gb (mobile)                  | Windows 10 |  570              | 199          |
 | Gtx 1080 11gb                          | Ubuntu     |  400              | 400          |
 | Gtx 950 2gb                            | Windows 7  |  140              | 52           |
-
 
 note: raw is for raw performance on all hyper-threads. This does not represent real life performance.
 
@@ -188,75 +187,72 @@ On Windows 7/8/10, if you get the missing OpenCL.dll error you need to download 
 ## Command line options
 ```
 General options:
-  -maxsubmiterrors      Stop the miner when a number of consecutive submit errors occured. 
-                        Default is 10 consecutive errors. 
-                        This is usefull when mining into local wallet. 
-  -extrapayload         An extra payload to be added when submiting solution to local wallet. 
-  -apiport              Tcp port of the remote api. 
-                        Default port is 71111
-                        Set to 0 to disable server. 
-  -worktimeout          No new work timeout. 
-                        Default is 60 seconds. 
-  -displayspeedtimeout  Display mining speeds every x seconds. 
+  -maxsubmiterrors      Stop the miner when a number of consecutive submit errors occured.
+                        Default is 10 consecutive errors.
+                        This is usefull when mining into local wallet.
+  -extrapayload         An extra payload to be added when submiting solution to local wallet.
+  -apiport              Tcp port of the remote api.
+                        Default port is 7111.
+                        Set to 0 to disable server
+  -worktimeout          No new work timeout. Default is 60 seconds
+  -displayspeedtimeout  Display mining speeds every x seconds.
                         Default is 10
-  -devfee               Set devfee raward percentage. To disable devfee, simply put 0 here. 
-                        But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. 
-                        Your help is very appreciated.
-  -logfilename          Set the name of the log's filename. 
-                        Note: the log file will be overwritten every time you start rhminer. 
-  -processpriority      On windows only. 
-                        Set miner's process priority. 
-                        0=Background Process, 1=Low Priority, 2=Normal Priority, 3=High Priority. 
-                        Default is 3
-                        WARNING: Changing this value will affect GPU mining. 
-  -v                    Log verbosity. 
-                        From 0 to 3
-                        0 no log, 1 normal log, 2 include warnings. 
-                        3 network (only in log file). 
+  -logfilename          Set the name of the log's filename.
+                        Note: the log file will be overwritten every time you start rhminer
+  -configfile           Xml config file containing all config options.
+                        All other command line options are ignored if config file given.
+  -processpriority      On windows only. Set miner's process priority.
+                        0=Background Process, 1=Low Priority, 2=Normal Priority, 3=High Priority.
+                        Default is 3.
+                        WARNING: Changing this value will affect GPU mining.
+  -v                    Log verbosity. From 0 to 3.
+                        0 no log, 1 normal log, 2 include warnings. 3 network and silent logs.
                         Default is 1
-  -list                 List all gpu in the system. 
-  -completelist         Exhaustive list of all devices in the system. 
-  -diff                 Set local difficulyu. 
-                        ex: -diff 999
-  -processorsaffinity   On windows only. 
-                        Force miner to only run on selected logical core processors. 
-                        ex: -processorsaffinity 0,3 will make the miner run only on logical core #0 and #3. 
-                        WARNING: Changing this value will affect GPU mining. 
-  -h                    Display Help. 
-  -help                 Display Help. 
-  -?                    Display Help. 
+  -list                 List all gpu in the system
+  -completelist         Exhaustive list of all devices in the system
+  -diff                 Set local difficulyu. ex: -diff 999
+  -processorsaffinity   On windows only. Force miner to only run on selected logical core processors.
+                        ex: -processorsaffinity 0,3 will make the miner run only on logical core #0 and #3.
+                        WARNING: Changing this value will affect GPU mining.
+  -h                    Display Help
+  -help                 Display Help
+  -?                    Display Help
 
 Optimizations options:
-  -memoryboost          This option will enable some memory optimizations that could make the miner slower on some cpu. 
-                        Test it with -testperformance before using it. 
-                        1 to enable boost. 
-                        0 to disable boost. 
-                        Enabled, by default, on cpu with hyperthreading. 
-  -sseboost             This option will enable some sse4 optimizations. 
-                        It could make the miner slower on some cpu. 
-                        Test it with -testperformance before using it. 
-                        1 to enable SSe4.1 optimizations. 
+  -memoryboost          This option will enable some memory optimizations that could make the miner slower on some cpu.
+                        Test it with -testperformance before using it.
+                        1 to enable boost. 0 to disable boost.
+                        Enabled, by default, on cpu with hyperthreading.
+  -sseboost             This option will enable some sse4 optimizations.
+                        It could make the miner slower on some cpu.
+                        Test it with -testperformance before using it.
+                        1 to enable SSe4.1 optimizations. 0 to disable.
                         Disabled by default. 
 
 Gpu options:
-  -cpu                  Enable the use of CPU to mine. 
-                        ex '-cpu -cputhreads 4' will enable mining on cpu while gpu mining. 
-  -cputhreads           Number of CPU miner threads when mining with CPU. 
-                        ex: -cpu -cputhreads 4
+  -cpu                  Enable the use of CPU to mine.
+                        ex '-cpu -cputhreads 4' will enable mining on cpu while gpu mining.
+  -cputhreads           Number of CPU miner threads when mining with CPU. ex: -cpu -cputhreads 4.
+                        NOTE: adding + before thread count will disable the maximum thread count safety of one thread per core/hyperthread.
+                        Use this at your own risk.
 
 Network options:
-  -dar                  Disable auto-reconnect on connection lost. 
+  -dar                  Disable auto-reconnect on connection lost.
                         Note : The miner will exit uppon loosing connection. 
-  -s                    Stratum/wallet server address:port. 
-                        NOTE: You can also use http://address to connect to local wallet. 
-  -su                   Stratum user. 
-  -pw                   Stratum password. 
-  -fo                   Failover address:port for stratum or local wallet. 
-  -fou                  Failover user for stratum of a local wallet. 
-  -fop                  Failover password for stratum or local wallet. 
-  -r                    Retries connection count for stratum or local wallet. 
+  -s                    Stratum/wallet server address:port.
+                        NOTE: You can also use http://address to connect to local wallet.
+  -su                   Stratum user
+  -pw                   Stratum password
+  -fo                   Failover address:port for stratum or local wallet
+  -fou                  Failover user for stratum of a local wallet
+  -fop                  Failover password for stratum or local wallet
+  -r                    Retries connection count for stratum or local wallet
 
 Debug options:
+  -forcesequentialnonce (For debugging purpose) Force search nonce to be sequential, starting at 0. 
+                        WARNING: This will gerate alot of uncle and refused solutions. 
+  -disablecachednoncereuse (For debugging purpose) Disable RandomHash cached nonce reuse. 
+                        This will lower hashrate substantially. 
   -testperformance      Run performance test for an amount of seconds. 
   -testperformancethreads Amount of threads to use for performance test. 
 ```

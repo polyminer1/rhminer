@@ -138,6 +138,52 @@ void CmdLineManager::Merge(const CmdLineManager& src)
     }
 }
 
+void CmdLineManager::LoadFromXml(const char* configFile)
+{
+    U64 endf = GetFileSize(configFile);
+    FILE* f = fopen(configFile, "rb");
+    if (f)
+    {
+        string buffer;
+        buffer.resize(endf + 1);
+        fread(&buffer[0], endf, 1, f);
+        buffer[endf] = 0;
+        fclose(f);
+
+        try
+        {
+            Json::Reader reader;
+            if (!reader.parse(&buffer[0], m_xmlCommandLineConfig))
+            {
+                PrintOutCritical("Cannot parse config file %s \n %s", configFile, reader.getFormattedErrorMessages().c_str());
+                exit(-299);
+            }
+            else
+            {
+                auto x = m_xmlCommandLineConfig.getMemberNames();
+                //find logfn file and apply
+                Json::Value params = m_xmlCommandLineConfig.get("logfilename", Json::Value::null);
+                if (!params.isNull())
+                {
+                    string logfn = params.asString();
+                    if (logfn.length())
+                        SetLogFileName(logfn.c_str());
+                }
+            }
+        }
+        catch (std::exception const& _e) 
+        {
+            PrintOutCritical("xml parsing error in %s : %s\n", configFile, _e.what());
+            exit(-299);
+        }
+    }
+    else
+    {
+        PrintOutCritical("Cannot open config file %s\n", configFile);
+        exit(-299);
+    }
+}
+
 void CmdLineManager::List()
 {
     strings cat = {"General", "Optimizations", "Gpu", "Network"};
@@ -154,10 +200,11 @@ void CmdLineManager::List()
             if (o.cathegory == c)
             {
                 printf("  -%-20s ", o.symbol.c_str());
-                strings lines = GetTokens(o.descr, ".");
-                printf("%s. \n", lines[0].c_str());
+                strings lines = GetTokens(o.descr, "\n");
+
+                printf("%s\n", lines[0].c_str());
                 for(int i=1; i < lines.size(); i++)
-                    printf("                       %s. \n", lines[i].c_str());
+                    printf("                        %s\n", lines[i].c_str());
             }
         }
     }
@@ -191,6 +238,7 @@ bool CmdLineManager::Parse(const strings& strList, bool exitOnError)
     return Parse(argc, args, exitOnError);
 }
 
+Json::Value CmdLineManager::m_xmlCommandLineConfig;
 int CmdLineManager::m_argc =0;
 char** CmdLineManager::m_argv = 0;
 bool CmdLineManager::Parse(int argc, char** argv, bool exitOnError)
@@ -217,6 +265,87 @@ bool CmdLineManager::Parse(int argc, char** argv, bool exitOnError)
 
 //return ith symbole that cause error. else return 0
 int CmdLineManager::ParseInternal(const char* specificSymbol, bool exitOnError)
+{
+    if (!m_xmlCommandLineConfig.empty())
+        return ParseInternalXML(specificSymbol, exitOnError);
+    else
+        return ParseInternalCMD(specificSymbol, exitOnError);
+}
+
+
+int CmdLineManager::ParseInternalXML(const char* specificSymbol, bool exitOnError)
+{
+    int i = 1;
+    try
+    {
+        auto tokenNames = m_xmlCommandLineConfig.getMemberNames();
+        for (auto symb : tokenNames)
+        {
+            if (specificSymbol && symb != specificSymbol)
+                continue;
+
+            try
+            {
+                CmdLineManagerOption* o = Find(symb);
+                if (o)
+                {
+                    if (o->parsed && !o->allowMultiples)
+                        return 0;
+
+                    string symbVal = m_xmlCommandLineConfig.get(symb, "").asString();
+                    
+                    PrintOutSilent("XML option %s %s\n", symb.c_str(), symbVal.c_str());
+                    if (symbVal.length())
+                    {
+                        if (o->flagSetter)
+                        {
+                            if (stristr(symbVal.c_str(), "enable") || stristr(symbVal.c_str(), "true"))
+                            {
+                                o->flagSetter();
+                                o->parsed = true;
+                            }
+                        }
+                        else
+                        {
+                            //detect val with no value !
+                            o->valSetter(symbVal);
+                            o->parsed = true;
+                        }
+                    }
+                }
+                else
+                {
+                    if (symb != "gpu" &&
+                        symb != "gputhreads" &&
+                        symb != "kernelactivewaiting")
+                    printf("Unknown argument '%s' \n", symb.c_str());
+                }
+            }
+            catch (...)
+            {
+                if (symb.c_str() && symb.length())
+                {
+                    printf("Invalid argument value for option %s \n", symb.c_str());
+                    RHMINER_EXIT_APP("")
+                }
+                else
+                {
+                    printf("Invalid argument values\n");
+                    RHMINER_EXIT_APP("")
+                }
+                return 0;
+            }
+        }
+    }
+    catch (...)
+    {
+        printf("Command line argument error\n");
+        return 0;
+    }
+    return 0;
+}
+
+int CmdLineManager::ParseInternalCMD(const char* specificSymbol, bool exitOnError)
 {
     int i = 1;
     try

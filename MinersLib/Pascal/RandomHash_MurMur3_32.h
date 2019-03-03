@@ -130,7 +130,7 @@ inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Init)(uint32_t seed, MurmurHash3_x8
 
 
 
-void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 chunk64, uint32_t len, MurmurHash3_x86_32_State* state)
+CUDA_DECL_HOST_AND_DEVICE void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 chunk64, uint32_t len, MurmurHash3_x86_32_State* state)
 {
     RH_ASSERT(len < S32_Max);
     RH_ASSERT(state->idx != 0xDEADBEEF)

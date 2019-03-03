@@ -41,6 +41,9 @@ include (CMake/flags.cmake)
 
 if(RH_CPU_ONLY)
 	add_definitions(-DRH_COMPILE_CPU_ONLY)
+else(RH_CPU_ONLY)
+    message(STATUS "Conditional SSe4")
+    add_definitions(-DRHMINER_COND_SSE4)
 endif(RH_CPU_ONLY)
 
 add_definitions(-DRH_CUDA_ARCH=${RH_CUDA_ARCH})

@@ -109,7 +109,8 @@ void ClientManager::Initialize()
         if (g_cpuMinerThreads == 0)
             g_cpuMinerThreads = GpuManager::CpuInfos.numberOfProcessors - 1;
 
-        if (g_cpuMinerThreads > (int)GpuManager::CpuInfos.numberOfProcessors)
+        if (g_cpuMinerThreads > (int)GpuManager::CpuInfos.numberOfProcessors &&
+            g_disableMaxGpuThreadSafety == false)
             g_cpuMinerThreads = (int)GpuManager::CpuInfos.numberOfProcessors;
 
         //manually enable the CPU in gpumanager
