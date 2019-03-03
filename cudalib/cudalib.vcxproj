@@ -337,23 +337,6 @@
       </AdditionalCompilerOptions>
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">compute_61,sm_61</CodeGeneration>
     </CudaCompile>
-    <CudaCompile Include="RandomHash_DEV_CUDA.cu">
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_CPU_OLDGEN|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
-      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">--ptxas-options=-v %(AdditionalOptions)</AdditionalOptions>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_CPU_OLDGEN|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
