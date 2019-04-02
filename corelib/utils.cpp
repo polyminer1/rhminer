@@ -215,6 +215,11 @@ void _PrintToLog(const char* szBuffer)
         fprintf(Logfile, "%s", szBuffer);
         fflush(Logfile);
     }
+
+#if defined(RH_SCREEN_SAVER_MODE)
+    extern void ScreenSaverText(const char* szBuffer);
+    ScreenSaverText(szBuffer);
+#endif
 }
 
 
@@ -239,6 +244,14 @@ void DebugOut(const char *szFormat, ...)
     GlobalOutputMutex()->unlock();
 }
 #endif
+
+void CloseLog()
+{
+    GlobalOutputMutex()->lock();
+    if (Logfile)
+        fclose(Logfile);
+    GlobalOutputMutex()->unlock();
+}
 
 
 void PrintOutWarning(const char *szFormat, ...) 

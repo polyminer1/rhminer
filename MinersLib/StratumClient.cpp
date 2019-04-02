@@ -32,6 +32,7 @@ RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_forceSequentialNonce, false)
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_disableCachedNonceReuse, false)
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_extraPayload, "")
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_apiPort, 7111)
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_apiPW, "")
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_workTimeout, 60);
 extern bool g_useGPU;
 
@@ -310,7 +311,6 @@ void StratumClient::Disconnect()
 	m_running = false;
 
 	m_socket.close();
-
 }
 
 string StratumClient::ReadLineFromServer()
@@ -411,6 +411,7 @@ void StratumClient::WorkLoop()
             Reconnect(3000);
         }
     }
+    CpuSleep(200);
 }
 
 void StratumClient::CallJsonMethod(string methodName, string params, U64 gpuIndexOrRigID, string additionalCallParams, bool dontPutID)
@@ -510,7 +511,7 @@ void StratumClient::Preconnect()
 
     if (error)
     {
-        RHMINER_PRINT_EXCEPTION_EX(FormatString("Could not connect to server %s", m_active->HostDescr()), "Retrying...");
+        RHMINER_PRINT_EXCEPTION_EX(FormatString("Error. Could not connect to server %s", m_active->HostDescr()), "Retrying...");
         Reconnect(5 * 1000);
     }
     else
@@ -636,7 +637,7 @@ void StratumClient::SendWorkToMiners(PascalWorkSptr wp)
     string ids = wp->m_jobID;
     U64 ts = ToUIntX(wp->m_ntime);    
 
-    PrintOutCritical("Received new Work %s. Difficulty is %s)\n", ids.c_str(), DiffToStr((float)wp->m_workDiff));
+    PrintOutCritical("Received new Work %s. Difficulty is %s\n", ids.c_str(), DiffToStr((float)wp->m_workDiff));
 
     //Propagate the workpackage to all miners
     m_farm->SetWork(InstanciateWorkPackage(&wp));

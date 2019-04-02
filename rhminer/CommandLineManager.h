@@ -100,9 +100,15 @@ public:
     bool FindSwitch(const string& switchName);
     void Reset();
 
+    string GetArgsList() {return m_argslist;}
+    char** GetArgv() { return m_argv; }
+    void   OverrideArgs(const string& newArgs);
+    
+
 private:
     static int m_argc;
     static char** m_argv;
+    static string m_argslist;
     static Json::Value m_xmlCommandLineConfig;
 
     struct CmdLineManagerOption

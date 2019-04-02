@@ -21,6 +21,7 @@
 #include "ClientManager.h"
 
 extern bool g_appActive;
+extern void StopMiniWeb();
 
 ClientManager & ClientManager::I()
 {
@@ -30,12 +31,52 @@ ClientManager & ClientManager::I()
     return *i;
 }
 
-
-void ClientManager::Shutdown()
+U64 g_shutdownWD = 0;
+U32 g_shutdownDone = 0;
+void ClientManager::Shutdown(eShutdownMode esmode)
 {
-    if (ActiveClients.client.get())
-        ActiveClients.client->GetFarm().Pause();
-    CpuSleep(500);
+    if (esmode ==  eShutdownLite)
+    {
+        if (ActiveClients.client.get())
+            ActiveClients.client->GetFarm().Pause();
+        CpuSleep(200);
+    }
+    else if (esmode == eShutdownRestart || esmode == eShutdownFull)
+    {
+    }
+    else if (esmode == eShutdownFull)
+    {
+        /*
+        auto t = new std::thread([&]()
+        {
+            g_shutdownWD = TimeGetMilliSec() + 60 * 1000;
+            while (TimeGetMilliSec() < g_shutdownWD)
+                CpuSleep(20);
+            
+            if (AtomicGet(g_shutdownDone) == 0)
+                RHMINER_EXIT_APP("Shutdown takes to long, exiting miner now.\n");
+
+        });
+        */
+
+        //stop all now!
+        StopMiniWeb();
+
+        PrintOutSilent("Shutdown: stratum client\n");
+        ActiveClients.stratum->Disconnect();
+
+        PrintOutSilent("Shutdown: miner threads\n");
+        if (ActiveClients.client.get())
+            ActiveClients.client->GetFarm().Stop();
+
+        if (esmode == eShutdownFull)
+            ActiveClients.stratum->Kill();
+        
+        PrintOutSilent("Shutdown: logs\n");
+        AtomicSet(g_shutdownDone, 1);
+        CloseLog();
+    }
+    
 }
 
 void ClientManager::Initialize()

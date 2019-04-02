@@ -30,20 +30,10 @@ class ClientManager
 {
 public:
     static ClientManager& I();
+    enum eShutdownMode { eShutdownLite, eShutdownRestart, eShutdownFull };
 
     void Initialize();
-    void Shutdown();
+    void Shutdown(eShutdownMode esmode);
 
     ActiveClientsData     ActiveClients;
-
-protected:
-    inline bool IsCoinEnabled() 
-    {
-        for(auto& g : GpuManager::Gpus)
-        {
-            if (g.enabled)
-                return true;
-        }
-        return false;
-    };
 };

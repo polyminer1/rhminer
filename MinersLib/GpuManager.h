@@ -74,6 +74,7 @@ struct CPUInfo
     bool    sse4aSupportted = false;
     bool    sse5Supportted = false;
     bool    avxSupportted = false;
+    bool*   pEnabled = 0;
     U64     avaiablelMem;
     U32     numberOfProcessors; //counting hyperthreads
     U32     numberOfCores;

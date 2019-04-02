@@ -160,7 +160,7 @@ void Farm::PauseCpuMiners()
             m->Pause();
 }
 	
-void Farm::stop()
+void Farm::Stop()
 {
     Guard l(m_minerWorkMutex);
     internalStop();

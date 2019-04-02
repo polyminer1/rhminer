@@ -19,4 +19,5 @@
 #include "corelib/utils.h"
 
 extern void StartMiniWeb();
-extern void SetMiniWebData(const string& data);
+extern void StopMiniWeb();
+extern void SetMiniWebData(const string& data, const string& ethManData);

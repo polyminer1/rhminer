@@ -1,6 +1,17 @@
 # rhminer update and bugfix history
 
-Version 1.4 - 3 march 2910
+Version 1.5 - 2 April 2019
+* Added ETHman and AwesomeMiner support (miner_getstat1, miner_restart, miner_reboot, miner_file, control_gpu)
+  It is strongly recommented to NOT put rhminer in a loop in a script if you intend to use EthMan or AwseomeMiner.
+  The restart option will close the instance and restart a new one. So if rhminer is in a loop, it will start another new instance everytime.
+* Added Pascal Coin ScreenSaver V1.0 - Windows
+* Now starting rhminer without parametres will automatically use config.txt.
+* Added support Maxwell architecture 5.3 (Tegra Tegra (Jetson) TX1 / Tegra X1) on windows
+* Re-added Pascal architecture 6.0 (Quadro GP100, Tesla P100, DGX-1) that was mistakenly removed in 1.4
+* Re-added Pascal architecture 6.2 ( Integrated GPU on the NVIDIA Drive PX2, Tegra (Jetson) TX2) that was mistakenly removed in 1.4
+
+
+Version 1.4 - 3 march 2019
 *Major gpu optimizations:
     Gtx 1060 3gb 280 threads +196%
     Gtx 1070 8gb 384 threads +218%

@@ -22,8 +22,20 @@
 #include "corelib/PascalWork.h"
 #include "MinersLib/CLMinerBase.h"
 #include "MinersLib/StratumClient.h"
+#include "rhminer/ClientManager.h"
 #include "MinersLib/Pascal/RandomHashCLMiner.h"
 #include "MinersLib/Pascal/RandomHashCPUMiner.h"
+
+#ifndef _WIN32_WINNT
+#include <unistd.h>
+#include <spawn.h>
+#include <linux/limits.h>
+#define __getcwd getcwd 
+#else
+#include <direct.h>
+#define __getcwd _getcwd 
+#endif
+
 #ifndef RH_COMPILE_CPU_ONLY
 #include "MinersLib/Pascal/RandomHashHostCudaMiner.h"
 #endif
@@ -31,14 +43,18 @@
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_logFileNameDummy, "");
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_configFileNameDummy, "");
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_useCPU, false);
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_restared, false);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformance, 0);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformanceThreads, 0);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_setProcessPrio, 3);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_memoryBoostLevel, RH_OPT_UNSET);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_sseOptimization, 0); 
+
 bool g_useGPU = false;
 U32  g_cpuMinerThreads = 1;
 bool g_disableMaxGpuThreadSafety = false;
+extern void StopMiniWeb();
+extern bool g_appActive;
 
 const U64 t1M = 1000 * 60;
 const U64 t1H = t1M * 60;
@@ -99,6 +115,8 @@ GlobalMiningPreset::GlobalMiningPreset()
         }
     });
 #endif //RH_COMPILE_CPU_ONLY
+//TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP 
+    /*
     CmdLineManager::GlobalOptions().RegisterValue("devfee", "General", "Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.", [&](const string& val)
     {
         if (val == "0" || val == "0.0")
@@ -122,7 +140,8 @@ GlobalMiningPreset::GlobalMiningPreset()
                 m_devfeePercent = 1.0f;
         }
     });
-
+    */
+    //TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP TEMP 
     CmdLineManager::GlobalOptions().RegisterFlag("list", "General", "List all gpu in the system", [&]() 
     {
         GpuManager::listGPU(); 
@@ -387,6 +406,109 @@ Miner* GlobalMiningPreset::CreateMiner(CreatorClasType type, FarmFace& _farm, U3
     RHMINER_EXIT_APP("critical");
 }
 
+void GlobalMiningPreset::SetRestart(ERestartMode val)
+{
+    AtomicSet(m_requestRestart, (U32)val);
+    if (val == eExternalRestart)
+    {
+#ifdef _WIN32_WINNT
+        char exeFN[MAX_PATH];
+        *exeFN;
+        GetModuleFileName(0, exeFN, sizeof(exeFN));
+        if (strlen(exeFN))
+        {
+            char dir[MAX_PATH];
+            char f[MAX_PATH];
+            char fn[MAX_PATH];
+            char ex[MAX_PATH];
+            _splitpath(exeFN, dir, f, fn, ex);
+            strncat(dir, f, sizeof(dir));
+
+            string cmd = " -restarted ";
+            cmd += CmdLineManager::GlobalOptions().GetArgsList();
+            PrintOutSilent("Restarting to %s\n", cmd.c_str());
+
+            char cwdDir[1024] = "";
+            __getcwd(cwdDir, sizeof(cwdDir));
+
+            STARTUPINFO si = {};
+            si.cb = sizeof si;
+            PROCESS_INFORMATION pi = {};
+            if (!CreateProcess(exeFN, (char*)cmd.c_str(), 0, FALSE, 0, 0, 0, cwdDir, &si, &pi))
+            {
+                PrintOutCritical("Cannot Restart rhminer.\n");
+            }
+            else
+            {
+                printf("Restarting rhminer\n");
+                exit(0);
+            }
+        }
+        else
+            PrintOutCritical("Cannot get module filename for restart. Restart aborted.\n");
+
+#else
+        int*   processId = new int;
+        char  *exec_path_name = (char*)malloc(strlen(CmdLineManager::GlobalOptions().GetArgv()[0]) + 1);
+        strcpy(exec_path_name, CmdLineManager::GlobalOptions().GetArgv()[0]);
+
+        //stop all now!
+        StopMiniWeb();
+        CloseLog();
+        g_appActive = true;
+
+        char** agvI = CmdLineManager::GlobalOptions().GetArgv();
+        char *argv2[128 + 1];
+        char** agvI2 = argv2;
+        while (*agvI)
+        {
+            *agvI2 = (char*)malloc(strlen(*agvI) + 1);
+            strcpy(*agvI2, *agvI);
+            agvI++;
+            agvI2++;
+        }
+        *agvI2 = 0;
+
+        char *envp[] = { NULL };
+        execve(exec_path_name, argv2, envp);
+        exit(-1);
+#endif
+    }
+}
+
+void GlobalMiningPreset::RequestReboot()
+{
+    U32 lastVal = AtomicSet(m_requestReboot, 1);
+    if (lastVal == 1)
+        return;
+
+    char basePath[1024] = "";
+    __getcwd(basePath, sizeof(basePath));
+
+#ifdef _WIN32_WINNT    
+    strncat(basePath, "\\", sizeof(basePath));
+    strncat(basePath, "reboot.bat", sizeof(basePath));
+#else
+    strncat(basePath, "/", sizeof(basePath));
+    strncat(basePath, "reboot.sh", sizeof(basePath));
+#endif
+    if (GetFileSize(basePath) == U64_Max)
+        PrintOut("Launch Error. file. %s does not exists\n", basePath);
+    else
+    {
+        string cmd;
+#ifdef _WIN32_WINNT
+        cmd = "start \"reboot\" \"";
+        cmd += basePath;
+        cmd += "\"";
+#else
+        cmd = "sh ";
+        cmd += basePath;
+#endif
+        system(cmd.c_str());
+    }
+}
+
 void GlobalMiningPreset::DoPerformanceTest()
 {
     U8 out_hash[32];
@@ -463,3 +585,4 @@ void GlobalMiningPreset::DoPerformanceTest()
 
     exit(0);
 }
+

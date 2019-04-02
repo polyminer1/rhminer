@@ -51,6 +51,7 @@ bool GenericCLMiner::WorkLoopStep()
     if (!m_gpuInfoCache->enabled)
     {
         CpuSleep(100);
+        AddHashCount(0);
         return true;
     }
 
@@ -201,7 +202,7 @@ bool GenericCLMiner::IsWorkStalled()
     {
         if (dt > MaxWorkPackageTimeout)
         {        
-            PrintOut("No work for %u seconds. Reconnecing...", MaxWorkPackageTimeout);
+            PrintOut("No work for %u seconds. Reconnecing...\n", MaxWorkPackageTimeout);
             return true;
         }
     }
@@ -268,7 +269,7 @@ PrepareWorkStatus GenericCLMiner::PrepareWork(const PascalWorkSptr& newWorkTempl
         if (IsWorkStalled())
         {
             auto avgWorkTimeDelta = m_accumNewWorkDeltaTime / m_accumNewWorkDeltaTimeCount / 1000 / 1000; //sec
-            PrintOut("%s timeout after %u seconds. Work is stale.", GpuManager::Gpus[m_globalIndex].gpuName.c_str(), m_maxExtraTimePerWorkPackage + avgWorkTimeDelta);
+            PrintOut("%s timeout after %u seconds. Work is stale.\n", GpuManager::Gpus[m_globalIndex].gpuName.c_str(), m_maxExtraTimePerWorkPackage + avgWorkTimeDelta);
             
             //reset this warning
             m_LastNewWorkStartTime = TimeGetMicroSec();
