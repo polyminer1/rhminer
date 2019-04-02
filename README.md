@@ -6,7 +6,7 @@ Support stratum and solo mining<br>
 Works on Windows 7,10 and Ubuntu 18
 
 ## Download prebuilt binaries
-**Current version is 1.4** <br>
+**Current version is 1.5** <br>
 
 There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/releases/<br>
@@ -26,7 +26,7 @@ To get the number of logical cores, on you system, simply run rhminer with the -
 ```
 C:\rhminer>rhminer -completelist
 
-  rhminer v1.4 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
+  rhminer v1.5 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
   Buid CPU Nov 19 2018 20:04:01
 
   Donations : Pascal account 529692-23
@@ -49,7 +49,7 @@ Note2: It is not recommended to mine using a laptop.
 ## Supported Cuda architecture
 * Kepler  GTX  700 series, Tesla K40/K80
 * Maxwell GTX  900 series, Quadro M series, GTX Titan X
-* Pascal  GTX 1000 series, Titan Xp, Tesla P40, Tesla P4,GP100/Tesla P100 – DGX-1
+* Pascal  GTX 1000 series, Titan Xp, Tesla P40, Tesla P4,GP100/Tesla P100 DGX-1
 * Volta   GTX 1100 series (GV104), Tesla V100
 
 ## Gpu mining
@@ -96,7 +96,6 @@ CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 * curl Api for stats and control
 
 ## Performances for V1.3
-
 
 | Cpu/GPU                                |  OS        | Threads      | Speed in H/s |   Extra infos                         |
 | ---------------------------------------|------------|-------------:|-------------:|---------------------------------------|

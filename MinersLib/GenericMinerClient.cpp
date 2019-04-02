@@ -74,7 +74,51 @@ void GenericMinerClient::PushMiniWebData(SolutionStats& farmSol, WorkingProgress
     jdata += FormatString("\"diff\":%.8f", m_stratumClient->GetDiff());
     jdata += "}";
 
-    SetMiniWebData(jdata);
+    U32 totalAcc = 0;
+    U32 totalRej = 0;
+    string detailHR;
+    string tempFan;
+    for (unsigned i = 0; i < mp.minersHasheRate.size(); i++)
+    {
+        totalAcc += mp.acceptedShares[i];
+        totalRej += mp.rejectedShares[i];
+        detailHR += FormatString("%u", mp.minersHasheRate[i]);
+        tempFan += FormatString("%u;%u", mp.temperature[i], mp.fan[i]);
+
+        if (i + 1 != mp.minersHasheRate.size())
+        {
+            detailHR += ";";
+            tempFan += ";";
+        }
+    }
+
+
+    string ethManData = "{\"result\": [";
+    //Version
+    ethManData += FormatString("\"%s - PASC\", ", RH_PROJECT_VERSION);
+    
+    //Running time in minutes
+    ethManData += FormatString("\"%u\", ", GlobalMiningPreset::I().GetUpTimeMS() / 1000 / 60);
+    
+    //total ETH hashrate in MH / s, number of ETH shares, number of ETH rejected shares.
+    ethManData += FormatString("\"%u;%u;%u\",", totSpeed, totalAcc, totalRej);
+
+    //detailed ETH hashrate for all GPUs.
+    ethManData += FormatString("\"%s\",", detailHR.c_str());
+    ethManData += "\"0;0;0\", ";
+    ethManData += "\"off;off;off;off;off;off\", ";
+    
+    //Temperature and Fan speed(%) pairs for all GPUs.
+    ethManData += FormatString("\"%s\",", tempFan.c_str());
+
+    //current mining pool.For dual mode, there will be two pools here.
+    ethManData += FormatString("\"%s:%s\", ", m_stratumClient->GetCurrentCred()->host.c_str(), m_stratumClient->GetCurrentCred()->port.c_str());
+    //number of ETH invalid shares, number of ETH pool switches, number of DCR invalid shares, number of DCR pool switches.
+    ethManData += "\"0;0;0;0\"";
+
+    ethManData += "]}";
+
+    SetMiniWebData(jdata, ethManData);
 }
 
 void GenericMinerClient::doStratum()
@@ -181,8 +225,14 @@ void GenericMinerClient::doStratum()
 
                     PrintOut("%s\n", str.c_str()); 
 
+                    //check if all are not disabled !
+                    U32 enabled = 0;
+                    for (auto& g : GpuManager::Gpus)
+                        if (g.enabled)
+                            enabled++;
+
                     // Hanle zero speed watchdog
-                    if (mp.totalHashRate < 2)
+                    if (mp.totalHashRate < 2 && enabled > 0)
                     {
                         if (!m_zeroSpeedWD)
                             m_zeroSpeedWD = TimeGetMilliSec() + 60*1000; //60 sec zero speed watchtog
@@ -222,6 +272,35 @@ void GenericMinerClient::doStratum()
                         RHMINER_EXIT_APP("Connection timeout.\n");
                 }
                 CpuSleep(1000);
+
+                if (GlobalMiningPreset::I().RestartRequested() == GlobalMiningPreset::eInteralRestart && m_farm.isMining())
+                {
+                    PrintOutCritical("Restarging rhminer...\n");
+                    //once every 1 sec
+                    if (m_stratumClient.get())
+                    {
+                        m_farm.Pause();
+                        m_stratumClient->CloseConnection();
+                        if (g_appActive)
+                            m_stratumClient->StopWorking();
+                    }
+                
+                    PrintOut("Force stoping farm ...\n");
+                    m_farm.Stop();
+
+                    if (GlobalMiningPreset::I().GetPendingConfigFile().length())
+                    {
+                        string cfg = GlobalMiningPreset::I().GetPendingConfigFile().c_str();
+                        GlobalMiningPreset::I().SetLastConfigFile("");
+                        CmdLineManager::GlobalOptions().LoadFromXml(cfg.c_str());
+
+                        //apply new network cred
+
+                    }
+
+                    GlobalMiningPreset::I().SetRestart(GlobalMiningPreset::eExternalRestart);
+                    break;
+                }
             }
 	    }
     }

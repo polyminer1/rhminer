@@ -99,6 +99,7 @@ extern void PrintOutCritical(const char *szFormat, ...);                        
 extern void PrintOutWarning(const char *szFormat, ...);                                                     //Verbose level 2
 extern void PrintOutSilent(const char *szFormat, ...);                                                      //Verbose level 3
 extern void SetLogFileName(const char* fn);
+extern void CloseLog();
 #ifndef RHMINER_RELEASE
     extern void DebugOut(const char *szFormat, ...);
 #else

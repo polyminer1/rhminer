@@ -21,6 +21,7 @@ Global
 		Release_Maxwell|x64 = Release_Maxwell|x64
 		Release_Pascal|x64 = Release_Pascal|x64
 		Release_Volta|x64 = Release_Volta|x64
+		ScreenSaver|x64 = ScreenSaver|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{65073578-B99A-4D67-8086-CE2C040376A0}.Debug|x64.ActiveCfg = Debug|x64
@@ -37,6 +38,8 @@ Global
 		{65073578-B99A-4D67-8086-CE2C040376A0}.Release_Pascal|x64.Build.0 = Release_Pascal|x64
 		{65073578-B99A-4D67-8086-CE2C040376A0}.Release_Volta|x64.ActiveCfg = Release_Volta|x64
 		{65073578-B99A-4D67-8086-CE2C040376A0}.Release_Volta|x64.Build.0 = Release_Volta|x64
+		{65073578-B99A-4D67-8086-CE2C040376A0}.ScreenSaver|x64.ActiveCfg = ScreenSaver|x64
+		{65073578-B99A-4D67-8086-CE2C040376A0}.ScreenSaver|x64.Build.0 = ScreenSaver|x64
 		{DCB0F1CD-A563-4A85-9711-256955B6467C}.Debug|x64.ActiveCfg = Debug|x64
 		{DCB0F1CD-A563-4A85-9711-256955B6467C}.Debug|x64.Build.0 = Debug|x64
 		{DCB0F1CD-A563-4A85-9711-256955B6467C}.Debug|x64.Deploy.0 = Debug|x64
@@ -53,6 +56,8 @@ Global
 		{DCB0F1CD-A563-4A85-9711-256955B6467C}.Release_Pascal|x64.Build.0 = Release_Pascal|x64
 		{DCB0F1CD-A563-4A85-9711-256955B6467C}.Release_Volta|x64.ActiveCfg = Release_Volta|x64
 		{DCB0F1CD-A563-4A85-9711-256955B6467C}.Release_Volta|x64.Build.0 = Release_Volta|x64
+		{DCB0F1CD-A563-4A85-9711-256955B6467C}.ScreenSaver|x64.ActiveCfg = ScreenSaver|x64
+		{DCB0F1CD-A563-4A85-9711-256955B6467C}.ScreenSaver|x64.Build.0 = ScreenSaver|x64
 		{1E6C2C1C-6453-4129-AE3F-0EE8E6599C89}.Debug|x64.ActiveCfg = Debug|x64
 		{1E6C2C1C-6453-4129-AE3F-0EE8E6599C89}.Debug|x64.Build.0 = Debug|x64
 		{1E6C2C1C-6453-4129-AE3F-0EE8E6599C89}.Release_CPU_OLDGEN|x64.ActiveCfg = Release_CPU_OLDGEN|x64
@@ -67,6 +72,8 @@ Global
 		{1E6C2C1C-6453-4129-AE3F-0EE8E6599C89}.Release_Pascal|x64.Build.0 = Release_Pascal|x64
 		{1E6C2C1C-6453-4129-AE3F-0EE8E6599C89}.Release_Volta|x64.ActiveCfg = Release_Volta|x64
 		{1E6C2C1C-6453-4129-AE3F-0EE8E6599C89}.Release_Volta|x64.Build.0 = Release_Volta|x64
+		{1E6C2C1C-6453-4129-AE3F-0EE8E6599C89}.ScreenSaver|x64.ActiveCfg = ScreenSaver|x64
+		{1E6C2C1C-6453-4129-AE3F-0EE8E6599C89}.ScreenSaver|x64.Build.0 = ScreenSaver|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -138,6 +138,7 @@ void CmdLineManager::Merge(const CmdLineManager& src)
     }
 }
 
+extern FILE* Logfile;
 void CmdLineManager::LoadFromXml(const char* configFile)
 {
     U64 endf = GetFileSize(configFile);
@@ -167,7 +168,10 @@ void CmdLineManager::LoadFromXml(const char* configFile)
                 {
                     string logfn = params.asString();
                     if (logfn.length())
-                        SetLogFileName(logfn.c_str());
+                    {
+                        if (!Logfile)
+                            SetLogFileName(logfn.c_str());
+                    }
                 }
             }
         }
@@ -186,6 +190,8 @@ void CmdLineManager::LoadFromXml(const char* configFile)
 
 void CmdLineManager::List()
 {
+    printf("\nrhminer will automatically load config.txt if no commandline are present\n\n");
+
     strings cat = {"General", "Optimizations", "Gpu", "Network"};
     for (const auto& o : m_options)
     {
@@ -194,7 +200,11 @@ void CmdLineManager::List()
     }
     for(auto&c : cat)
     {
+        if (c == "*")
+            continue;
+
         printf("\n%s options:\n", c.c_str());
+
         for (const auto& o : m_options)
         {
             if (o.cathegory == c)
@@ -241,19 +251,20 @@ bool CmdLineManager::Parse(const strings& strList, bool exitOnError)
 Json::Value CmdLineManager::m_xmlCommandLineConfig;
 int CmdLineManager::m_argc =0;
 char** CmdLineManager::m_argv = 0;
+string CmdLineManager::m_argslist;
 bool CmdLineManager::Parse(int argc, char** argv, bool exitOnError)
 {
     m_argc = argc;
     m_argv = argv;
-    
-    string argslist;
-    for(int i=0; i < argc; i++)
+    m_argslist = "";
+
+    for(int i=1; i < argc; i++)
     {
-        argslist += argv[i];
-        argslist += " ";
+        m_argslist += argv[i];
+        m_argslist += " ";
     }
     
-    //DebugOut("Command line args : %s\n", argslist.c_str());
+    //DebugOut("Command line args : %s\n", m_argslist.c_str());
     int res = ParseInternal(NULL, exitOnError);
     if (res && exitOnError)
     {
@@ -271,7 +282,6 @@ int CmdLineManager::ParseInternal(const char* specificSymbol, bool exitOnError)
     else
         return ParseInternalCMD(specificSymbol, exitOnError);
 }
-
 
 int CmdLineManager::ParseInternalXML(const char* specificSymbol, bool exitOnError)
 {
@@ -446,3 +456,21 @@ bool CmdLineManager::ProcessSymbol(const string& symb, int& i)
     return true;
 }
 
+void CmdLineManager::OverrideArgs(const string& newArgs)
+{
+    strings na = GetTokens(newArgs, " ");
+    
+    char* arg0 = m_argv[0];
+    m_argv = (char**)malloc(sizeof(int*) * 256);
+    m_argv[0] = (char*)malloc(strlen(arg0)+ 1);
+    strcpy(m_argv[0], arg0);
+
+    m_argslist = newArgs;
+    size_t i;
+    for (i=0; i < na.size(); i++)
+    {
+        m_argv[i + 1] = (char*)malloc(na[i].length() + 1);
+        strcpy(m_argv[i + 1], &na[i][0]);
+    }
+    m_argv[i + 1] = 0;
+}

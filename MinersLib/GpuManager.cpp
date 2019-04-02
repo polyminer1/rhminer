@@ -565,6 +565,8 @@ bool GpuManager::SetupGPU()
         g.initialized = true;
         if (g.gpuType == GpuType_CPU)
         {
+            GpuManager::CpuInfos.pEnabled = &g.enabled;
+
             if (! g_testPerformance)
                 PrintOutCritical("Selecting CPU (GPU%d) %s to mine on %d logical cores with %d threads\n",
                     g.globalIndex,

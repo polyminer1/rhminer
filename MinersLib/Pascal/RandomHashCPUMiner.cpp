@@ -19,6 +19,7 @@
 #include "MinersLib/Algo/sph_blake.h"
 #include "rhminer/ClientManager.h"
 extern bool g_useGPU;
+extern bool g_cpuDisabled;
 
 RandomHashCPUMiner::RandomHashCPUMiner(FarmFace& _farm, unsigned globalWorkMult, unsigned localWorkSize, U32 gpuIndex) :
     GenericCLMiner(_farm, globalWorkMult, localWorkSize, gpuIndex),
@@ -71,11 +72,13 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
         }
     }
 
+
     U32 workWindow = m_globalWorkSizePerCPUMiner;
     U32 gid = (U32)KernelOffsetManager::Increment(workWindow) - workWindow;
     U32 endFrame = gid + workWindow;
     bool paused = false;
     U64 oldID = U64_Max;
+
     while(!kernelData->m_abortThread)
     {
         RHMINER_RETURN_ON_EXIT_FLAG();
@@ -100,6 +103,12 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
             if (oldID != packageID)
             {
                 RandomHash_SetHeader(&m_randomHashArray[kernelData->m_id], packageData->m_header.asU8, (U32)packageData->m_nonce2); //copy header                
+            }
+
+            if (*GpuManager::CpuInfos.pEnabled == false)
+            {
+                CpuSleep(100);
+                continue;
             }
 
     #ifdef RH_FORCE_PASCAL_V3_ON_CPU
@@ -132,7 +141,6 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
                     foundNonce.push_back(gidBE);
 #else
                     foundNonce.push_back(m_randomHashArray[kernelData->m_id].m_startNonce);
-
 #endif              
                     SolutionSptr solPtr = MakeSubmitSolution(foundNonce, true);
                     m_farm.submitProof(solPtr);
@@ -143,6 +151,12 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
                     {
                         paused = true;
                     }
+
+#ifdef RH_SCREEN_SAVER_MODE
+                    extern void ScreensaverFoundNonce(U32 nonce);
+                    ScreensaverFoundNonce(foundNonce[0]);
+#endif
+
                 }
             }
             gid++;

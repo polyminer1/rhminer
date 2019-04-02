@@ -32,7 +32,7 @@ public:
 
 	~Farm()
 	{
-		stop();
+		Stop();
 	}
 
     void SetWork(PascalWorkSptr _wp);
@@ -45,7 +45,7 @@ public:
     bool HasOneCPUMiner();
 
 
-    void stop();
+    void Stop();
     void Pause();
     void PauseCpuMiners();
 

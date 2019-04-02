@@ -47,8 +47,13 @@ long   __stdcall   GlobalExpCallback(_EXCEPTION_POINTERS*   excp);
 
 bool g_appActive = true;
  
+#ifdef RH_SCREEN_SAVER_MODE
+int main_init(int argc, char** argv)
+#else
 int main(int argc, char** argv)
+#endif
 {
+
     ////////////////////////////////////////////////////////////////////
     //
     //      App header
@@ -93,22 +98,30 @@ int main(int argc, char** argv)
     //Preparse log file and config filename name cuz we need it prior init
     for (int i = 0; i < argc; i++)
     {
-        if (stristr(argv[i], "logfilename") && i+1 < argc)
+        if (stristr(argv[i], "logfilename") && i + 1 < argc)
         {
             SetLogFileName(argv[i + 1]);
         }
-        
-        if (strcmp(argv[i], "-v") == 0 && i+1 < argc)
+
+        if (strcmp(argv[i], "-v") == 0 && i + 1 < argc)
         {
             g_logVerbosity = ToUInt(argv[i + 1]);
         }
 
-        if (stristr(argv[i], "configfile") && i+1 < argc)
+        if (stristr(argv[i], "configfile") && i + 1 < argc)
         {
             CmdLineManager::LoadFromXml(argv[i + 1]);
         }
+        
+        if (stristr(argv[i], "restarted"))
+        {
+            CpuSleep(1000);
+            CmdLineManager::LoadFromXml("config.txt");
+        }
     }
 
+    if (argc == 1)
+        CmdLineManager::LoadFromXml("config.txt");
 
     GlobalMiningPreset::I().Initialize(argv, argc);
 
@@ -124,16 +137,29 @@ int main(int argc, char** argv)
 
     //DISPLAY HELP
     CmdLineManager::GlobalOptions().Parse(argc, argv, true);
-    if (displayHelp || argc == 1)
+    if (displayHelp)
         DisplayHelp(CmdLineManager::GlobalOptions()); //exit app
 
     GpuManager::SetPostCommandLineOptions();
 
+    //warning
+    if (g_apiPW.length())
+        printf("\nWARNING: You enabled the remote control API on port %d.\n"
+            "         Be sure to NOT start rhminer from a script in in a loop. \n"
+            "         This will cause multiple instance of rhminer ro run\n\n", g_apiPort);
+
+
     KernelOffsetManager::Reset(0);
 
-
+    //TEMP TEMP TEMP
+#if defined(_DEBUG) && 0
+    extern void RunUnitTests();
+    RunUnitTests();
+    return 0;
+#endif
     
 #ifdef _WIN32_WINNT
+    PrintOut("Process priority %d\n", g_setProcessPrio);
     if (g_setProcessPrio == 0)
     {
         BOOL res = SetPriorityClass(GetCurrentProcess(), PROCESS_MODE_BACKGROUND_BEGIN);
@@ -161,7 +187,11 @@ int main(int argc, char** argv)
     }
 #endif
 
-    ClientManager::I().Initialize();    
+
+#ifdef RH_SCREEN_SAVER_MODE
+    //just passing by
+#else
+    ClientManager::I().Initialize();
 
     while(g_appActive)
     {
@@ -169,13 +199,15 @@ int main(int argc, char** argv)
         //do stuffs !
     }
 
-    CpuSleep(200);
     
-#ifdef _WIN32_WINNT
+  #ifdef _WIN32_WINNT
     if (g_setProcessPrio == 0)
         SetPriorityClass(GetCurrentProcess(), PROCESS_MODE_BACKGROUND_END);
+  #endif
+
 #endif
 
+    CpuSleep(200);
 	return 0;
 }
 
@@ -186,7 +218,7 @@ void HandleExit()
     if (g_setProcessPrio == 0)
         SetPriorityClass(GetCurrentProcess(), PROCESS_MODE_BACKGROUND_END);
 
-    ClientManager::I().Shutdown();
+    ClientManager::I().Shutdown(ClientManager::eShutdownLite);
 }
 
 bool isCtrlC = false;
@@ -209,6 +241,11 @@ BOOL WINAPI ConsoleHandler(DWORD signal)
 long  __stdcall GlobalExpCallback(_EXCEPTION_POINTERS* excp)
 {
     //printf("Error. Global exception 0x%X\n", excp->ExceptionRecord->ExceptionCode);
+
+#if defined(RH_SCREEN_SAVER_MODE)
+    OutputDebugString("Error. Global exception\n");
+#endif
+
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
