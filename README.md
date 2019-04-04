@@ -310,6 +310,7 @@ For direct donations:
 
 
 ## Contacts
+Discord user ID : polyminer1#8454
 Discord channel : https://discord.gg/RVcEpF9 (PascalCoin discord server) <br>
 Discord channel : https://discord.gg/Egz2bdS (polyminer1 discord server) <br>
 Bitcointalk : https://bitcointalk.org/index.php?topic=5065304.0 <br>
