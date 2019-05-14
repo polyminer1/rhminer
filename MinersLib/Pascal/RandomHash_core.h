@@ -129,7 +129,6 @@ struct RH_StrideStruct
 
 #else //!CPU
 
-//TODO: Optmiz - Test memcpy
 #define RH_INPLACE_MEMCPY_128(pDst, pSrc, byteCount)                    \
     {U8* end = pDst + byteCount;                                        \
     while(pDst < end)                                                   \

@@ -1,5 +1,15 @@
 # rhminer update and bugfix history
 
+Version 1.5.1 - 14 May 2019
+* Support for CUDA 10.1 with drivers 419.x(Windows) and 418.x(Linux)
+* Added suppot for Nvidia Turing architecture (GTX 20xx) Untested.
+* Fixed : Cannot Disable gpu mining when using config.txton gpu binaries. 
+  Now you can simply empty the value of "gpu" and "gputhreads" to disable gpu mining on gpu binaries. Ex: "gpu":"" and "gputhreads":""
+* Little performance boost on linux binaries (CPU and GPU)
+* Added missing screensaver source files
+* change line ending in many files
+
+
 Version 1.5 - 2 April 2019
 * Added ETHman and AwesomeMiner support (miner_getstat1, miner_restart, miner_reboot, miner_file, control_gpu)
   It is strongly recommented to NOT put rhminer in a loop in a script if you intend to use EthMan or AwseomeMiner.

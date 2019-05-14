@@ -1,4 +1,4 @@
 :a
-rhminer.exe -configfile config.xml
+rhminer.exe -configfile config.txt
 goto a
 

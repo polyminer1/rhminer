@@ -28,6 +28,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake")
 
 include_directories(./)
 include_directories(..)
+include_directories(/usr/local/cuda/include)
 include_directories(rhminer)
 
 include (CheckCCompilerFlag)

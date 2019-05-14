@@ -1,5 +1,14 @@
 {
 /*
+**************************************************************************************************************************************
+*	This is file is an xml representation of command-line values.
+*	Keys are command-line options (without the dash)
+*	Values types are string, bool andd integer
+*	To see the list of available Keys/options simply look at the list of command-line options given by calling "rhminer -?"
+**************************************************************************************************************************************
+*/
+
+/*
 Enable the use of CPU to mine.
 ex "cpu":true, "cputhreads":4 will enable mining on cpu while gpu mining.
 */
@@ -12,10 +21,12 @@ NOTE: adding + before thread count will disable the maximum thread count safety 
 "cputhreads":2,
 
 /*
-Enable indiviaual GPU by their index. GPU not in the list will be disabled. ex: "gpu":"0,3,4"
-NOTE: this option is ignored for CPU only binaries.
+Enable indiviaual GPU by their index. GPU not in the list will be disabled. Put an empty string to disable mining on all gpu
+ex: "gpu":"0,3,4" to mine on gpu #0, #3 and #4
+NOTE: This option is ignored for CPU only binaries.
+      To disable gpu mining, on gpu binaries, simply put empty string value of "gpu" and "gputhreads". Ex: "gpu":"" and "gputhreads":""
 */
-"gpu":"1",
+"gpu":"0",
 
 /*
 Cuda thread count. 
@@ -77,9 +88,18 @@ Failover password for stratum or local wallet
  * Tcp port of the remote api.
  * Default port is 7111.
  * Set to 0 to disable server
+ * Port is read-only by default. 
+ * See API.txt for more informations
  */
 "apiport":7111,
 
+/*
+ * Api password for non read-only (miner_restart, miner_reboot, control_gpu, ...)
+ * Default password is empty puting the api in read-only mode.
+ * Note: must match Ethman password
+ * See API.txt for more informations
+ */
+"apipw":"",
 
 /*
  * No new work timeout. Default is 60 seconds

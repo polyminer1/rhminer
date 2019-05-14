@@ -303,16 +303,17 @@ int CmdLineManager::ParseInternalXML(const char* specificSymbol, bool exitOnErro
                         return 0;
 
                     string symbVal = m_xmlCommandLineConfig.get(symb, "").asString();
-                    
-                    PrintOutSilent("XML option %s %s\n", symb.c_str(), symbVal.c_str());
                     if (symbVal.length())
                     {
+                        //printf("XML option %s %s\n", symb.c_str(), symbVal.c_str());
+			
                         if (o->flagSetter)
                         {
                             if (stristr(symbVal.c_str(), "enable") || stristr(symbVal.c_str(), "true"))
                             {
                                 o->flagSetter();
                                 o->parsed = true;
+                                m_argslist += FormatString("-%s ", symb.c_str());
                             }
                         }
                         else
@@ -320,6 +321,7 @@ int CmdLineManager::ParseInternalXML(const char* specificSymbol, bool exitOnErro
                             //detect val with no value !
                             o->valSetter(symbVal);
                             o->parsed = true;
+                            m_argslist += FormatString("-%s %s ", symb.c_str(), symbVal.c_str());
                         }
                     }
                 }
@@ -328,8 +330,10 @@ int CmdLineManager::ParseInternalXML(const char* specificSymbol, bool exitOnErro
                     if (symb != "gpu" &&
                         symb != "gputhreads" &&
                         symb != "kernelactivewaiting")
+                    {
                     printf("Unknown argument '%s' \n", symb.c_str());
                 }
+            }
             }
             catch (...)
             {
@@ -352,6 +356,10 @@ int CmdLineManager::ParseInternalXML(const char* specificSymbol, bool exitOnErro
         printf("Command line argument error\n");
         return 0;
     }
+
+    if (m_argslist.length())
+        OverrideArgs(m_argslist);
+
     return 0;
 }
 
@@ -473,4 +481,5 @@ void CmdLineManager::OverrideArgs(const string& newArgs)
         strcpy(m_argv[i + 1], &na[i][0]);
     }
     m_argv[i + 1] = 0;
+    m_argc = i+1;
 }

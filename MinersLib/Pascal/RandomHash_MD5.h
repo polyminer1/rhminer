@@ -30,7 +30,6 @@ error
     
 /* MD5_F, MD5_G and MD5_H are basic MD5 functions: selection, majority, parity */
 
-//todo optimiz -> intrinsics
 #define MD5_F(x, y, z) (((x) & (y)) | ((~x) & (z)))
 #define MD5_G(x, y, z) (((x) & (z)) | ((y) & (~z)))
 #define MD5_H(x, y, z) ((x) ^ (y) ^ (z))

@@ -46,38 +46,9 @@ inline void RH_INPLACE_MEMCPY_128(U8* pDst, U8* pSrc, size_t byteCount)
     else
         memcpy(pDst, pSrc, byteCount);
 }
-/*
-CUDA_DECL_DEVICE
-inline void CUDA_SYM(RH_INPLACE_MEMCPY_128_A)(U8* pDst, U8* pSrc, U32 byteCount, MurmurHash3_x86_32_State* accum)
-{
-    RH_ASSERT(( (size_t)pDst % 8) == 0);
-    RH_ASSERT(( (size_t)pSrc % 8) == 0);
-
-    S32 n = (byteCount / sizeof(__m128i)) * sizeof(__m128i);
-    U32 m = byteCount % sizeof(__m128i);
-    __m128i r0;
-    while (n > 0)
-    {
-        r0 = RH_MM_LOAD128((__m128i *)(pSrc ));
-        MurmurHash3_x86_32_Update_16(r0, 16, accum);   
-        RH_MM_STORE128((__m128i *)(pDst ), r0);
-        pSrc += sizeof(__m128i);
-        pDst += sizeof(__m128i);
-        n -= sizeof(__m128i);
-    }
-    if (m)
-    {
-        r0 = RH_MM_LOAD128((__m128i *)(pSrc));
-        RH_MM_STORE128((__m128i *)(pDst ), r0);
-        MurmurHash3_x86_32_Update_16(r0, m, accum); 
-    }
-    RH_MM_BARRIER();
-}
-*/
 
 #else //!CPU
 
-//TODO: Optmiz - Test memcpy
 #define RH_INPLACE_MEMCPY_128(pDst, pSrc, byteCount)                    \
     {U8* end = pDst + byteCount;                                        \
     while(pDst < end)                                                   \
@@ -506,7 +477,6 @@ void CUDA_SYM(RH_STRIDE_ARRAY_UPDATE_MURMUR3_SSE41_2)(U8* strideArray, U32 eleme
 
 
 
-
 #ifdef RANDOMHASH_CUDA
 
 CUDA_DECL_DEVICE
@@ -539,7 +509,7 @@ void CUDA_SYM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(U8* strideArray, U32 elementIdx)
 
 void CUDA_SYM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(U8* strideArray, U32 elementIdx, U8* r5p2AccumArray = 0)
 {
-    U32 sseoOtimization = g_sseOptimization;// RH_STRIDEARRAY_GET_EXTRA(strideArray, sseoptimization);
+    U32 sseoOtimization = g_sseOptimization;
     if (!sseoOtimization)
     {
         if (r5p2AccumArray)
@@ -570,7 +540,7 @@ void CUDA_SYM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(U8* strideArray, U32 elementIdx, U
         else
             return _CM(RH_STRIDE_ARRAY_UPDATE_MURMUR3_SSE41)(strideArray, elementIdx);
 #else
-        RHMINER_ASSERT(sseoOtimization == 0); //impossible
+        RHMINER_ASSERT(sseoOtimization == 0); 
 #endif  
     }
 #if 0
@@ -701,10 +671,10 @@ inline void CUDA_SYM_DECL(Transfo0_2)(U8* nextChunk, U32 size, U8* source)
     }
 }
 
-#ifdef RHMINER_PLATFORM_CPU
+#if defined(RHMINER_PLATFORM_CPU) && !defined(__CUDACC__)
 
+#if defined(RHMINER_ENABLE_SSE4)
 
-#if defined(RHMINER_ENABLE_SSE4) && !defined(__CUDA_ARCH__)
 inline void CUDA_SYM_DECL(Transfo0_2_128_SSE4)(U8* nextChunk, U32 size, U8* source)
 {
     U32 rndState = _CM(MurmurHash3_x86_32_Fast)(source,size); 
@@ -1006,9 +976,6 @@ void CUDA_SYM_DECL(Transfo5_2)(U8* nextChunk, U32 size, U8* outputPtr)
         ritt--;
     }
 }
-
-
-
 
 void CUDA_SYM_DECL(Transfo6_2)(U8* nextChunk, U32 size, U8* source)
 {

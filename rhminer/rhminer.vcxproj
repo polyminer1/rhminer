@@ -37,6 +37,10 @@
       <Configuration>Release_Pascal</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_Turing|x64">
+      <Configuration>Release_Turing</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release_Volta|Win32">
       <Configuration>Release_Volta</Configuration>
       <Platform>Win32</Platform>
@@ -132,55 +136,62 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ScreenSaver|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_CPU_OLDGEN|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
@@ -220,6 +231,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'" Label="PropertySheets">
@@ -272,6 +286,10 @@
     <LibraryPath>$(BOOST_ROOT)\stage\x64\lib\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <LibraryPath>$(BOOST_ROOT)\stage\x64\lib\;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>$(BOOST_ROOT)\stage\x64\lib\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -509,6 +527,34 @@
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Pascal</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(CUDA_PATH)/include;$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <DebugInformationFormat>None</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>lib_json.lib;OpenCL.lib;cudart_static.lib;cuda.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CUDA_PATH)/lib/x64;..\x64\$(Configuration)\</AdditionalLibraryDirectories>
+      <MapFileName>
+      </MapFileName>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+    <PostBuildEvent />
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -549,7 +595,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
-      <Optimization>Full</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -698,12 +744,14 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="precomp.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ScreenSaver|x64'">Create</PrecompiledHeader>
@@ -787,6 +835,7 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ScreenSaver|x64'">true</ExcludedFromBuild>
@@ -809,6 +858,7 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Kepler|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">true</ExcludedFromBuild>
     </ResourceCompile>
   </ItemGroup>
