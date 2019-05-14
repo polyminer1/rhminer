@@ -51,6 +51,7 @@ Note2: It is not recommended to mine using a laptop.
 * Maxwell GTX  900 series, Quadro M series, GTX Titan X
 * Pascal  GTX 1000 series, Titan Xp, Tesla P40, Tesla P4,GP100/Tesla P100 DGX-1
 * Volta   GTX 1100 series (GV104), Tesla V100
+* Turing  GTX 2000 series (GTX RTX, GTX 2060, GTX 2070, GTX 2080)
 
 ## Gpu mining
 To mine using gpu you must provide the gpu numbers and the amount of threads for each gpu.<br>
