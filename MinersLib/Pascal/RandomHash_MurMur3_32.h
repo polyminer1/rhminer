@@ -552,9 +552,12 @@ uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const U8* key, int len)
     while (key != keyEnd)
     {
         r0 = *(U64*)(key);
-        MURMUR3_BODY((U32)(r0));
+		key += sizeof(U64);
+#if defined(RH_USE_CUDA_MEM_BOOST)
+		RH_PREFETCH_MEM((const char*)key);
+#endif
+		MURMUR3_BODY((U32)(r0));
         MURMUR3_BODY((U32)(r0 >> 32));
-        key += sizeof(U64);
     }
 
     if (m >= 4)

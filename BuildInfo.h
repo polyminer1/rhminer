@@ -1,5 +1,6 @@
 #pragma once
 
 #define RH_PROJECT_NAME "rhminer"
-#define RH_PROJECT_VERSION "1.5"
+#define RH_PROJECT_VERSION "1.5.1"
+
 

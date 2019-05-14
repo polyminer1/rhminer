@@ -148,7 +148,10 @@ inline U32 _mm_extract_epi32_( __m128i V)
             m_tmp = _mm_srli_epi32(m_tmp,(32-count)); \
             m = _mm_or_si128(m,m_tmp);}
 
-    #define RH_PREFETCH_MEM(addr) _mm_prefetch((char*)addr,_MM_HINT_T0);
+    //#define RH_PREFETCH_MEM(addr) _mm_prefetch((char*)addr,_MM_HINT_T0);
+	#define RH_PREFETCH_MEM(addr) _mm_prefetch((char*)addr,_MM_HINT_NTA); 
+
+
     #define BIG_CONSTANT(x) (x)
     #define KERNEL_LOG(...) PrintOutCritical(__VA_ARGS__)
     #define KERNEL0_LOG(...) PrintOutCritical(__VA_ARGS__)

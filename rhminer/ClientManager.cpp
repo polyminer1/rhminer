@@ -99,6 +99,8 @@ void ClientManager::Initialize()
     //          Setup gpu map
     bool gpuSwitchPresent = CmdLineManager::GlobalOptions().FindSwitch("-gpu") || 
                             (CmdLineManager::GlobalOptions().FindSwitch("-cpu"));
+    bool disableGpuSwitcht = CmdLineManager::GlobalOptions().FindSwitch("-gpu") == false &&  
+                             CmdLineManager::GlobalOptions().FindSwitch("-gputhreads") == false;
 
     /////////////////////////////////////////////////
     //with no cmdline ,enable mining for GPUS+cpu
@@ -115,6 +117,10 @@ void ClientManager::Initialize()
                 g_useCPU = true;
                 if (g_cpuMinerThreads == 0)
                     g_cpuMinerThreads = 1;
+            }
+            else if (disableGpuSwitcht)
+            {
+                g.enabled = false;
             }
         }
     }

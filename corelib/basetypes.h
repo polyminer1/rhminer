@@ -40,7 +40,7 @@
     #define RHMINER_PLATFORM_GPU
     #define RHMINER_PLATFORM_GPU_CODE(...) __VA_ARGS__
     #define RHMINER_PLATFORM_CPU_CODE(...)
-#elif defined(__GNUC__) || defined(_WIN32) || defined __x86_64 || defined _M_X64 || defined __i386__ || defined _M_IX86
+#elif (defined(__unix__) || defined(__unix)) || defined(_WIN32) || defined __x86_64 || defined _M_X64 || defined __i386__ || defined _M_IX86
     #define RHMINER_PLATFORM_CPU
     #define RHMINER_PLATFORM_GPU_CODE(...)
     #define RHMINER_PLATFORM_CPU_CODE(...) __VA_ARGS__

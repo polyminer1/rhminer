@@ -287,7 +287,7 @@ bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
 {
     std::lock_guard<std::mutex> g(*devFeeMutex);
 
-    //TODO: change that to lower time, it causes sopt-mining-emails from nanopool
+    // TODO: change that to lower time, it causes sopt-mining-emails from nanopool
 
     if (TimeGetMilliSec() > m_devFeeTimer24hMS)
     {

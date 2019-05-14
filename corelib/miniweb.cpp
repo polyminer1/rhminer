@@ -68,7 +68,7 @@ void ProcessControlgpu(Json::Value responseObject, socket_ptr sock)
     {
         Json::Value params = responseObject.get("params", Json::Value::null);
         if (!params.isArray())
-            PrintOut("Api Error. Wrong parameter\n");
+            PrintOut("Remote Api Error. Wrong parameter\n");
         else
         {
             string g = params.get((Json::Value::ArrayIndex)0, "0").asString();
@@ -102,7 +102,7 @@ void ProcessControlgpu(Json::Value responseObject, socket_ptr sock)
     }
     catch (...)
     {
-        PrintOut("Error parsing api.contro_gpu\n");
+        PrintOut("Error parsing api.control_gpu\n");
     }
 }
 
@@ -112,7 +112,7 @@ void ProcessMinerFile(Json::Value responseObject, socket_ptr sock)
     {
         Json::Value params = responseObject.get("params", Json::Value::null);
         if (!params.isArray())
-            PrintOut("Api Error. Wrong parameter\n");
+            PrintOut("Remote Api Error. Wrong parameter\n");
         else
         {
             string fn = params.get((Json::Value::ArrayIndex)0, "").asString();
@@ -136,7 +136,7 @@ void ProcessMinerFile(Json::Value responseObject, socket_ptr sock)
                 FILE* f = fopen(basePath, "wb");
                 if (f)
                 {
-                    PrintOut("Received %s\n", basePath);
+                    PrintOut("Remote API Received %s\n", basePath);
                     fwrite(&data[0], data.size(), 1, f);
                     fclose(f);
 
@@ -156,7 +156,7 @@ void ProcessMinerFile(Json::Value responseObject, socket_ptr sock)
     }
     catch (...)
     {
-        PrintOut("Error parsing api.contro_gpu\n");
+        PrintOut("Error parsing api.control_gpu\n");
     }
 }
 
@@ -182,14 +182,14 @@ void ProcessJsonApi(Json::Value responseObject, socket_ptr sock)
                 if (IsValidPassword(psw))
                     GlobalMiningPreset::I().SetRestart(GlobalMiningPreset::eExternalRestart);
                 else
-                    PrintOut("Api Error. Wrong password\n");
+                    PrintOut("Remote Api Error. Wrong password\n");
             }
             else if (method == "miner_reboot")
             {
                 if (IsValidPassword(psw))
                     GlobalMiningPreset::I().RequestReboot();
                 else
-                    PrintOut("Api Error. Wrong password\n");
+                    PrintOut("Remote Api Error. Wrong password\n");
             }
             else if (method == "miner_file")
             {
@@ -198,7 +198,7 @@ void ProcessJsonApi(Json::Value responseObject, socket_ptr sock)
                     ProcessMinerFile(responseObject, sock);
                 }
                 else
-                    PrintOut("Api Error. Wrong password\n");
+                    PrintOut("Remote Api Error. Wrong password\n");
             }
             else if (method == "control_gpu")
             {
@@ -207,16 +207,16 @@ void ProcessJsonApi(Json::Value responseObject, socket_ptr sock)
                     ProcessControlgpu(responseObject, sock);
                 }
                 else
-                    PrintOut("Api Error. Wrong password\n");
+                    PrintOut("Remote Api Error. Wrong password\n");
             }
 
         }
         else
-            PrintOut("Api Error. unsupported method\n");
+            PrintOut("Remote Api Error. unsupported method\n");
     }
     catch (...)
     {
-        PrintOut("Api Error. Json error\n");
+        PrintOut("Remote Api Error. Json error\n");
     }
 }
 
@@ -237,7 +237,7 @@ void MiniWeb_Connection(socket_ptr sock)
         data[MaxBuffer - 1] = 0;
         data[length + 1] = 0;
 
-        PrintOutSilent("API:  %s\n", data);
+        PrintOutSilent("Remote API:  %s\n", data);
 
         bool validJson = false;
         Json::Value responseObject;
@@ -267,7 +267,7 @@ void MiniWeb_Connection(socket_ptr sock)
     }
     catch (std::exception& e)
     {
-        PrintOut("MiniWeb: Exception in webthread: %s\n", e.what());
+        PrintOut("Exception in MiniWeb thread: %s\n", e.what());
     }
 }
 
@@ -277,7 +277,7 @@ void MiniWeb_Server(boost::asio::io_service& io_service, unsigned short port)
 {
     acceptor = new tcp::acceptor(io_service, tcp::endpoint(tcp::v4(), port));
 
-    PrintOut("MiniWeb: Webserver started on port %d\n", port);
+    PrintOut("Remote API started on port %d\n", port);
     for (;;)
     {
         socket_ptr sock(new tcp::socket(io_service));
@@ -305,7 +305,7 @@ void StartMiniWeb()
             }
             catch (std::exception& e)
             {
-                PrintOut("MiniWeb: Exception in miniweb: %s\n", e.what());
+                PrintOut("Exception in miniweb: %s\n", e.what());
                 return;
             }
             CpuSleep(1000);

@@ -44,6 +44,10 @@
       <Configuration>Release_Pascal</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Release_Turing|x64">
+      <Configuration>Release_Turing</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release_Volta|Win32">
       <Configuration>Release_Volta</Configuration>
       <Platform>Win32</Platform>
@@ -80,7 +84,7 @@
   <PropertyGroup>
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -89,6 +93,9 @@
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Release_Pascal'">
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release_Turing'">
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Release_Volta'">
@@ -108,7 +115,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(CUDAPropsPath)\CUDA 9.2.props" />
+    <Import Project="$(CUDAPropsPath)\CUDA 10.1.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" />
@@ -199,7 +206,7 @@
       <OutputFile>$(OutDir)/cudalib.exe</OutputFile>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_60,sm_60;compute_61,sm_61;compute_62,sm_62;</CodeGeneration>
+      <CodeGeneration>compute_60,sm_60;compute_61,sm_61;compute_62,sm_62</CodeGeneration>
       <AdditionalOptions>-Xcompiler "/wd 4819" %(AdditionalOptions)</AdditionalOptions>
       <Include>./;../../common/inc;../MinersLib/</Include>
       <Defines>WIN32;</Defines>
@@ -207,6 +214,35 @@
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">false</GPUDebugInfo>
       <HostDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">false</HostDebugInfo>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">O3</Optimization>
+    </CudaCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release_Turing'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(CudaToolkitDir)/include;..\jsoncpp-1.8.0\include;$(BOOST_ROOT);..\</AdditionalIncludeDirectories>
+      <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">true</IntrinsicFunctions>
+      <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">Speed</FavorSizeOrSpeed>
+      <RuntimeLibrary Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">false</BufferSecurityCheck>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">Full</Optimization>
+      <DebugInformationFormat Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">None</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CudaToolkitLibDir);</AdditionalLibraryDirectories>
+      <OutputFile>$(OutDir)/cudalib.exe</OutputFile>
+    </Link>
+    <CudaCompile>
+      <CodeGeneration>compute_75,sm_75</CodeGeneration>
+      <AdditionalOptions>-Xcompiler "/wd 4819" %(AdditionalOptions)</AdditionalOptions>
+      <Include>./;../../common/inc;../MinersLib/</Include>
+      <Defines>WIN32;</Defines>
+      <TargetMachinePlatform Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">64</TargetMachinePlatform>
+      <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">false</GPUDebugInfo>
+      <HostDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">false</HostDebugInfo>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">O3</Optimization>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release_Volta'">
@@ -348,6 +384,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ScreenSaver|x64'">Create</PrecompiledHeader>
@@ -356,6 +393,7 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">precomp.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">precomp.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='ScreenSaver|x64'">precomp.h</PrecompiledHeaderFile>
@@ -371,6 +409,7 @@
       <Defines Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release_Maxwell|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
+      <Defines Condition="'$(Configuration)|$(Platform)'=='Release_Turing|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release_Volta|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
       <Defines Condition="'$(Configuration)|$(Platform)'=='ScreenSaver|x64'">WIN32;RANDOMHASH_CUDA;</Defines>
@@ -384,6 +423,6 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(CUDAPropsPath)\CUDA 9.2.targets" />
+    <Import Project="$(CUDAPropsPath)\CUDA 10.1.targets" />
   </ImportGroup>
 </Project>

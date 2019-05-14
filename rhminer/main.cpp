@@ -151,12 +151,6 @@ int main(int argc, char** argv)
 
     KernelOffsetManager::Reset(0);
 
-    //TEMP TEMP TEMP
-#if defined(_DEBUG) && 0
-    extern void RunUnitTests();
-    RunUnitTests();
-    return 0;
-#endif
     
 #ifdef _WIN32_WINNT
     PrintOut("Process priority %d\n", g_setProcessPrio);
