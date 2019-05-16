@@ -264,17 +264,19 @@ bool CmdLineManager::Parse(int argc, char** argv, bool exitOnError)
         m_argslist += " ";
     }
     
-    //DebugOut("Command line args : %s\n", m_argslist.c_str());
     int res = ParseInternal(NULL, exitOnError);
     if (res && exitOnError)
     {
         printf("Invalid command line option '%s'\n", res < argc ? argv[res]:"");
         RHMINER_EXIT_APP("");
     }
+
+	PrintOutSilent("Options: %s\n", m_argslist.c_str());
+	
     return res == 0;
 }
 
-//return ith symbole that cause error. else return 0
+//return ith symbol that cause error. else return 0
 int CmdLineManager::ParseInternal(const char* specificSymbol, bool exitOnError)
 {
     if (!m_xmlCommandLineConfig.empty())
@@ -300,13 +302,12 @@ int CmdLineManager::ParseInternalXML(const char* specificSymbol, bool exitOnErro
                 if (o)
                 {
                     if (o->parsed && !o->allowMultiples)
-                        return 0;
+                        continue;
 
                     string symbVal = m_xmlCommandLineConfig.get(symb, "").asString();
+					//PrintOut("XML option %s '%s'\n", symb.c_str(), symbVal.c_str());
                     if (symbVal.length())
                     {
-                        //printf("XML option %s %s\n", symb.c_str(), symbVal.c_str());
-			
                         if (o->flagSetter)
                         {
                             if (stristr(symbVal.c_str(), "enable") || stristr(symbVal.c_str(), "true"))
@@ -357,7 +358,7 @@ int CmdLineManager::ParseInternalXML(const char* specificSymbol, bool exitOnErro
         return 0;
     }
 
-    if (m_argslist.length())
+    if (m_argslist.length() && !specificSymbol)
         OverrideArgs(m_argslist);
 
     return 0;

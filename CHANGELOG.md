@@ -1,5 +1,9 @@
 # rhminer update and bugfix history
 
+Version 1.5.2 - 16 May 2019
+* Fixed Xml parsing of config file. Some options where skipped.
+
+
 Version 1.5.1 - 14 May 2019
 * Support for CUDA 10.1 with drivers 419.x(Windows) and 418.x(Linux)
 * Added suppot for Nvidia Turing architecture (GTX 20xx) Untested.

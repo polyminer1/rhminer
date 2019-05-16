@@ -132,7 +132,7 @@ WARNING: Changing this value will affect GPU mining.
 Log verbosity. From 0 to 3.
 0 no log, 1 normal log, 2 include warnings. 3 network (only in log file).
 Default is 1
-/*
+*/
 "v":3,
 
 
