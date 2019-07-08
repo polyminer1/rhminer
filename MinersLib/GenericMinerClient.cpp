@@ -273,7 +273,7 @@ void GenericMinerClient::doStratum()
                 }
                 CpuSleep(1000);
 
-                if (GlobalMiningPreset::I().RestartRequested() == GlobalMiningPreset::eInteralRestart && m_farm.isMining())
+                if (GlobalMiningPreset::I().RestartRequested() == GlobalMiningPreset::eInteralRestart /*&& m_farm.isMining()*/)
                 {
                     PrintOutCritical("Restarging rhminer...\n");
                     //once every 1 sec

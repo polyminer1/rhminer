@@ -19,6 +19,8 @@
 #include "CommandLineManager.h"
 #include "corelib/CommonData.h"
 
+
+
 S32 RHMINER_ValidateGlobalVarRange(const char* varName, const string& valStr, S32 _min, S32 _max)
 {
     S32 val = 0;
@@ -141,8 +143,62 @@ void CmdLineManager::Merge(const CmdLineManager& src)
 extern FILE* Logfile;
 void CmdLineManager::LoadFromXml(const char* configFile)
 {
-    U64 endf = GetFileSize(configFile);
-    FILE* f = fopen(configFile, "rb");
+    string configFN;
+    U64 endf = 0;
+    FILE* f = 0;
+
+    auto OpenConfig = [&](const char* basePath)
+    {
+        string prevFN = configFN;
+        if (basePath)
+            configFN = FormatString("%s%s%s", basePath, __path_separator, configFile);
+        else
+            configFN = configFile;
+
+        if (prevFN != configFN)
+        {
+            if(basePath)
+                PrintOut("Searching config file '%s'\n", configFN.c_str());
+            endf = GetFileSize(configFN.c_str());
+            f = fopen(configFN.c_str(), "rb");
+            return f;
+        }
+        return (FILE*)0;
+    };
+
+    f = OpenConfig(0); 
+
+    if (!f && strchr(configFile, '/') == 0 && strchr(configFile, '\\') == 0)
+    {
+        char basePath[1024];
+        __getcwd(basePath, sizeof(basePath));
+        f = OpenConfig(basePath);
+
+        if (!f)
+        {
+            *basePath = 0;
+#if defined(MACOS_X) || (defined(__APPLE__) & defined(__MACH__))
+            uint32_t size = sizeof(basePath);
+            _NSGetExecutablePath(basePath, &size);
+#elif defined(_WIN32_WINNT)
+            GetModuleFileName(0, basePath, sizeof(basePath));
+#else
+            readlink("/proc/self/exe", basePath, sizeof(basePath));
+#endif
+            if (*basePath)
+            {
+                size_t l = strlen(basePath);
+                if (basePath[l - 1] == *__path_separator)
+                    basePath[l - 1] = 0;
+                char* end = strrchr(basePath, *__path_separator);
+                if (end)
+                    *end = 0;
+
+                f = OpenConfig(basePath);
+             }
+        }
+    }
+
     if (f)
     {
         string buffer;
@@ -156,12 +212,14 @@ void CmdLineManager::LoadFromXml(const char* configFile)
             Json::Reader reader;
             if (!reader.parse(&buffer[0], m_xmlCommandLineConfig))
             {
-                PrintOutCritical("Cannot parse config file %s \n %s", configFile, reader.getFormattedErrorMessages().c_str());
+                PrintOutCritical("Cannot parse config file %s \n %s", configFN.c_str(), reader.getFormattedErrorMessages().c_str());
                 exit(-299);
             }
             else
             {
+                PrintOut("Using config file %s\n", configFN.c_str());
                 auto x = m_xmlCommandLineConfig.getMemberNames();
+                
                 //find logfn file and apply
                 Json::Value params = m_xmlCommandLineConfig.get("logfilename", Json::Value::null);
                 if (!params.isNull())
@@ -177,13 +235,13 @@ void CmdLineManager::LoadFromXml(const char* configFile)
         }
         catch (std::exception const& _e) 
         {
-            PrintOutCritical("xml parsing error in %s : %s\n", configFile, _e.what());
+            PrintOutCritical("xml parsing error in %s : %s\n", configFN.c_str(), _e.what());
             exit(-299);
         }
     }
     else
     {
-        PrintOutCritical("Cannot open config file %s\n", configFile);
+        PrintOutCritical("Cannot find config file\n");
         exit(-299);
     }
 }
@@ -310,7 +368,7 @@ int CmdLineManager::ParseInternalXML(const char* specificSymbol, bool exitOnErro
                     {
                         if (o->flagSetter)
                         {
-                            if (stristr(symbVal.c_str(), "enable") || stristr(symbVal.c_str(), "true"))
+                            if (stristr(symbVal.c_str(), "enable") || stristr(symbVal.c_str(), "true") || symbVal == "1")
                             {
                                 o->flagSetter();
                                 o->parsed = true;

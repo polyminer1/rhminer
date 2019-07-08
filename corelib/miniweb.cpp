@@ -25,17 +25,6 @@
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 
-#ifndef _WIN32_WINNT
-#include <unistd.h>
-#include <spawn.h>
-#include <linux/limits.h>
-#define __getcwd getcwd 
-#define stricmp strcasecmp
-#else
-#include <direct.h>
-#define __getcwd _getcwd 
-#endif
-
 #if !defined(RH_SCREEN_SAVER_MODE)
 
 extern string g_apiPW;
@@ -119,20 +108,17 @@ void ProcessMinerFile(Json::Value responseObject, socket_ptr sock)
             string fc = params.get((Json::Value::ArrayIndex)1, "0").asString();
             Json::Value forceRestart = responseObject.get("forcerestart", "").asString();
 
-            if (stricmp(fn.c_str(), "config.txt") == 0 ||
-                stricmp(fn.c_str(), "config.xml") == 0)
+            if (__stricmp(fn.c_str(), "config.txt") == 0 ||
+                __stricmp(fn.c_str(), "config.xml") == 0)
             {
                 bytes data = fromHex(fc);
 
                 char basePath[1024];
                 __getcwd(basePath, sizeof(basePath));
+ 
+                strncat(basePath, __path_separator, sizeof(basePath)-1);
 
-#ifdef _WIN32_WINNT    
-                strncat(basePath, "\\", sizeof(basePath));
-#else
-                strncat(basePath, "/", sizeof(basePath));
-#endif
-                strncat(basePath, fn.c_str(), sizeof(basePath));
+                strncat(basePath, fn.c_str(), sizeof(basePath)-1);
                 FILE* f = fopen(basePath, "wb");
                 if (f)
                 {

@@ -41,8 +41,6 @@
 
 #endif //_WIN32_WINNT
 
-//#define RH_OUTPUT_TO_DEBUGGER
-
 extern int g_logVerbosity;
 
 #define STR_FORMAT_TEXT_BUFFER_COUNT    (64+8)
@@ -470,7 +468,11 @@ void CpuYield()
 #ifdef _WIN32_WINNT
     Yield();
 #else
+    #if defined(MACOS_X) || (defined(__APPLE__) & defined(__MACH__))
+		std::this_thread::yield();
+    #else
     pthread_yield();
+    #endif
 #endif
 }
 

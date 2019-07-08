@@ -13,123 +13,12 @@
 //
 //* Copyright 2018 Polyminer1 <https://github.com/polyminer1>
 
-#include "MinersLib/Pascal/RandomHash_def.h"
-#include "corelib/basetypes.h"
+#include "MinersLib/Pascal/RandomHash_MurMur3_32_def.h"
 #include "MinersLib/Pascal/PascalCommon.h"
 
-
-//----------------------------------------------------------------------------------------------------
-PLATFORM_CONST uint32_t MurmurHash3_x86_32_c1 = 0xcc9e2d51;
-PLATFORM_CONST uint32_t MurmurHash3_x86_32_c2 = 0x1b873593;
-PLATFORM_CONST uint32_t MurmurHash3_x86_32_c3 = 0xe6546b64;
-PLATFORM_CONST uint32_t MurmurHash3_x86_32_c4 = 0x85ebca6b;
-PLATFORM_CONST uint32_t MurmurHash3_x86_32_c5 = 0xc2b2ae35;
-
-struct MurmurHash3_x86_32_State
-{
-    union
-	{
-    uint8_t         buf[4]; //pending
-    	uint32_t		buf32;
-	} U;
-    uint32_t        idx;    //pending size
-    uint32_t        totalLen = 0;
-    uint32_t        h1 = 0;
-};
-
-
-#define RH_MUR3_BACKUP_STATE(state)                 \
-register uint32_t        back_buf = (state)->U.buf32;     \
-register uint32_t        back_idx = (state)->idx;              \
-register uint32_t        back_totalLen = (state)->totalLen;    \
-register uint32_t        back_h1 = (state)->h1;                \
-register uint32_t        back_i = 0;
-
-#define RH_MUR3_RESTORE_STATE(state)                 \
-(state)->U.buf32 = back_buf; \
-(state)->idx = back_idx; \
-(state)->totalLen = back_totalLen; \
-(state)->h1 = back_h1; 
-
-inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Init)(uint32_t seed, MurmurHash3_x86_32_State* state)
-{
-    state->U.buf32 = 0;
-    state->idx = 0;
-    state->totalLen = 0;
-    state->h1 = 0;
-}
-
-#define MURMUR3_BODY(k) { \
-            uint32_t k1 = (k); \
-            k1 *= MurmurHash3_x86_32_c1; \
-            k1 = ROTL32(k1, 15); \
-            k1 *= MurmurHash3_x86_32_c2; \
-            h1 ^= k1; \
-            h1 = ROTL32(h1, 13); \
-            h1 = h1 * 5 + MurmurHash3_x86_32_c3; } 
-
-
-/*
-#define INPLACE_M_MurmurHash3_x86_32_Update_1(chunk8)  \
-{                                                      \
-    RH_ASSERT(back_idx != 0xDEADBEEF)                \
-    RH_ASSERT(back_idx != 4);                        \
-    back_totalLen++;                                   \
-    uint32_t h1 = back_h1;                             \
-    back_buf &= ~(0xFF << (back_idx*8));               \
-    back_buf |= (chunk8 << (back_idx*8));              \
-    back_idx++;                                        \
-    if (back_idx == 4)                                 \
-    {                                                  \
-        MURMUR3_BODY(back_buf)                         \
-        back_idx = 0;                                  \
-    }                                                  \
-    back_h1 = h1;                                      \
-}
-*/
-
-#define INPLACE_M_MurmurHash3_x86_32_Update_1(chunk8)  \
-{                                                      \
-    RH_ASSERT(back_idx != 0xDEADBEEF)                \
-    RH_ASSERT(back_idx != 4);                        \
-    back_totalLen++;                                   \
-    back_buf &= ~(0xFF << (back_idx*8));               \
-    back_buf |= (chunk8 << (back_idx*8));              \
-    back_idx++;                                        \
-    if (back_idx == 4)                                 \
-    {                                                  \
-        back_buf *= MurmurHash3_x86_32_c1; \
-        back_buf = ROTL32(back_buf, 15); \
-        back_buf *= MurmurHash3_x86_32_c2; \
-        back_h1 ^= back_buf; \
-        back_h1 = ROTL32(back_h1, 13); \
-        back_h1 = back_h1 * 5 + MurmurHash3_x86_32_c3; \
-        back_idx = 0;                                  \
-        back_buf = 0; \
-    }                                                  \
-}
-
-#define INPLACE_M_MurmurHash3_x86_32_Update_1_NL(b)         \
-{                                                           \
-    U32 chunk8 = b;                                         \
-    chunk8 = chunk8 << (back_idx * 8);                      \
-    back_buf |= chunk8;                                     \
-    back_idx++;                                             \
-    if (back_idx == 4)                                      \
-    {                                                       \
-        back_buf *= MurmurHash3_x86_32_c1;                  \
-        back_buf = ROTL32(back_buf, 15);                    \
-        back_buf *= MurmurHash3_x86_32_c2;                  \
-        back_h1 ^= back_buf;                                \
-        back_h1 = ROTL32(back_h1, 13);                      \
-        back_h1 = back_h1 * 5 + MurmurHash3_x86_32_c3;      \
-        back_idx = 0;                                       \
-        back_buf = 0;                                       \
-    }                                                       \
-}
-
-
-
+#ifdef RH_ENABLE_AVX
+extern void MurmurHash3_x86_32_Update_8(U64 chunk64, uint32_t len, MurmurHash3_x86_32_State* state);
+#else
 CUDA_DECL_HOST_AND_DEVICE void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 chunk64, uint32_t len, MurmurHash3_x86_32_State* state)
 {
     RH_ASSERT(len < S32_Max);
@@ -145,7 +34,7 @@ CUDA_DECL_HOST_AND_DEVICE void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 ch
     {
         while(len)
         {
-            while (state->idx < 4 && len)
+            while (state->idx < 4 && len)       //TODO: optimiz - use switch case
             {
                 U32 b = (U8)(chunk64 >> (i*8)); //TODO: Manage endianness
                 state->U.buf[state->idx] = b;
@@ -165,7 +54,7 @@ CUDA_DECL_HOST_AND_DEVICE void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 ch
     else
     {
         const int nblocks = len >> 2;
-        while (i < nblocks)
+        while (i < nblocks)     //TODO: optimiz - use switch case
         {
             U32 block = (U32)(chunk64 >> (i*32));   //TODO: Manage endianness
             MURMUR3_BODY(block);
@@ -175,7 +64,7 @@ CUDA_DECL_HOST_AND_DEVICE void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 ch
 
         //save pending end bytes
         i = (nblocks * 4);
-	    while (i < (int)len)
+	    while (i < (int)len)        //TODO: optimiz - use switch case
         {
             RH_ASSERT(state->idx < 4);
             U32 b = (U8)(chunk64 >> (i*8)); //TODO: Manage endianness
@@ -194,7 +83,10 @@ CUDA_DECL_HOST_AND_DEVICE void CUDA_SYM_DECL(MurmurHash3_x86_32_Update_8)(U64 ch
     
     state->h1 = h1;
 }
+#endif //#ifdef RH_ENABLE_AVX
 
+
+//TODO: optimiz - CUDA: one 'while' on U8 should do better (same upthere)
 #define INPLACE_M_MurmurHash3_x86_32_Update_8(chunk64, _len)         \
 {                                                                    \
     RH_ASSERT(back_idx != 0xDEADBEEF)                              \
@@ -537,7 +429,10 @@ inline uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Finalize)( MurmurHash3_x86_32_S
     return h1;
 }
 
-uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const U8* key, int len)
+#ifdef RH_ENABLE_AVX
+extern uint32_t MurmurHash3_x86_32_Fast(const U8* key, int len);
+#else
+inline uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const U8* key, int len)
 {
     //const uint8_t * data = (const uint8_t*)key;
     RH_ASSERT((size_t(key)% 8) == 0);
@@ -553,7 +448,7 @@ uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const U8* key, int len)
     {
         r0 = *(U64*)(key);
 		key += sizeof(U64);
-#if defined(RH_USE_CUDA_MEM_BOOST)
+#if defined(RANDOMHASH_CUDA)
 		RH_PREFETCH_MEM((const char*)key);
 #endif
 		MURMUR3_BODY((U32)(r0));
@@ -591,8 +486,10 @@ uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const U8* key, int len)
 
     return h1;
 }
+#endif //#ifdef RH_ENABLE_AVX
 
 /*
+simple implementation
 uint32_t CUDA_SYM_DECL(MurmurHash3_x86_32_Fast)(const void * key, int len)
 {
     const uint8_t * data = (const uint8_t*)key;

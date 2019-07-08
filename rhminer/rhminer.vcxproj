@@ -599,6 +599,8 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <DebugInformationFormat>None</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <ControlFlowGuard>false</ControlFlowGuard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -719,6 +721,9 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
     <ClCompile Include="..\MinersLib\Algo\blake2s.cpp" />
     <ClCompile Include="..\MinersLib\Algo\Pascal.cpp" />
     <ClCompile Include="..\MinersLib\Algo\sha2.cpp" />
+    <ClCompile Include="..\MinersLib\Pascal\avx.cpp">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
     <ClCompile Include="..\MinersLib\Pascal\RandomHash_Cpu.cpp" />
     <ClCompile Include="..\MinersLib\StratumClient.cpp" />
     <ClCompile Include="..\MinersLib\CLMinerBase.cpp" />
@@ -783,6 +788,7 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
     <ClInclude Include="..\MinersLib\Pascal\RandomHash_inl.h" />
     <ClInclude Include="..\MinersLib\Pascal\RandomHash_mersenne_twister.h" />
     <ClInclude Include="..\MinersLib\Pascal\RandomHash_MurMur3_32.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_MurMur3_32_def.h" />
     <ClInclude Include="..\MinersLib\StratumClient.h" />
     <ClInclude Include="..\MinersLib\CLMinerBase.h" />
     <ClInclude Include="..\MinersLib\CPUMiner.h" />

@@ -22,6 +22,7 @@
 #include "corelib/boostext.h"
 #include "corelib/miniweb.h"
 
+
 #ifndef _WIN32_WINNT
 #include <sys/socket.h>
 #endif
@@ -57,7 +58,7 @@ StratumClient::StratumClient(const StratumInit& initData )
     m_sessionRandomID = h256(rand32());
 
     //init nonce2 random 
-    m_nonce2Rand.seed(TimeGetMilliSec()^rand32());
+    m_nonce2Rand.seed((U32)TimeGetMilliSec()^rand32());
 
 	//m_minerType = initData.m;
 	m_primary.host = initData.host;
@@ -535,7 +536,7 @@ void StratumClient::ProcessExtranonce(Json::Value& responseObject)
     RHMINER_ASSERT(params.isArray());
 
     std::string enonce = params.get((Json::Value::ArrayIndex)0, "").asString();
-    PrintOut("Extranonce set to %s\n", enonce);
+    PrintOut("Extranonce set to %s\n", enonce.c_str());
 
     for (auto i = enonce.length(); i < 16; ++i)
         enonce += "0";
@@ -785,7 +786,7 @@ void StratumClient::ProcessSetDiff(Json::Value& responseObject)
 {
     Json::Value params = responseObject.get("params", Json::Value::null);
     double stratDiff = params.isArray() ? params[0].asDouble() : responseObject.asDouble();
-    SetStratumDiff(stratDiff);
+    SetStratumDiff((float)stratDiff);
 }
 
 
@@ -994,7 +995,7 @@ void StratumClient::ProcessMiningNotifySolo(Json::Value& jsondata)
 
         string nonce1;
         char LocalPayloadData[67] = {0};
-        strncpy(LocalPayloadData, "rhminer.rhminer.rhminer.rhminer.rhminer.rhminer.rhminer.polyminer1", sizeof(LocalPayloadData));
+        strncpy(LocalPayloadData, "rhminer.rhminer.rhminer.rhminer.rhminer.rhminer.rhminer.polyminer1", sizeof(LocalPayloadData)-1);
         if (g_extraPayload.length())
         {
             //filter
@@ -1007,6 +1008,7 @@ void StratumClient::ProcessMiningNotifySolo(Json::Value& jsondata)
             memcpy(LocalPayloadData , g_extraPayload.c_str(), RH_Min((size_t)(66 - 11), g_extraPayload.length()) ); 
             LocalPayloadData[66] = 0;
         }
+
         if (payload.length() > 52)
         {
             //NOTE: there is a bug in the wallet where it will resent the last submited payload in the next mining notify. 
@@ -1142,7 +1144,7 @@ void StratumClient::ProcessReponse(Json::Value& responseObject)
         }
         if (lastMethodName == "miner-submit")
         {
-            RespondMiningSubmitSolo(responseObject, gpuIndex);
+            RespondMiningSubmitSolo(responseObject, (U32)gpuIndex);
             return;
         }
         else if (lastMethodName == "mining.subscribe")

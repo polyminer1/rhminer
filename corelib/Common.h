@@ -23,7 +23,6 @@
     #define MAX_GPUS 32
 #endif
 
-
 using bytesRef = vector_ref<byte>;
 using bytesConstRef = vector_ref<byte const>;
 

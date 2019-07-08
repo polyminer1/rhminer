@@ -43,7 +43,7 @@ protected:
     virtual void                  QueueKernel();
     virtual PrepareWorkStatus     PrepareWork(const PascalWorkSptr& workTempl, bool reuseCurrentWP = false);
     virtual void                  EvalKernelResult();
-    virtual SolutionSptr          MakeSubmitSolution(const std::vector<U64>& nonces, bool isFromCpuMiner);
+    virtual SolutionSptr          MakeSubmitSolution(const std::vector<U64>& nonces, U64 nonce2, bool isFromCpuMiner);
     virtual void                  SetSearchKernelCurrentTarget(U32 paramIndex, cl::Kernel& searchKernel);
     virtual void                  ClearKernelOutputBuffer(); 
     virtual KernelCodeAndFuctions GetKernelsCodeAndFunctions(); 

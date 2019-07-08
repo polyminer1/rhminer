@@ -8,173 +8,128 @@
 **************************************************************************************************************************************
 */
 
-/*
-Enable the use of CPU to mine.
-ex "cpu":true, "cputhreads":4 will enable mining on cpu while gpu mining.
-*/
+// Enable the use of CPU to mine.
+// ex "cpu":true, "cputhreads":4 will enable mining on cpu while gpu mining.
 "cpu":true,
 
-/*
-Number of CPU miner threads when mining with CPU. ex: "cpu":true, "cputhreads":4
-NOTE: adding + before thread count will disable the maximum thread count safety of one thread per core/hyperthread. Use this at your own risk. EX: "cputhreads":"+5"
-*/
+// Number of CPU miner threads when mining with CPU. ex: "cpu":true, "cputhreads":4
+// NOTE: adding + before thread count will disable the maximum thread count safety of one thread per core/hyperthread. Use this at your own risk. EX: "cputhreads":"+5"
 "cputhreads":2,
 
-/*
-Enable indiviaual GPU by their index. GPU not in the list will be disabled. Put an empty string to disable mining on all gpu
-ex: "gpu":"0,3,4" to mine on gpu #0, #3 and #4
-NOTE: This option is ignored for CPU only binaries.
-      To disable gpu mining, on gpu binaries, simply put empty string value of "gpu" and "gputhreads". Ex: "gpu":"" and "gputhreads":""
-*/
+// Slow down mining by internally throttling the cpu while mining.
+// This is usefull to prevent virtual computer provider throttling vCpu when mining softwares are detected
+// Min-Max are 0 and 99. Ex. -cputhrottling 12 will throttle the cpu 12% of the time 
+"cputhrottling":0,
+
+// Enable indiviaual GPU by their index. GPU not in the list will be disabled. Put an empty string to disable mining on all gpu
+// ex: "gpu":"0,3,4" to mine on gpu #0, #3 and #4
+// NOTE: This option is ignored for CPU only binaries.
+//       To disable gpu mining, on gpu binaries, simply put empty string value of "gpu" and "gputhreads". Ex: "gpu":"" and "gputhreads":""
 "gpu":"0",
 
-/*
-Cuda thread count. 
-ex: "gputhreads":"100" launche 100 threads on selected gpu(s)
-ex: "gputhreads":"100,200,123" launche 100 threads on selected gpu 0, 200 threads on gpu1, 123 treads on gpu2
-NOTE: this option is ignored for CPU only binaries.
-*/
+// Cuda thread count. 
+// ex: "gputhreads":"100" launche 100 threads on selected gpu(s)
+// ex: "gputhreads":"100,200,123" launche 100 threads on selected gpu 0, 200 threads on gpu1, 123 treads on gpu2
+// NOTE: this option is ignored for CPU only binaries.
 "gputhreads":"100",
 
-/*
-Stratum/wallet server address:port.
-NOTE: You can also use http://address to connect to local wallet.
-*/
+// Stratum/wallet server address:port.
+// NOTE: You can also use http://address to connect to local wallet.
 "s":"stratum+tcp://mine.pool.pascalpool.org:3334",
 
-/*
-Stratum user
-*/
+// Stratum user
+// Ex: "su":"1300378-87.0.Donations"
 "su":"WALLET_ADDRESS.0.USER_NAME",
 
-/*
-Stratum password
-*/
+// Stratum password
 "pw":"",
 
-/*
-Retries connection count for stratum or local wallet
-*/
+// Retries connection count for stratum or local wallet
 "r":20,
 
-/*
-Failover address:port for stratum or local wallet
-*/
+// Failover address:port for stratum or local wallet
 "fo":"",
 
-/*
-Failover user for stratum of a local wallet
-*/
+// Failover user for stratum of a local wallet
 "fou":"",
 
-/*
-Failover password for stratum or local wallet
-*/
+
+// Failover password for stratum or local wallet
 "fop":"",
 
-/*
- * Stop the miner when a number of consecutive submit errors occured.
- * Default is 10 consecutive errors.
- * This is usefull when mining into local wallet.
- */
+// Stop the miner when a number of consecutive submit errors occured.
+// Default is 10 consecutive errors.
+// This is usefull when mining into local wallet.
 "maxsubmiterrors":5,
 
-/* 
- * An extra payload to be added when submiting solution to local wallet.
- */
+// An extra payload to be added when submiting solution to local wallet.
 "extrapayload":"Default",
   
-/*
- * Tcp port of the remote api.
- * Default port is 7111.
- * Set to 0 to disable server
- * Port is read-only by default. 
- * See API.txt for more informations
- */
+// Tcp port of the remote api.
+// Default port is 7111.
+// Set to 0 to disable server
+// Port is read-only by default. 
+// See API.txt for more informations
 "apiport":7111,
 
-/*
- * Api password for non read-only (miner_restart, miner_reboot, control_gpu, ...)
- * Default password is empty puting the api in read-only mode.
- * Note: must match Ethman password
- * See API.txt for more informations
- */
+// Api password for non read-only (miner_restart, miner_reboot, control_gpu, ...)
+// Default password is empty puting the api in read-only mode.
+// Note: must match Ethman password
+// See API.txt for more informations
 "apipw":"",
 
-/*
- * No new work timeout. Default is 60 seconds
- */
+// No new work timeout. Default is 60 seconds
 "worktimeout": 60,
 
-/*
- * Display mining speeds every x seconds.
- * Default is 10
- */
+// Display mining speeds every x seconds.
+// Default is 10
 "displayspeedtimeout":10,
 
           
-/* 
- * Set the name of the log's filename.
- * Note: the log file will be overwritten every time you start rhminer
- */
+// Set the name of the log's filename.
+// Note: the log file will be overwritten every time you start rhminer
 "logfilename":"rhminer.log",
 
-/*
-On windows only. Set miner's process priority.
-0=Background Process, 1=Low Priority, 2=Normal Priority, 3=High Priority.
-Default is 3.
-WARNING: Changing this value will affect GPU mining.
-*/
+// On windows only. Set miner's process priority.
+// 0=Background Process, 1=Low Priority, 2=Normal Priority, 3=High Priority.
+// Default is 3.
+// WARNING: Changing this value will affect GPU mining.
 "processpriority":3,
 
 
-/*
-Log verbosity. From 0 to 3.
-0 no log, 1 normal log, 2 include warnings. 3 network (only in log file).
-Default is 1
-*/
+// Log verbosity. From 0 to 3.
+// 0 no log, 1 normal log, 2 include warnings. 3 network (only in log file).
+// Default is 1
 "v":3,
 
-
-/*
-Set local difficulyu. ex: "diff":999
-*/
+// Set local difficulyu. ex: "diff":999
 "diff":0,
 
-/*
-On windows only. Force miner to only run on selected logical core processors.
-ex: "processorsaffinity":"0,3" will make the miner run only on logical core #0 and #3.
-WARNING: Changing this value will affect GPU mining.
-*/
+// On windows only. Force miner to only run on selected logical core processors.
+// ex: "processorsaffinity":"0,3" will make the miner run only on logical core #0 and #3.
+// WARNING: Changing this value will affect GPU mining.
 "processorsaffinity":"",
 
-/*
-This option will enable some memory optimizations that could make the miner slower on some cpu.
-Test it with -testperformance before using it.
-1 to enable boost. 0 to disable boost.
-Enabled, by default, on cpu with hyperthreading.
-*/
+
+// This option will enable some memory optimizations that could make the miner slower on some cpu.
+// Test it with -testperformance before using it.
+// 1 to enable boost. 0 to disable boost.
+// Enabled, by default, on cpu with hyperthreading.
 "memoryboost":"",
 
-/*
-This option will enable some sse4 optimizations.
-It could make the miner slower on some cpu.
-Test it with -testperformance before using it.
-1 to enable SSe4.1 optimizations. 0 to disable. Disabled by default. 
-*/
+// This option will enable some sse4 optimizations.
+// It could make the miner slower on some cpu.
+// Test it with -testperformance before using it.
+// 1 to enable SSe4.1 optimizations. 0 to disable. Disabled by default. 
 "sseboost":"",
 
-/*
-Enable active waiting on kernel run.
-This will raise cpu usage but bring more stability, specially when mining on multiple gpu.
-WARNING: This affect cpu mining
-*/
+// Enable active waiting on kernel run.
+// This will raise cpu usage but bring more stability, specially when mining on multiple gpu.
+// WARNING: This affect cpu mining
 "kernelactivewaiting":false,
 
-/*
-Disable auto-reconnect on connection lost.
-Note : The miner will exit uppon loosing connection. 
-*/
+// Disable auto-reconnect on connection lost.
+// Note : The miner will exit uppon loosing connection. 
 "dar":false
 
 }

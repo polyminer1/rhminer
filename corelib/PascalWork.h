@@ -15,7 +15,7 @@
 /// @file
 /// @copyright Polyminer1, QualiaLibre
 #pragma once
-#ifdef _WIN32_WINNT
+#if defined(_WIN32_WINNT) || defined(MACOS_X) || (defined(__APPLE__) & defined(__MACH__))
 #include <json/json.h>
 #else
 #include <jsoncpp/json/json.h>
@@ -30,6 +30,9 @@
 
 //Enable V3 on cpu only. To bootstrap the chain.
 //#define RH_FORCE_PASCAL_V3_ON_CPU
+
+//Randomize nonce2
+#define RH_RANDOMIZE_NONCE2
 
 struct PascalSolution;
 
@@ -54,6 +57,7 @@ struct PascalWorkPackage
     string  ComputePayload();
 
     static void     ComputeTargetBoundary(h256& boundary, double& diff, double diffMultiplyer);
+	static U64	    ComputeNonce2(U32 nonce2);
 
     string          m_jobID;
     string          m_ntime;   

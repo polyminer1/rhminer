@@ -18,6 +18,9 @@
 #include "MinersLib/Algo/sph_sha2.h"
 #include "MinersLib/Algo/sph_blake.h"
 #include "rhminer/ClientManager.h"
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_cputhrottling, 0)
+
+const U64 VentingMultiplyer = 3;
 extern bool g_useGPU;
 extern bool g_cpuDisabled;
 
@@ -34,6 +37,9 @@ RandomHashCPUMiner::~RandomHashCPUMiner()
 
 void RandomHashCPUMiner::InitFromFarm(U32 relativeIndex)
 {
+	if (g_cputhrottling)
+		PrintOut("Cpu throttling for %d ms every %d seconds\n", g_cputhrottling * 10 * VentingMultiplyer, VentingMultiplyer);
+
     //NOTE: WE need to force the local WS to 64 for UpdateWorkSize
     const U32 g_cpuRoundsThread = 64;
     m_localWorkSize = 64;
@@ -48,7 +54,7 @@ void RandomHashCPUMiner::InitFromFarm(U32 relativeIndex)
         CPUKernelData* kdata = (CPUKernelData*)RH_SysAlloc(sizeof(CPUKernelData));
         memset(kdata, 0, sizeof(CPUKernelData));
         kdata->m_id = i;
-        //kdata->m_signalPause = 1; //start paused
+		//kdata->m_packages[0].m_requestPause = true;
         kdata->m_thread = new std::thread([&,kdata] { RandomHashCpuKernel(kdata); });
         m_cpuKernels.push_back(kdata);
         kdata->m_thread->detach();
@@ -61,6 +67,9 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
     snprintf(tname, 64, "Cpu%d", (int)kernelData->m_id);
     setThreadName(tname);
 
+	if (g_cputhrottling)
+		CpuSleep(100 + rand32() % 800);
+	
     if (g_setProcessPrio != 1)
     {
         if (kernelData->m_id == GpuManager::CpuInfos.numberOfProcessors-1) 
@@ -78,6 +87,8 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
     U32 endFrame = gid + workWindow;
     bool paused = false;
     U64 oldID = U64_Max;
+	U64 cpuVentingTimeout = 0;
+	const U64 CpuVentingPeriod = g_cputhrottling * 10;
 
     while(!kernelData->m_abortThread)
     {
@@ -98,11 +109,23 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
             paused = true;
         }
         
+       
         if (!paused)
         {
+ 			if (g_cputhrottling)
+			{
+				if (TimeGetMilliSec() > cpuVentingTimeout)
+				{
+					cpuVentingTimeout = TimeGetMilliSec() + (1000 * VentingMultiplyer) - (CpuVentingPeriod * VentingMultiplyer);
+					//CpuYield();
+					CpuSleep((U32)CpuVentingPeriod);
+				}
+			}
+				
             if (oldID != packageID)
             {
-                RandomHash_SetHeader(&m_randomHashArray[kernelData->m_id], packageData->m_header.asU8, (U32)packageData->m_nonce2); //copy header                
+				gid = packageData->m_rndVal;
+                RandomHash_SetHeader(&m_randomHashArray[kernelData->m_id], packageData->m_header.asU8, (U32)packageData->m_nonce2);                 
             }
 
             if (*GpuManager::CpuInfos.pEnabled == false)
@@ -142,7 +165,7 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
 #else
                     foundNonce.push_back(m_randomHashArray[kernelData->m_id].m_startNonce);
 #endif              
-                    SolutionSptr solPtr = MakeSubmitSolution(foundNonce, true);
+                    SolutionSptr solPtr = MakeSubmitSolution(foundNonce, packageData->m_nonce2, true);
                     m_farm.submitProof(solPtr);
                     resetOFfset = true;
 
@@ -159,7 +182,7 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
 
                 }
             }
-            gid++;
+            /*gid++;
             if (gid == endFrame)
             {
                 if (resetOFfset)
@@ -168,6 +191,7 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
                 gid = (U32)KernelOffsetManager::Increment(workWindow) - workWindow;
                 endFrame = gid + workWindow;
             }
+			*/
         }
         else
         {
@@ -237,6 +261,7 @@ PrepareWorkStatus RandomHashCPUMiner::PrepareWork(const PascalWorkSptr& workTemp
 
 void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp, bool requestPause)
 {
+
     // makeup CPU work pakcage
     const U32 target = m_currentWp->GetDeviceTargetUpperBits();
     U32 savedNonce2 = wp->m_nonce2;
@@ -245,7 +270,7 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp, bool re
     {
         data->m_isSolo = wp->m_isSolo;
         nextPackage = (AtomicGet(data->m_packageID) + 1);
-        CPUKernelData::DataPackage* kernelData = &data->m_packages[nextPackage % CPUKernelData::PackagesCount ];
+        CPUKernelData::DataPackage* kernelData = &data->m_packages[nextPackage % CPUKernelData::PackagesCount];
         
         memset(kernelData, 0, sizeof(CPUKernelData::DataPackage));
         kernelData->m_requestPause = !!requestPause;
@@ -253,12 +278,28 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp, bool re
         memcpy(kernelData->m_header.asU8, &wp->m_fullHeader[0], wp->m_fullHeader.size());
         RHMINER_ASSERT(wp->m_fullHeader.size() <= sizeof(kernelData->m_header.asU8));
 
+#ifdef RH_RANDOMIZE_NONCE2
+        if (!wp->m_isSolo)
+        {
+            //inject new n2
+            kernelData->m_nonce2 = rand32();
+            U64 n264 = PascalWorkPackage::ComputeNonce2(kernelData->m_nonce2);
+            U32 offset = (m_currentWp->m_coinbase1.length() + m_currentWp->m_nonce1.length()) / 2;
+            string n2str = toHex(n264);
+            bytes xbfr = fromHex(n2str);
+            memcpy(kernelData->m_header.asU8 + offset, &xbfr[0], sizeof(U64));
+        }
+#else
+		kernelData->m_nonce2 = savedNonce2;
+#endif
+		//randomize start
+		kernelData->m_rndVal = rand32();
+
         if (wp->m_isSolo)
             memcpy(kernelData->m_targetFull, wp->m_soloTargetPow.data(), 32);
         else
             memcpy(kernelData->m_targetFull, wp->m_deviceBoundary.data(), 32);
 
-        kernelData->m_nonce2 = savedNonce2;
         kernelData->m_target = target;
         
         RHMINER_ASSERT(wp->m_jobID.length() < sizeof(kernelData->m_workID)-1);
@@ -348,3 +389,4 @@ void RandomHashCPUMiner::AddHashCount(U64 hashes)
 { 
     m_hashCountTime = TimeGetMilliSec();
 }
+

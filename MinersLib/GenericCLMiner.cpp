@@ -312,7 +312,7 @@ void GenericCLMiner::EvalKernelResult()
             for (U32 i = 0; i < count; i++) 
                 nonces.push_back((U64)m_results[i + 1]);
 
-            SolutionSptr solPtr = MakeSubmitSolution(nonces, false);
+            SolutionSptr solPtr = MakeSubmitSolution(nonces, m_currentWp->m_nonce2, false);
 
             m_farm.submitProof(solPtr);
         }
@@ -339,13 +339,21 @@ KernelCodeAndFuctions GenericCLMiner::GetKernelsCodeAndFunctions()
 };
 
 
-SolutionSptr GenericCLMiner::MakeSubmitSolution(const std::vector<U64>& nonces, bool isFromCpuMiner)
+SolutionSptr GenericCLMiner::MakeSubmitSolution(const std::vector<U64>& nonces, U64 nonce2, bool isFromCpuMiner)
 {
     PascalSolution* sol = new PascalSolution();
     sol->m_results = nonces;
     sol->m_gpuIndex = m_globalIndex;
     sol->m_work = PascalWorkSptr(m_currentWp->Clone());
     sol->m_isFromCpuMiner = isFromCpuMiner;
+
+#ifdef RH_RANDOMIZE_NONCE2
+    if (!sol->m_work->m_isSolo)
+    {
+        sol->m_work->m_nonce2 = (U32)nonce2;
+        sol->m_work->m_nonce2_64 = PascalWorkPackage::ComputeNonce2((U32)nonce2);
+    }
+#endif
 
     return SolutionSptr(sol);
 }

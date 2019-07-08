@@ -8,6 +8,8 @@ rhminer api support EthMan api format and structure with some limitations.
     3 - miner_getstat2 return same as miner_getstat1
     4 - Fan and temperature data are all zero
     
+To change miner's config remotly, using EthMan, you send a config.txt first then restart the miner.
+    
 -----------------------------------------------------------------------------------------------------------------
 
 EthMan uses raw TCP/IP connections (not HTTP) for remote management and statistics. Optionally, "psw" field is added to requests is the password for remote management is set for miner.

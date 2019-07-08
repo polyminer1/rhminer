@@ -226,7 +226,7 @@ h256 PascalWorkPackage::RebuildNonce(U64 nonce)
         RandomHash_State opt;
         RandomHash_Create(&opt);
         RandomHash_SetHeader(&opt, &m_fullHeader[0], m_nonce2); 
-        RandomHash_Search(&opt, solutionTmp.data(), nonce);
+        RandomHash_Search(&opt, solutionTmp.data(), (U32)nonce);
         swab256((void*)solution.data(), (void*)solutionTmp.data());
         RandomHash_Destroy(&opt);
     }
@@ -249,6 +249,21 @@ void PascalWorkPackage::ComputeTargetBoundary()
     ComputeTargetBoundary(m_deviceBoundary, m_deviceDiff, 1.0f);
 }
 
+U64 PascalWorkPackage::ComputeNonce2(U32 nonce2)
+{
+	//updated injected nonce2
+	string n2str;
+	n2str.reserve(10);
+	n2str = FormatString("%X", nonce2);
+	while (n2str.length() < 8)
+		n2str += '0';
+
+	U64 nonce2_64;
+	static_assert(sizeof(nonce2_64) <= 8, "fatal error");
+	memcpy(&nonce2_64, n2str.c_str(), 8);
+	return nonce2_64;
+}
+
 
 string PascalWorkPackage::ComputePayload()
 {
@@ -258,15 +273,7 @@ string PascalWorkPackage::ComputePayload()
 
 void PascalWorkPackage::UpdateHeader()
 {
-    //updated injected nonce2
-    string n2str;
-    n2str.reserve(10);
-    n2str = FormatString("%X",m_nonce2);
-    while (n2str.length() < 8)
-        n2str += '0';
-
-    static_assert(sizeof(m_nonce2_64) <= 8, "fatal error");
-    memcpy(&m_nonce2_64, n2str.c_str(), 8);
+	m_nonce2_64 = ComputeNonce2(m_nonce2);
 
     string noncePlaceHolder;
     string payload;

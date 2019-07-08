@@ -1,5 +1,11 @@
 # rhminer update and bugfix history
 
+Version 1.5.3 - 8 Jul 2019
+* Added MacOS support and binaries. (Tested on High Sierra and El Capitan)
+* Added internal cpu throttling option to slow down mining.
+* Fixed: No more dulicate shares
+* Fixed: EthMan API : sent config.txt was ignored when restarting miner on Linux.
+
 Version 1.5.2 - 16 May 2019
 * Fixed Xml parsing of config file. Some options where skipped.
 

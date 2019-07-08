@@ -1,6 +1,6 @@
 # rhminer binaries 
 
-**Current version is 1.5.1** <br>
+**Current version is 1.5.3** <br>
 
 
 Prebuilt binaries for the PascalCoin RandomHash miner.<br> 
@@ -17,47 +17,47 @@ Download here : https://github.com/polyminer1/rhminer/releases/<br>
 Windows MD5 : 
 -------------------------------- 
 MD5 for rhminer.exe CPU is 
-7a1740751adc4ad0370ef4bc51bf289c
+7e5e0be27579d5fbc44e72f221cdfb79
 -------------------------------- 
 MD5 for rhminer.exe CPU_OLDGEN is 
-1241c286f8bbded84580771c591a8c26
+334ff9bcd585caeb05003df28df5e52f
 -------------------------------- 
 MD5 for rhminer.exe Kepler is 
-eb4831842e9fe448155287f12d82b1c6
+026719b0aba0a9ce0a67ba317e0c82c2
 -------------------------------- 
 MD5 for rhminer.exe Maxwell is 
-47ea4be103de1072272288ff509ce22a
+c54ab0e4b1586eeaff122fe576851dad
 -------------------------------- 
 MD5 for rhminer.exe Pascal is 
-46fe701354d8f5c72a547c6fd39c5f4c
+88a9c332f8201c653fe44afc906a0c8a
 -------------------------------- 
 MD5 for rhminer.exe Volta is 
-e9157dd2fa2640614622deb577e8f57e
+0e8b81a8bf1514dbc9e2fa340b574ce7
 -------------------------------- 
 MD5 for rhminer.exe Turing is 
-1b605b99d7262981419f268a68487b66
+33cdbad333c7ea7a9de7a45ca07965af
 -------------------------------- 
 . 
 Linux MD5 
 -------------------------------
 MD5 for rhminer for CPU is :
-861b357b702ae4d3f53d92234d3fe81b
+e04d64a55be2d2854be48110e77fa729
 -------------------------------
 MD5 for rhminer for CPU_OLDGEN is :
-9a6d6b6178093bc764e2b63af9e6a753
+cfd1fc9f25d733a9b04d737c42e04ed3
 -------------------------------
 MD5 for rhminer for Kepler is :
-50ef5eb6cae37f3c54a62fc1858d14ea
+d4ba71d538cc7bacf7d87dd36d4ac4d2
 -------------------------------
 MD5 for rhminer for Maxwell is :
-01f9a882ccd2d8e0f3bee059eb7f3750
+b9cf02f41347c502c8025e24335e6e28
 -------------------------------
 MD5 for rhminer for Pascal is :
-8a62e3dfcb076a3c517471aabddacf41
+13683f7c793c74120aa555ddfc1aeaf7
 -------------------------------
 MD5 for rhminer for Volta is :
-45cc2c3659dc5f345c2dabd728d24952
+38d520e8eafe433fa8f8bf71f3a0d921
 -------------------------------
 MD5 for rhminer for Turing is :
-b333a9db95971083595db2cdbb41c60a
+6ec944625c943791faf6317a1d1b835b
 ``` 

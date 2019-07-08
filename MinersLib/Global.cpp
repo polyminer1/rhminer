@@ -26,16 +26,6 @@
 #include "MinersLib/Pascal/RandomHashCLMiner.h"
 #include "MinersLib/Pascal/RandomHashCPUMiner.h"
 
-#ifndef _WIN32_WINNT
-#include <unistd.h>
-#include <spawn.h>
-#include <linux/limits.h>
-#define __getcwd getcwd 
-#else
-#include <direct.h>
-#define __getcwd _getcwd 
-#endif
-
 #ifndef RH_COMPILE_CPU_ONLY
 #include "MinersLib/Pascal/RandomHashHostCudaMiner.h"
 #endif
@@ -115,6 +105,7 @@ GlobalMiningPreset::GlobalMiningPreset()
         }
     });
 #endif //RH_COMPILE_CPU_ONLY
+
     CmdLineManager::GlobalOptions().RegisterValue("devfee", "General", "Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.", [&](const string& val)
     {
         if (val == "0" || val == "0.0")
@@ -421,7 +412,10 @@ void GlobalMiningPreset::SetRestart(ERestartMode val)
             _splitpath(exeFN, dir, f, fn, ex);
             strncat(dir, f, sizeof(dir));
 
-            string cmd = " -restarted ";
+            string cmd;
+            if (GlobalMiningPreset::I().GetPendingConfigFile().length()) 
+                cmd += " -restarted ";
+
             cmd += CmdLineManager::GlobalOptions().GetArgsList();
             PrintOutSilent("Restarting to %s\n", cmd.c_str());
 
@@ -437,7 +431,6 @@ void GlobalMiningPreset::SetRestart(ERestartMode val)
             }
             else
             {
-                printf("Restarting rhminer\n");
                 exit(0);
             }
         }
@@ -464,11 +457,26 @@ void GlobalMiningPreset::SetRestart(ERestartMode val)
             agvI++;
             agvI2++;
         }
+
+        if (GlobalMiningPreset::I().GetPendingConfigFile().length())
+        {
+            const char* restart = "-restarted";
+            *agvI2 = (char*)malloc(strlen(restart) + 1);
+            strcpy(*agvI2, restart);
+            agvI2++;
+        }
         *agvI2 = 0;
 
-        char *envp[] = { NULL };
-        execve(exec_path_name, argv2, envp);
-        exit(-1);
+        pid_t pid;
+        pid = fork();
+        if (pid == 0)
+        {
+            char *envp[] = { NULL };
+            int err = execve(exec_path_name, argv2, envp);
+            if (err != 0)
+                printf("exec error %d\n", errno);
+        }
+        exit(0);
 #endif
     }
 }
@@ -483,11 +491,11 @@ void GlobalMiningPreset::RequestReboot()
     __getcwd(basePath, sizeof(basePath));
 
 #ifdef _WIN32_WINNT    
-    strncat(basePath, "\\", sizeof(basePath));
-    strncat(basePath, "reboot.bat", sizeof(basePath));
+    strncat(basePath, "\\", sizeof(basePath)-1);
+    strncat(basePath, "reboot.bat", sizeof(basePath) - 1);
 #else
-    strncat(basePath, "/", sizeof(basePath));
-    strncat(basePath, "reboot.sh", sizeof(basePath));
+    strncat(basePath, "/", sizeof(basePath) - 1);
+    strncat(basePath, "reboot.sh", sizeof(basePath) - 1);
 #endif
     if (GetFileSize(basePath) == U64_Max)
         PrintOut("Launch Error. file. %s does not exists\n", basePath);
@@ -523,7 +531,7 @@ void GlobalMiningPreset::DoPerformanceTest()
     PrintOut("CPU: %s\n", GpuManager::CpuInfos.cpuBrandName.c_str());
     PrintOut("Testing raw cpu performance for %d sec on %d threads\n", g_testPerformance, ThreadCount);
     
-    U64 timeout[] = { 10 * 1000, g_testPerformance * 1000 };
+    U64 timeout[] = { 10 * 1000, (U64)g_testPerformance * 1000 };
     std::vector<U64> hashes;
     hashes.resize(ThreadCount);
 

@@ -37,22 +37,9 @@
 
 extern bool g_isSSE3Supported;
 extern bool g_isSSE4Supported;
-struct RH_StrideArrayStruct
-{
-    U32 size;
-    U32 maxSize;
-    U64 memoryboost;
-    U64 supportsse41;
-    U64 sseoptimization;
-    MurmurHash3_x86_32_State accum;
-    U8  dummy2[(RH_IDEAL_ALIGNMENT/2) - sizeof(MurmurHash3_x86_32_State)];
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-    U8* strides[RH_StrideArrayCount + 1];
-#else
-    U8* strides[RH_StrideArrayCount];
-#endif
-};
-#define RH_StrideArrayStruct_GetAccum(strideArray) (&((RH_StrideArrayStruct*)strideArray)->accum)
+extern bool g_isAVX2Supported;
+
+
 
 #include "corelib/CommonData.h"
 
@@ -288,12 +275,12 @@ void CUDA_SYM(RandomHash_RoundDataAlloc)(RH_RoundData* rd, int round)
 
     if (GetRoundOutputCount(round) > 0)
     {
-        _CM(AllocateArray)(rd->roundOutputs, GetRoundOutputCount(round));
+        _CM(AllocateArray)(rd->roundOutputs, (int)GetRoundOutputCount(round));
     }
         
     if (GetParentRoundOutputCount(round))
     {
-        _CM(AllocateArray)(rd->parenAndNeighbortOutputs, GetParentRoundOutputCount(round));
+        _CM(AllocateArray)(rd->parenAndNeighbortOutputs, (int)GetParentRoundOutputCount(round));
     }
 }
 
@@ -373,7 +360,7 @@ void CUDA_SYM(RandomHash_SetHeader)(RandomHash_State* state, U8* sourceHeader, U
     RHMINER_ASSERT(sourceHeader);
     RHMINER_ASSERT(PascalHeaderSize <= PascalHeaderSize);
     memcpy(targetInput, sourceHeader, PascalHeaderSize);
-    
+
 }
 
 
@@ -437,7 +424,16 @@ void CUDA_SYM_DECL(RandomHash_Expand)(RandomHash_State* state, RH_StridePtr inpu
         RH_ASSERT((nextChunkSize & 1) == 0);
         switch(r)
         {
-            case 0: if (nextChunkSize <= 128 && (size_t(nextChunk) & 0x0f) == 0)
+            case 0: 
+#if defined(RHMINER_ENABLE_SSE4) && defined(RH_ENABLE_AVX)
+                    if (nextChunkSize <= 512 && (g_sseOptimization == 2))
+                    {
+                        extern void Transfo0_2_AVX(U8* nextChunk, U32 size, U8* source);
+                        Transfo0_2_AVX(nextChunk, nextChunkSize, outputPtr);
+                    }
+                    else
+#endif
+                    if (nextChunkSize <= 128 && (size_t(nextChunk) & 0x0f) == 0)
                     {
 #if defined(RHMINER_ENABLE_SSE4)
     #if defined(RHMINER_COND_SSE4)
@@ -449,7 +445,8 @@ void CUDA_SYM_DECL(RandomHash_Expand)(RandomHash_State* state, RH_StridePtr inpu
                             _CM(Transfo0_2)(nextChunk, nextChunkSize,  outputPtr); 
     #else
                         _CM(Transfo0_2_128_SSE4)(nextChunk, nextChunkSize,  outputPtr);
-    #endif 
+                            
+    #endif //defined(RHMINER_COND_SSE4)
 #else
                         if (g_isSSE3Supported)
                             _CM(Transfo0_2_128_SSE3)(nextChunk, nextChunkSize,  outputPtr);
@@ -464,7 +461,27 @@ void CUDA_SYM_DECL(RandomHash_Expand)(RandomHash_State* state, RH_StridePtr inpu
             case 1: _CM(Transfo1_2)(nextChunk, nextChunkSize,  outputPtr); break;
             case 2: _CM(Transfo2_2)(nextChunk, nextChunkSize,  outputPtr); break;
             case 3: _CM(Transfo3_2)(nextChunk, nextChunkSize,  outputPtr); break;
-            case 4: _CM(Transfo4_2)(nextChunk, nextChunkSize,  outputPtr); break;
+            case 4: 
+            {
+#if defined(RHMINER_ENABLE_SSE4)
+    #if defined(RH_ENABLE_AVX)
+                if (g_sseOptimization == 2 && nextChunkSize > 32)
+                {
+                    extern void Transfo4_2_AVX(U8* nextChunk, U32 size, U8* outputPtr);
+                    Transfo4_2_AVX(nextChunk, nextChunkSize, outputPtr);
+                }
+                else
+    #endif //defined(RH_ENABLE_AVX)
+#if 0
+                if (nextChunkSize <= 128 && (size_t(nextChunk) & 0x0f) && g_isSSE4Supported)
+                {
+                    _CM(Transfo4_2_128_SSE4)(nextChunk, nextChunkSize, outputPtr);
+                }
+                else
+#endif
+#endif //#if defined(RHMINER_ENABLE_SSE4)
+                    _CM(Transfo4_2)(nextChunk, nextChunkSize, outputPtr);
+            }break;
             case 5: _CM(Transfo5_2)(nextChunk, nextChunkSize,  outputPtr); break; 
             case 6: _CM(Transfo6_2)(nextChunk, nextChunkSize,  outputPtr); break;
             case 7: _CM(Transfo7_2)(nextChunk, nextChunkSize,  outputPtr); break;
@@ -509,6 +526,8 @@ void CUDA_SYM_DECL(RandomHash_Compress)(RandomHash_State* state, RH_StridePtrArr
 inline void CUDA_SYM_DECL(RandomHash_MiddlePoint)(RandomHash_State* state)
 {
     state->m_midStateNonce = *(U32*)(RH_STRIDE_GET_DATA(state->m_roundInput)+PascalHeaderNoncePosV4(PascalHeaderSize));
+    
+
     if (!state->m_isMidStateRound)
     {
         const U32 ReqDelta = 4096;
@@ -558,6 +577,7 @@ inline void CUDA_SYM_DECL(RandomHash_Phase_1_pop)(RandomHash_State* state, int i
         {
             RH_StridePtrArray testCache = state->m_data[RH_N].parenAndNeighbortOutputs;
 
+            
             state->m_isCachedOutputs = false;
             state->m_skipPhase1 = 0;
 
@@ -577,6 +597,7 @@ inline void CUDA_SYM_DECL(RandomHash_Phase_1_pop)(RandomHash_State* state, int i
     U32 seed;
 
     {
+
         if (skipLastUpdate)
         {
             _CM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(pano, RH_STRIDEARRAY_GET_SIZE(pano) - 1); 
@@ -639,7 +660,6 @@ void CUDA_SYM_DECL(RandomHash_Phase_2_pop)(RandomHash_State* state, int in_round
     
     if (in_round == 5)
     {
-        
         {
             RH_STRIDEARRAY_PUSHBACK(state->m_round5Phase2PrecalcArray, RH_STRIDEARRAY_GET(pano, RH_STRIDEARRAY_GET_SIZE(pano)-1));
 
@@ -661,7 +681,6 @@ void CUDA_SYM_DECL(RandomHash_Phase_2_pop)(RandomHash_State* state, int in_round
         }
         else
         {
-
             _CM(RH_STRIDEARRAY_PUSHBACK_MANY_UPDATE)(state->m_data[in_round].roundOutputs, pano, state->m_round5Phase2PrecalcArray);
         }
     }
@@ -669,7 +688,6 @@ void CUDA_SYM_DECL(RandomHash_Phase_2_pop)(RandomHash_State* state, int in_round
     RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(pano) <= GetParentRoundOutputCount(in_round));
     RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) <= GetRoundOutputCount(in_round));
 
-    
     _CM(RandomHash_Compress)(state, state->m_data[in_round].roundOutputs, state->m_workBytes, in_round);  
     RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_workBytes) <= 100);
         
@@ -1102,12 +1120,14 @@ CUDA_DECL_KERNEL void CUDA_SYM(RandomHash_Init)(RandomHash_State* allStates, U8*
     *(U32*)(RH_STRIDE_GET_DATA(state->m_roundInput) + PascalHeaderNoncePosV4(PascalHeaderSize)) = startNonce;
 }
 
+#ifdef __CUDA_ARCH__
+//CUDA_DECL_KERNEL 
+#endif
 void CUDA_SYM(RandomHash_Finalize)(RandomHash_State* allStates, U8* output) 
 {
     CUDA_DECLARE_STATE();
 
     RH_STRIDE_CHECK_INTEGRITY(RH_STRIDEARRAY_GET(state->m_data[5].roundOutputs, 30));
-
 
     _CM(RandomHash_Compress)(state, state->m_data[5].roundOutputs, state->m_workBytes, 0);
 
@@ -1138,6 +1158,7 @@ void RandomHash_Alloc(void** out_ptr, size_t size)
 
 void RandomHash_Search(RandomHash_State* in_state, U8* out_hash, U32 startNonce)
 {
+
     RandomHash_State* allStates = in_state;
     RandomHash_Init(allStates, out_hash, startNonce);
     RH_CALL_ALL_KERNEL_BLOCKS

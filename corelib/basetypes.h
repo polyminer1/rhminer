@@ -86,6 +86,9 @@
     #define _CM(X) X
     #define CUDA_ONLY(X)
     #define CUDA_NOT_ONLY(X) X
+
+    //For research purpose only. AVX code is actually slower on most cpu !
+    //#define RH_ENABLE_AVX
 #endif
 
 

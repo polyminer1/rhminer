@@ -214,6 +214,8 @@
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">false</GPUDebugInfo>
       <HostDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">false</HostDebugInfo>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">O3</Optimization>
+      <PtxAsOptionV Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">false</PtxAsOptionV>
+      <MaxRegCount Condition="'$(Configuration)|$(Platform)'=='Release_Pascal|x64'">0</MaxRegCount>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release_Turing'">

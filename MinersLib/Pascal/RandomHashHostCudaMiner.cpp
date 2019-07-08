@@ -120,7 +120,7 @@ void RandomHashHostCudaMiner::EvalKernelResult()
         
         //ajust our nonce to the RandomHashCUDAMiner one 
         m_startNonce = baseNonce64;
-        SolutionSptr solPtr = MakeSubmitSolution(nonces, false);
+        SolutionSptr solPtr = MakeSubmitSolution(nonces, m_currentWp->m_nonce2, false);
         m_farm.submitProof(solPtr);
     }
 }

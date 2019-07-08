@@ -26,11 +26,10 @@ const static U32 PascalHeaderNoncePosV3  = (PascalHeaderSize-4);
 #define RH_M_MEM_PER_THREAD_MB  8.8f 
 
 #define RH_N                    5
-#define RH_STRIDE_SIZE_FACTOR   32
 
 // M*=5
 #define RH_StrideArrayCount     31
-#define RH_StrideSize           208896
+#define RH_StrideSize           (208896)
 
 #define RH_CheckerSize          (sizeof(U64))
 #define RH_WorkSize             RH_StrideSize 
