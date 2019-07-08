@@ -34,6 +34,8 @@ void CUDA_SYM_DECL(SHA3_512_Transorm)(const uint64_t *data, uint64_t* state, con
 		state[j]  = state[j] ^ data[j];
 		j++;
 	}
+	//TODO optim : implement this for CUDA https://github.com/potatosalad/erlang-keccakf1600/blob/master/c_src/shake.c
+	//			   keccakf() is core impl of Update
 
 	Aba = state[0];
 	Abe = state[1];
@@ -69,7 +71,7 @@ void CUDA_SYM_DECL(SHA3_512_Transorm)(const uint64_t *data, uint64_t* state, con
 	Da = Cu ^ ROTL64(Ce, 1);
 	De = Ca ^ ROTL64(Ci, 1);
 	Di = Ce ^ ROTL64(Co, 1);
-		Do  = Ci ^ ROTL64(Cu, 1);
+	Do = Ci ^ ROTL64(Cu, 1);
 	Du = Co ^ ROTL64(Ca, 1);
 	Aba = Aba ^ Da;
 	Bba = Aba;
@@ -175,7 +177,7 @@ void CUDA_SYM_DECL(SHA3_512_Transorm)(const uint64_t *data, uint64_t* state, con
 	Da = Cu ^ ROTL64(Ce, 1);
 	De = Ca ^ ROTL64(Ci, 1);
 	Di = Ce ^ ROTL64(Co, 1);
-		Do  = Ci ^ ROTL64(Cu, 1);
+	Do = Ci ^ ROTL64(Cu, 1);
 	Du = Co ^ ROTL64(Ca, 1);
 	Eba = Eba ^ Da;
 	Bba = Eba;

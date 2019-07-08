@@ -18,6 +18,8 @@
 #include "MinersLib/GenericCLMiner.h"
 #include "MinersLib/CPUMiner.h"
 #include "MinersLib/Pascal/RandomHash.h"
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("cputhrottling", g_cputhrottling, "General", "Slow down mining by internally throttling the cpu. nThis is usefull to prevent virtual computer provider throttling vCpu when mining softwares are detected\nMin-Max are 0 and 99.\nEx. -cputhrottling 12 will throttle the cpu 12% of the time", 0, 99);
+
 
 class RandomHashCPUMiner: public GenericCLMiner
 {

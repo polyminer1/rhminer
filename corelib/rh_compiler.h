@@ -46,6 +46,29 @@
 #define RH_NOEXCEPT throw()
 #endif
 
+#if defined(_WIN32)    || defined(_WIN64) || defined(__TOS_WIN__) || defined(__WINDOWS__)
+    #define RH_OS_NAME "Windows"
+#elif defined(sun) || defined(__sun) || defined(__SVR4) || defined(__svr4__)
+    #define RH_OS_NAME "Solaris"
+#else
+    #if defined(__linux__)
+        #define RH_OS_NAME "Linux"
+    #elif defined(BSD)
+        #if defined(MACOS_X) || (defined(__APPLE__) & defined(__MACH__))
+            #define RH_OS_NAME "MacOS"
+        #elif defined(macintosh) || defined(Macintosh)
+            #define RH_OS_NAME "Macintosh"
+        #elif defined(__OpenBSD__)
+            #define RH_OS_NAME "OpenBSD"
+        #else
+            #define RH_OS_NAME "BSD"
+        #endif
+    #else
+        #define RH_OS_NAME "OS"
+    #endif
+#endif
+
+
 #define RH_BUILD_TYPE RHMINER_STRINGIZE(RH_CUDA_ARCH)
 
 class RH_Exception : public std::exception 

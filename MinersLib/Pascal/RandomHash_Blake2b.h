@@ -146,6 +146,7 @@ void CUDA_SYM_DECL(RandomHash_blake2b)(RH_StridePtr roundInput, RH_StridePtr out
 	ctx.c = 0;                         // pointer within buffer
 	ctx.outlen = outlen;
 
+    //TODO: optimiz
 	for (i = 0; i < 128; i++)      // zero input block
 		ctx.b[i] = 0;
 
@@ -159,6 +160,7 @@ void CUDA_SYM_DECL(RandomHash_blake2b)(RH_StridePtr roundInput, RH_StridePtr out
 			ctx.c = 0;                 // counter to zero
 		}
         
+        //TODO: optimiz
 		ctx.b[ctx.c++] = ((const uint8_t *) in)[i];
 	}
 

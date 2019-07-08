@@ -44,7 +44,7 @@ return NULL;
 
 #ifdef WIN32
 	char tmp[512];
-	ExpandEnvironmentStringsA(libatiadlxx, tmp, sizeof(tmp));
+	ExpandEnvironmentStringsA(libatiadlxx, tmp, sizeof(tmp)-1);
 #else
 	char tmp[512] = libatiadlxx;
 #endif

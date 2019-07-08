@@ -33,7 +33,7 @@ struct CPUKernelData
         RH_ALIGN(64) U64          m_requestPause;
         RH_ALIGN(64) U8           m_workID[64];
         RH_ALIGN(64) U64          m_nonce2;
-        RH_ALIGN(64) U64          m_startNonce;
+        RH_ALIGN(64) U64          m_rndVal;
         RH_ALIGN(64) U64          m_headerSize;
         RH_ALIGN(64) U8           m_work1[256];       //return state for RandomHash
         RH_ALIGN(64) U8           m_work2[256];       

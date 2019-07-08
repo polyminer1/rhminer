@@ -16,10 +16,8 @@
 
 #pragma once
 #include "MinersLib/Pascal/RandomHash_def.h"
+#include "MinersLib/Pascal/RandomHash_MurMur3_32_def.h"
 #include "MinersLib/Pascal/RandomHash_mersenne_twister.h"
-
-//murmur3 pre-decl
-struct MurmurHash3_x86_32_State;
 
 #if defined(RANDOMHASH_CUDA)
     #include "cuda_helper.h"
@@ -161,6 +159,23 @@ struct RH_StrideStruct
 }
 #endif
 */
+
+struct RH_StrideArrayStruct
+{
+    U32 size;
+    U32 maxSize;
+    U64 memoryboost;
+    U64 supportsse41;
+    U64 sseoptimization;
+    MurmurHash3_x86_32_State accum;
+    U8  dummy2[(RH_IDEAL_ALIGNMENT / 2) - sizeof(MurmurHash3_x86_32_State)];
+#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+    U8* strides[RH_StrideArrayCount + 1];
+#else
+    U8* strides[RH_StrideArrayCount];
+#endif
+};
+#define RH_StrideArrayStruct_GetAccum(strideArray) (&((RH_StrideArrayStruct*)strideArray)->accum)
 
 
 //common for the 3 RIPEMD

@@ -34,7 +34,7 @@
 
 #ifdef RHMINER_DEBUG
     #undef RH_DISABLE_RH_ASSERTS
-    #define RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+    //#define RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
 #endif
 
 
@@ -45,9 +45,8 @@
     #define RH_TOTAL_STRIDES_INSTANCES ((RH_StrideArrayCount+1))
 #else
     #define RH_TOTAL_STRIDES_INSTANCES (RH_StrideArrayCount+1)
-#endif
+ #endif
 
-//#define RH_STRIDE_BANK_SIZE (RH_StrideSize * RH_TOTAL_STRIDES_INSTANCES)
 #define RH_STRIDE_BANK_SIZE 5033984
 
 #define RH_GET_MEMBER_POS(STRUCT, MEMBER)  (U32)((size_t)(void*)&(((STRUCT*)0)->MEMBER))

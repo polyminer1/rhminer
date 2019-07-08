@@ -63,11 +63,10 @@ int main(int argc, char** argv)
     printf("  Build %s (CUDA SDK %d.%d) %s %s\n\n", RH_BUILD_TYPE, CUDART_VERSION/1000, (CUDART_VERSION % 1000)/10, __DATE__, __TIME__);
 #else
     printf("\n  rhminer v%s beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)\n", RH_PROJECT_VERSION);
-    printf("  Build %s %s %s \n\n", RH_BUILD_TYPE, __DATE__, __TIME__);
+    printf("  Build %s %s %s %s \n\n", RH_OS_NAME, RH_BUILD_TYPE, __DATE__, __TIME__);
 #endif    
 
-	printf("  Donations : Pascal account 529692-23 \n");
-    printf("  Donations : Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp \n\n");
+	printf("  Donations : Pascal account 529692-23 \n\n");
 
 #ifdef _WIN32_WINNT
     std::atexit(HandleExit);
@@ -95,7 +94,7 @@ int main(int argc, char** argv)
 	setenv("GPU_SINGLE_ALLOC_PERCENT", "100");
     rand32_reseed((U32)(TimeGetMilliSec())^0xF5E8A1C4);
 
-    //Preparse log file and config filename name cuz we need it prior init
+	//Preparse log file and config filename name cuz we need it prior init
     for (int i = 0; i < argc; i++)
     {
         if (stristr(argv[i], "logfilename") && i + 1 < argc)
@@ -151,7 +150,6 @@ int main(int argc, char** argv)
 
     KernelOffsetManager::Reset(0);
 
-    
 #ifdef _WIN32_WINNT
     PrintOut("Process priority %d\n", g_setProcessPrio);
     if (g_setProcessPrio == 0)

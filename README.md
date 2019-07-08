@@ -6,7 +6,7 @@ Support stratum and solo mining<br>
 Works on Windows 7,10 and Ubuntu 18
 
 ## Download prebuilt binaries
-**Current version is 1.5.2** <br>
+**Current version is 1.5.3** <br>
 
 There is one prebuilt binariy per OS and CUDA architectures. <br>
 https://github.com/polyminer1/rhminer/releases/<br>
@@ -26,7 +26,7 @@ To get the number of logical cores, on you system, simply run rhminer with the -
 ```
 C:\rhminer>rhminer -completelist
 
-  rhminer v1.5.2 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
+  rhminer v1.5.3 beta for CPU by polyminer1 (https://github.com/polyminer1/rhminer)
   Buid CPU Nov 19 2018 20:04:01
 
   Donations : Pascal account 529692-23
@@ -37,10 +37,7 @@ CPU : Intel(R) Core(TM) i5-4460 CPU @ 3.20GHz with 4 logical cores
 This tells you what is the ideal maximum number of threads for cpu mining (-cputhreads) <br>
 
 ```
-Solo mining examples:
-
-For Test net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4109 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
-For Main net solo mining :  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
+Solo mining examples:  rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 1 -gpu 0 -gputhreads 100 -extrapayload HelloWorld
 
 NOTE: remove -gpu 0 -gputhreads 100 if you dont have a gpu
 ```
@@ -192,7 +189,11 @@ General options:
   -extrapayload         An extra payload to be added when submiting solution to local wallet.
   -apiport              Tcp port of the remote api.
                         Default port is 7111.
-                        Set to 0 to disable server
+                        Set to 0 to disable server.
+                        Port is read-only by default. See API.txt for more informations
+  -apipw                Api password for non read-only (miner_restart, miner_reboot, control_gpu, ..).
+                        Default password is empty (read-only mode).
+                        Note: must match ethman password
   -worktimeout          No new work timeout. Default is 60 seconds
   -displayspeedtimeout  Display mining speeds every x seconds.
                         Default is 10
@@ -203,7 +204,7 @@ General options:
   -processpriority      On windows only. Set miner's process priority.
                         0=Background Process, 1=Low Priority, 2=Normal Priority, 3=High Priority.
                         Default is 3.
-                        WARNING: Changing this value will affect GPU mining.
+                        NOTE:Background Proces mode will make the console disapear from the desktop and taskbar. WARNING: Changing this value will affect GPU mining.
   -v                    Log verbosity. From 0 to 3.
                         0 no log, 1 normal log, 2 include warnings. 3 network and silent logs.
                         Default is 1
@@ -227,17 +228,24 @@ Optimizations options:
                         Test it with -testperformance before using it.
                         1 to enable SSe4.1 optimizations. 0 to disable.
                         Disabled by default. 
+  -cpuventing           Slow down mining by introducing micro sleep periods udring mining.
+                        It works by pausing the miner about every second for a period of time defined as {argument-value}*10 milliseconds. 
+                        This is usefull to prevent virtual computer provider throttling vCpu when mining softwares are detected
+                        Min-Max are 0 and 99. Ex. -cpuventing 12 will introduce 120ms pause every second
 
 Gpu options:
   -cpu                  Enable the use of CPU to mine.
                         ex '-cpu -cputhreads 4' will enable mining on cpu while gpu mining.
   -cputhreads           Number of CPU miner threads when mining with CPU. ex: -cpu -cputhreads 4.
                         NOTE: adding + before thread count will disable the maximum thread count safety of one thread per core/hyperthread.
-                        Use this at your own risk.
+                        Use this option at your own risk.
+  -gpu                  Enable indiviaual GPU by their index. GPU not in the list will be disabled. ex: -gpu 0,3,4.
+  -gputhreads           Cuda thread count. ex: -gputhreads  100 launche 100 threads on selected gpu
+  -kernelactivewaiting  Enable active waiting on kernel run.
+                        This will raise cpu usage but bring more stability, specially when mining on multiple gpu.
+                        WARNING: This affect cpu mining
 
 Network options:
-  -dar                  Disable auto-reconnect on connection lost.
-                        Note : The miner will exit uppon loosing connection. 
   -s                    Stratum/wallet server address:port.
                         NOTE: You can also use http://address to connect to local wallet.
   -su                   Stratum user
@@ -246,18 +254,24 @@ Network options:
   -fou                  Failover user for stratum of a local wallet
   -fop                  Failover password for stratum or local wallet
   -r                    Retries connection count for stratum or local wallet
+  -dar                  Disable auto-reconnect on connection lost.
+                        Note : The miner will exit uppon loosing connection. 
 
 Debug options:
-  -forcesequentialnonce (For debugging purpose) Force search nonce to be sequential, starting at 0. 
-                        WARNING: This will gerate alot of uncle and refused solutions. 
-  -disablecachednoncereuse (For debugging purpose) Disable RandomHash cached nonce reuse. 
-                        This will lower hashrate substantially. 
-  -testperformance      Run performance test for an amount of seconds. 
-  -testperformancethreads Amount of threads to use for performance test. 
+  -testperformance      Run performance test for an amount of seconds
+  -testperformancethreads Amount of threads to use for performance test
+
 ```
 
 ## Examples
 ```
+With config file:
+ First use : Edit config.txt and set "s", "su" and desired "cputhreads" or "gputhreads"
+ 
+ Mining with default config.txt : rhminer.exe
+ Mining with specific config file : rhminer.exe -configfile {config file pathname}
+
+ With command line:
  Mining solo on cpu          : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 4 -extrapayload HelloWorld
  Mining solo on cpu and gpu  : rhminer.exe -v 2 -r 20 -s http://127.0.0.1:4009 -cpu -cputhreads 4 -gpu 0 -gputhreads 262 -extrapayload HelloWorld
  Mining on a pool with 6 gpu : rhminer.exe -v 2 -r 20 -s stratum+tcp://somepool.com:1379 -su MyUsername -gpu 0,1,2,3,4,5 -gputhreads 400,512,512,512,210,512 -extrapayload Rig1
@@ -298,7 +312,7 @@ Default port is 7111. Just sending empty string will return mining status in jso
 	"diff": 0.00000049
 }
 ```
-
+For more details and informations see https://github.com/polyminer1/rhminer/blob/master/Release/API.txt <br>
   
 ## Developer Donation
 Default donation is 1%. <br>
@@ -307,7 +321,6 @@ To disable donation download and compile locally, then use the -devfee option wi
 
 For direct donations:
   * Pascal wallet 529692-23
-  * Bitcoin address 19GfXGpRJfwcHPx2Nf8wHgMps8Eat1o4Jp
 
 
 ## Contacts

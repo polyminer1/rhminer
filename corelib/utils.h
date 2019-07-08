@@ -29,10 +29,27 @@
 #endif
 
 #ifndef _WIN32_WINNT
-
+#include <unistd.h>
+#include <spawn.h>
 //#include <pthread.h>
 #include <condition_variable>
 		
+#if defined(MACOS_X) || (defined(__APPLE__) & defined(__MACH__))
+    #include <sys/syslimits.h>
+    #include <mach-o/dyld.h>
+#else
+    #include <linux/limits.h>
+#endif
+
+    #define __getcwd getcwd 
+    #define __stricmp strcasecmp
+    #define __path_separator "/"
+
+#else
+    #include <direct.h>
+    #define __getcwd _getcwd 
+    #define __stricmp stricmp
+    #define __path_separator "\\"
 #endif
 
 
