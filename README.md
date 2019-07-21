@@ -87,12 +87,6 @@ CPU: I3, I5, Core2, Xeon, Athlon <br>
 GPU: GTX 950, GTX 1060, GTX 1070 <br>
 CUDA: Linux CUDA 9.1, Windows CUDA 9.2 <br>
 
-## Upcoming
-* CPU optimization using SSe4 and AVX
-* Adding more stability to GPU mining
-* GPU optimizations
-* curl Api for stats and control
-
 ## Performances for V1.3
 
 | Cpu/GPU                                |  OS        | Threads      | Speed in H/s |   Extra infos                         |
@@ -278,7 +272,20 @@ With config file:
 ```
 
 ## Api access
-Default port is 7111. Just sending empty string will return mining status in json format like that:
+Default port is 7111.  <br>
+Api supports EthMan api format and structure with some limitations. <br>
+```
+    1 - At the exception of 'miner_getstat1', the rest of the api needs a pw that match what was passed to rhminer (see -apipw with rhminer and 'Password' field in EthMan)
+    2 - For security reasons, method "miner_file" ONLY accept config.txt and config.xml.
+        The config file must be under 8K
+        The config file must be an rhminer compatible config file containing xml data
+        With parameter 'forcerestart' the miner will restart uppon reception of the config file, no mather what was the command line given to rhminer orignialy.
+    3 - miner_getstat2 return same as miner_getstat1
+    4 - Fan and temperature data are all zero
+```     <br>
+To change miner's config remotly, using EthMan, you send a config.txt first then send a restart command to the miner. <br>
+    
+Just sending empty string will return mining status in json format like that:
 ```
 {
 	"infos": [
@@ -313,7 +320,16 @@ Default port is 7111. Just sending empty string will return mining status in jso
 }
 ```
 For more details and informations see https://github.com/polyminer1/rhminer/blob/master/Release/API.txt <br>
-  
+
+## ScreenSaver
+To install PascalCoin ScreenSaver simply right-click on file PascalCoinScreenSaver.scr and click "install" from the menu. <br>
+Then you can configure it. <br>
+For Laptop users it is STROGLY recommented to set only 1 thread in the scrensaver's config. <br>
+ <br>
+ <br>   
+NOTE: To set a mining password open regedit.exe and append your password command line, followed by a space, to the string located here : **Computer\HKEY_CURRENT_USER\Software\PascalCoin\ScreenSaver\extra** <br>
+      EX: *-pw MyEmail@email.com * <br>
+
 ## Developer Donation
 Default donation is 1%. <br>
 Donation is hardcoded in the binaries downloadable on gitgub. That is to recoup the 6 month it toke to R&D, develop, stabilize and optimize this miner and for the upcoming bug fixes and many upcoming optimizations. <br>
