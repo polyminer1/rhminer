@@ -222,10 +222,9 @@ Optimizations options:
                         Test it with -testperformance before using it.
                         1 to enable SSe4.1 optimizations. 0 to disable.
                         Disabled by default. 
-  -cpuventing           Slow down mining by introducing micro sleep periods udring mining.
-                        It works by pausing the miner about every second for a period of time defined as {argument-value}*10 milliseconds. 
-                        This is usefull to prevent virtual computer provider throttling vCpu when mining softwares are detected
-                        Min-Max are 0 and 99. Ex. -cpuventing 12 will introduce 120ms pause every second
+  -cputhrottling        Slow down mining by internally throttling the cpu. 
+                        This is usefull to prevent virtual computer provider throttling vCpu when mining softwares are detected.
+                        Min-Max are 0 and 99.
 
 Gpu options:
   -cpu                  Enable the use of CPU to mine.
@@ -274,15 +273,14 @@ With config file:
 ## Api access
 Default port is 7111.  <br>
 Api supports EthMan api format and structure with some limitations. <br>
-```
-    1 - At the exception of 'miner_getstat1', the rest of the api needs a pw that match what was passed to rhminer (see -apipw with rhminer and 'Password' field in EthMan)
-    2 - For security reasons, method "miner_file" ONLY accept config.txt and config.xml.
-        The config file must be under 8K
-        The config file must be an rhminer compatible config file containing xml data
-        With parameter 'forcerestart' the miner will restart uppon reception of the config file, no mather what was the command line given to rhminer orignialy.
-    3 - miner_getstat2 return same as miner_getstat1
-    4 - Fan and temperature data are all zero
-```     <br>
+- At the exception of 'miner_getstat1', the rest of the api needs a pw that match what was passed to rhminer (see -apipw with rhminer and 'Password' field in EthMan)
+- For security reasons, method "miner_file" ONLY accept config.txt and config.xml.
+  - The config file must be under 8K
+  - The config file must be an rhminer compatible config file containing xml data
+  - With parameter 'forcerestart' the miner will restart uppon reception of the config file, no mather what was the command line given to rhminer orignialy.
+- miner_getstat2 return same as miner_getstat1
+- Fan and temperature data are all zero
+<br>
 To change miner's config remotly, using EthMan, you send a config.txt first then send a restart command to the miner. <br>
     
 Just sending empty string will return mining status in json format like that:
