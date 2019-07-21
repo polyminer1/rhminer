@@ -162,6 +162,16 @@ cd build <br>
 make all <br>
 
 
+## ScreenSaver
+To download the screensaver go to release section here https://github.com/polyminer1/rhminer/releases and download *PascalCoinScreenSaver.zip* <br>
+To install PascalCoin ScreenSaver simply right-click on file PascalCoinScreenSaver.scr and click "install" from the menu. <br>
+Then you can configure it. <br>
+For Laptop users it is *STROGLY* recommented to set only 1 thread in the scrensaver's config. <br>
+ <br>
+To set a mining password open regedit.exe and append your password command line, followed by a space, to the string located here : **Computer\HKEY_CURRENT_USER\Software\PascalCoin\ScreenSaver\extra** <br>
+EX: -pw MyEmail@email.com <br>
+
+
 ## Stability issues
 Thre are some limitations on nvidia gpu to consider.
 
@@ -318,14 +328,6 @@ Just sending empty string will return mining status in json format like that:
 }
 ```
 For more details and informations see https://github.com/polyminer1/rhminer/blob/master/Release/API.txt <br>
-
-## ScreenSaver
-To install PascalCoin ScreenSaver simply right-click on file PascalCoinScreenSaver.scr and click "install" from the menu. <br>
-Then you can configure it. <br>
-For Laptop users it is *STROGLY* recommented to set only 1 thread in the scrensaver's config. <br>
- <br>
-To set a mining password open regedit.exe and append your password command line, followed by a space, to the string located here : **Computer\HKEY_CURRENT_USER\Software\PascalCoin\ScreenSaver\extra** <br>
-EX: -pw MyEmail@email.com <br>
 
 ## Developer Donation
 Default donation is 1%. <br>
