@@ -163,13 +163,14 @@ make all <br>
 
 
 ## ScreenSaver
-To download the screensaver go to release section here https://github.com/polyminer1/rhminer/releases and download *PascalCoinScreenSaver.zip* <br>
+To download the screensaver go to release section here https://github.com/polyminer1/rhminer/releases and download **PascalCoinScreenSaver.zip** <br>
 To install PascalCoin ScreenSaver simply right-click on file PascalCoinScreenSaver.scr and click "install" from the menu. <br>
 Then you can configure it. <br>
 For Laptop users it is *STROGLY* recommented to set only 1 thread in the scrensaver's config. <br>
  <br>
 To set a mining password open regedit.exe and append your password command line, followed by a space, to the string located here : **Computer\HKEY_CURRENT_USER\Software\PascalCoin\ScreenSaver\extra** <br>
 EX: -pw MyEmail@email.com <br>
+Dont forget to put a space at the end. <br>
 
 
 ## Stability issues
