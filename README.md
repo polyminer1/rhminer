@@ -3,7 +3,8 @@
 Miner for RandomHash2 POW algorithm.<br>
 Support Intel/AMD 64 bit CPU.<br>
 Support stratum and solo mining<br>
-Works on Windows 7,10 and Ubuntu 16/18
+Works on Windows 7,10, Ubuntu 16/18, and MacOS
+Also comes as a ScreenSaver on windows.
 
 ## Download prebuilt binaries
 **Current version is 2.0** <br>
