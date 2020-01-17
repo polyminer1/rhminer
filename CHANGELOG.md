@@ -1,5 +1,8 @@
 # rhminer update and bugfix history
 
+Version 2.0
+* Added RandomHash2. Up to 110% Faster than the reference miner.
+
 Version 1.5.3 - 8 Jul 2019
 * Added MacOS support and binaries. (Tested on High Sierra and El Capitan)
 * Added internal cpu throttling option to slow down mining.
