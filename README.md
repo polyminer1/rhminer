@@ -8,7 +8,7 @@ Also comes as a ScreenSaver on windows.
 
 ## Download prebuilt binaries
 **Current version is 2.0** <br>
-Support Windows7, Windows 10, Ubuntu 16/18, MacOS
+Support Windows7, Windows 10, Ubuntu 16/18, MacOS <br>
 There is one prebuilt binariy per OS <br>
 https://github.com/polyminer1/rhminer/releases/<br>
 
