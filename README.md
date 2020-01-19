@@ -48,11 +48,14 @@ CPU: I3, I5, Core2, Xeon, Macbook <br>
 
 ## Performances for V2.0
 
-| Cpu/GPU                                |  OS        | Threads      | Speed in H/s |   Extra infos                         |
-| ---------------------------------------|------------|-------------:|-------------:|---------------------------------------|
-|  i7-8750H CPU @ 2.20GHz                | win10      |    12        |   56,742     |                                       |
-|  i5-3337U CPU @ 1.80GHz                | Win10      |    4         |   14,539     |                                       |
-|  Core(TM) 2 QuadCore Q6600 @ 2.40GHz   | Win7       |    2         |    6,835     |                                       |
+| Cpu/GPU                               |  OS       | Threads   | Speed in H/s  | Extra infos   |
+| --------------------------------------|-----------|----------:|--------------:|---------------|
+|  i7-8750H CPU @ 2.20GHz               | win10     |   12      |   56,742      |               |
+|  i5-3330S 2.7ghz                      | Win10     |  Max      |   22,230      |               |
+|  i5-3337U CPU @ 1.80GHz               | Win10     |    4      |   14,539      |               |
+|  Ryzen 1800x @ 3.67GHz                | Win10     |   16      |   96,000      |               |
+|  Core(TM) 2 QuadCore Q6600 @ 2.40GHz  | Win7      |    2      |    6,835      |               |
+
 
 **NOTE: I do not recommend to overclock your cpu. If you do it, it's at your own risk.**
 
