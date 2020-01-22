@@ -7,7 +7,7 @@ Works on Windows 7,10, Ubuntu 16/18, and MacOS
 Also comes as a ScreenSaver on windows.
 
 ## Download prebuilt binaries
-**Current version is 2.0** <br>
+**Current version is 2.1** <br>
 Support Windows7, Windows 10, Ubuntu 16/18, MacOS <br>
 There is one prebuilt binariy per OS <br>
 https://github.com/polyminer1/rhminer/releases/<br>
@@ -45,6 +45,13 @@ Note2: It is not recommended to mine using a laptop.
 
 ## Tested on 
 CPU: I3, I5, Core2, Xeon, Macbook <br>
+
+## Performances for V2.1
+
+| Cpu/GPU                               |  OS       | Threads   | Speed in H/s  | Extra infos   |
+| --------------------------------------|-----------|----------:|--------------:|---------------|
+|  i7-8750H CPU @ 2.20GHz               | win10     |   12      |   94,222      |               |
+|  i5-3337U CPU @ 1.80GHz               | Win10     |    4      |   23,450      |               |
 
 ## Performances for V2.0
 
