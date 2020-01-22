@@ -1,7 +1,7 @@
 # rhminer update and bugfix history
 
 Version 2.1
-* Optimized RandomHash2 with up to 80% more speed. (On some system rhminer 2.1 is up to 350% faster than official miner)
+* Optimized RandomHash2 with up to 80% more speed. (On some system rhminer 2.1 is up to 250% faster than official miner)
 * Fixed linux binary where main thread was exiting after miner startup.
 * Linux zip files now contain rhminer as an executable and not a simple file.
 * FIxed windows packages and removed extra folders
