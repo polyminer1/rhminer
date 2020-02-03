@@ -1,5 +1,13 @@
 # rhminer update and bugfix history
 
+Version 2.1c
+*Fixed miner stalling after 24+ hours
+*Fixed miner crashing when resizing terminal
+*Fixed screen -r making miner stop
+*Fixed terminal randomly closing
+*Fixed linux caching error that give out litle more than 2% more speed.
+*Validated by tclark70
+
 Version 2.1
 * Optimized RandomHash2 with up to 80% more speed. (On some system rhminer 2.1 is up to 250% faster than official miner)
 * Fixed linux binary where main thread was exiting after miner startup.
