@@ -1,5 +1,10 @@
 # rhminer update and bugfix history
 
+Version 2.2 - New optimizations up to 55% faster.
+*Added major optimizations. (55% on Platinuim, 50% on i7 and i5)
+*Tested on i5, i7, Epic and Xeon 
+*Added version in log and submit chrono
+
 Version 2.1c
 *Fixed miner stalling after 24+ hours
 *Fixed miner crashing when resizing terminal

@@ -12,11 +12,11 @@ Download here : https://github.com/polyminer1/rhminer/releases/<br>
 * Linux binaries https://mega.nz/#F!Dz4ElAwK!gbWbU4OpmEf6YnOCLIKfSQ
  
 ## MD5 binaries hashes ##
-| File name                             |  MD5                                  |
+| Package Name                          |  MD5 for rhminer executable           |
 | --------------------------------------|---------------------------------------|
-| rhminer.2.2.Windows.CPU.zip           | **0c378f87054b8e2a6773a74e90be8ce8**  |
-| rhminer.2.2.Windows.CPU_OLDGEN.zip    | **f7332debe9027e6d482d72abbc658d83**  |
-| PascalCoinScreenSaver.zip             | **4b7fb5c39c89069ce917ae6320d6e15a**  |
-| rhminer.2.2.MacOS.CPU.zip             | **defffb6002bb9e18e0213e01fe82202d**  |
-| rhminer.2.2.Linux.CPU.zip             | **e1dbb54f1e70060c2e23b8cf026e3d7b**  |
-| rhminer.2.2.Linux.CPU_OLDGEN.zip      | **5852c4fcc857f25391834c4fc1e8491a**  |
+| rhminer.2.2.Windows.CPU.zip           | **86c2745048e14508b1a6af9c8da89b43**  |
+| rhminer.2.2.Windows.CPU_OLDGEN.zip    | **0c2ba9745abe5706869c486b61a8f978**  |
+| PascalCoinScreenSaver.zip             | **33e3a603755e214943f7042ed2840043**  |
+| rhminer.2.2.MacOS.CPU.zip             | **c2e0c6d5e4189ae55f9d3b522f8de62c**  |
+| rhminer.2.2.Linux.CPU.zip             | **f74682da0bec080ed77079801762a950**  |
+| rhminer.2.2.Linux.CPU_OLDGEN.zip      | **89a3f35643625968886b35ca5ee5b26c**  |
