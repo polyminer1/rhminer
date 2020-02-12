@@ -1,6 +1,6 @@
 # rhminer binaries 
 
-**Current version is 2.2** <br>
+**Current version is 2.2b** <br>
 
 
 Prebuilt binaries for the PascalCoin RandomHash miner.<br> 
@@ -14,9 +14,9 @@ Download here : https://github.com/polyminer1/rhminer/releases/<br>
 ## MD5 binaries hashes ##
 | Package Name                          |  MD5 for rhminer executable           |
 | --------------------------------------|---------------------------------------|
-| rhminer.2.2.Windows.CPU.zip           | **86c2745048e14508b1a6af9c8da89b43**  |
-| rhminer.2.2.Windows.CPU_OLDGEN.zip    | **0c2ba9745abe5706869c486b61a8f978**  |
-| PascalCoinScreenSaver.zip             | **33e3a603755e214943f7042ed2840043**  |
-| rhminer.2.2.MacOS.CPU.zip             | **c2e0c6d5e4189ae55f9d3b522f8de62c**  |
-| rhminer.2.2.Linux.CPU.zip             | **f74682da0bec080ed77079801762a950**  |
-| rhminer.2.2.Linux.CPU_OLDGEN.zip      | **89a3f35643625968886b35ca5ee5b26c**  |
+| rhminer.2.2b.Windows.CPU.zip          | **5e6c4656d6e4f83cb0aa5cf93cd4df02**  |
+| rhminer.2.2b.Windows.CPU_OLDGEN.zip   | **d6a7c40abfcf95771ebe4b494147bd54**  |
+| PascalCoinScreenSaver.zip             | **eee34c80beb5c1c42965720cee3ffd3d**  |
+| rhminer.2.2b.MacOS.CPU.zip            | **164bf1d2739aade854dc10a3a371c34b**  |
+| rhminer.2.2b.Linux.CPU.zip            | **7c83f0b21d9f796a5374d920b8282406**  |
+| rhminer.2.2b.Linux.CPU_OLDGEN.zip     | **c094b56ad45222812128b2aed031ae25**  |
