@@ -1,5 +1,10 @@
 # rhminer update and bugfix history
 
+
+Version 2.2b - Removed pascalpool.org from DevPool list
+*Improved pool connection
+*code cleanup and minor improvements (linux and macos)
+
 Version 2.2 - New optimizations up to 55% faster.
 *Added major optimizations. (55% on Platinuim, 50% on i7 and i5)
 *Tested on i5, i7, Epic and Xeon 
