@@ -1,9 +1,16 @@
 # rhminer update and bugfix history
 
+Version 2.3 - Optimizations up to 10%
+*General optimizations from 5% and up, depending on cpu and mem speed
+*Default mining cpu count is *All CPU* instead of 1
+*Remove requirement of command line options -cpu and -cputhreads
+*Network stability improved !
+
 
 Version 2.2b - Removed pascalpool.org from DevPool list
 *Improved pool connection
 *code cleanup and minor improvements (linux and macos)
+
 
 Version 2.2 - New optimizations up to 55% faster.
 *Added major optimizations. (55% on Platinuim, 50% on i7 and i5)

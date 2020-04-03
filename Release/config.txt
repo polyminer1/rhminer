@@ -14,7 +14,7 @@
 
 // Number of CPU miner threads when mining with CPU. ex: "cpu":true, "cputhreads":4
 // NOTE: adding + before thread count will disable the maximum thread count safety of one thread per core/hyperthread. Use this at your own risk. EX: "cputhreads":"+5"
-"cputhreads":2,
+"cputhreads":0,
 
 // Slow down mining by internally throttling the cpu while mining.
 // This is usefull to prevent virtual computer provider throttling vCpu when mining softwares are detected
@@ -35,7 +35,7 @@
 
 // Stratum/wallet server address:port.
 // NOTE: You can also use http://address to connect to local wallet.
-"s":"stratum+tcp://mine.pool.pascalpool.org:3334",
+"s":"stratum+tcp://fastpool.xyz:10098",
 
 // Stratum user
 // Ex: "su":"1300378-87.0.Donations"
