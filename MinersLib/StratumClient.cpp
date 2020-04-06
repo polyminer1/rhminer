@@ -22,7 +22,6 @@
 #include "corelib/boostext.h"
 #include "corelib/miniweb.h"
 
-
 #ifndef _WIN32_WINNT
 #include <sys/socket.h>
 #endif
@@ -71,6 +70,7 @@ StratumClient::StratumClient(const StratumInit& initData )
 	m_authorized = false;
 	m_connected = false;
 	m_maxRetries = initData.retries;
+    m_maxRetriesDEV = 4;
 	m_email = initData.email;
 	m_farm = initData.f;
     m_soloMining = initData.soloOverStratum;
@@ -236,7 +236,7 @@ void StratumClient::Reconnect(U32 preSleepTimeMS)
         preSleepTimeMS = 1000;
 
     if (m_devFeeConnectionMode)
-        CpuSleep(1000);
+        CpuSleep(500);
     else if (preSleepTimeMS)
     {
         CpuSleep(preSleepTimeMS);
@@ -290,7 +290,16 @@ void StratumClient::Reconnect(U32 preSleepTimeMS)
     if (GlobalMiningPreset::I().IsInDevFeeMode())
     {
         string x;
-        GlobalMiningPreset::I().UpdateToDevModeState(x);
+        if (m_retries > m_maxRetriesDEV)
+            x = "_retry_";
+
+        bool res = GlobalMiningPreset::I().UpdateToDevModeState(x);
+        if (m_retries > m_maxRetriesDEV && res)
+        {
+            m_retries = 0;
+            SetDevFeeCredentials(x);
+        }
+
         if (!GlobalMiningPreset::I().IsInDevFeeMode())
             m_active = &m_primary;
     }
@@ -380,7 +389,6 @@ void StratumClient::WorkLoop()
                     {
                         Json::Value responseObject;
                         Json::Reader reader;
-
                         m_lastReceivedLine = response;
                         if (reader.parse(response.c_str(), responseObject))
                         {
@@ -843,12 +851,14 @@ void StratumClient::RespondMiningSubmit(Json::Value& responseObject, U64 gpuInde
 {
     //process mining.submit responce
     string errorStr;
+    U32 calltime = TimeGetMilliSec() - lastMethodCallTime;
+
     bool succeded = HandleMiningSubmitResponceResult(responseObject, errorStr, lastMethodCallTime);
     if (succeded)
     {
-        if (!GlobalMiningPreset::I().IsInDevFeeMode())
+        if (!GlobalMiningPreset::I().IsInDevFeeMode()) 
         {
-            PrintOutCritical("Share accepted by %s\n\n", m_active->HostDescr());
+            PrintOutCritical("Share accepted by %s in %u ms \n\n", m_active->HostDescr(),calltime);
             m_farm->AddAcceptedSolution((U32)gpuIndex);
             m_lastSubmitTime = TimeGetMilliSec();
         }
@@ -857,7 +867,7 @@ void StratumClient::RespondMiningSubmit(Json::Value& responseObject, U64 gpuInde
     {
         if (!GlobalMiningPreset::I().IsInDevFeeMode())
         {
-            PrintOutCritical("Share REJECTED by %s. Reason :%s\n\n", m_active->HostDescr(), errorStr.c_str());
+            PrintOutCritical("Share REJECTED by %s in %u ms. Reason :%s\n\n", m_active->HostDescr(), calltime, errorStr.c_str());
             m_farm->AddRejectedSolution((U32)gpuIndex);
         }
     }

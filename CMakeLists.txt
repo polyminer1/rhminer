@@ -2,22 +2,18 @@ cmake_minimum_required(VERSION 2.8)
 
 option(RH_DEBUG_TARGET "Compile in Debug" OFF)
 option(RH_CPU_ONLY "Compile only cpu code" OFF)
-option(RH_CUDA_ARCH "Cuda architecture name" Maxwell)
+option(RH_ARCH "Architecture name" Maxwell)
 option(RH_NO_SSE4 "Disable sse4 optimizations" OFF)
 
-if(RH_CPU_ONLY)
-	project(rhminer)
-	set(RH_CUDA_ARCH CPU)
-else()
-	project(rhminer)
-endif(RH_CPU_ONLY)
+project(rhminer)
+set(RH_ARCH CPU)
 
 set(CMAKE_CXX_STANDARD 11)
 
 if(RH_NO_SSE4)
 	message(STATUS "Disabling SSe4 intrinsics")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
-	set(RH_CUDA_ARCH CPU_OLDGEN)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -mssse3 ")
+	set(RH_ARCH CPU_OLDGEN)
 	add_definitions(-DRHMINER_NO_SSE4)
 else()
 	message(STATUS "ENABLING SSe4 intrinsics")
@@ -28,7 +24,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake")
 
 include_directories(./)
 include_directories(..)
-include_directories(/usr/local/cuda/include)
 include_directories(rhminer)
 
 include (CheckCCompilerFlag)
@@ -47,7 +42,7 @@ else(RH_CPU_ONLY)
     add_definitions(-DRHMINER_COND_SSE4)
 endif(RH_CPU_ONLY)
 
-add_definitions(-DRH_CUDA_ARCH=${RH_CUDA_ARCH})
+add_definitions(-DRH_ARCH=${RH_ARCH})
 
 
 if(RH_DEBUG_TARGET)
@@ -56,8 +51,8 @@ if(RH_DEBUG_TARGET)
 	add_definitions(-D_DEBUG)
 	set(CMAKE_BUILD_TYPE Debug)
 else(RH_DEBUG_TARGET)
-	message(STATUS "Building ${PROJECT_NAME} for ${RH_CUDA_ARCH} architecture in Release")
-	add_definitions( -Wall -Ofast -fexceptions -Wfatal-errors -Wno-sign-compare -Wno-deprecated-declarations -Wno-unused-variable)
+	message(STATUS "Building ${PROJECT_NAME} for ${RH_ARCH} architecture in Release")
+    add_definitions( -Wall -Ofast -fomit-frame-pointer -fexceptions -Wfatal-errors -Wno-sign-compare -Wno-deprecated-declarations -Wno-unused-variable)
 	set(CMAKE_BUILD_TYPE Release)
 	add_definitions(-DNDEBUG)
 endif(RH_DEBUG_TARGET)
@@ -96,8 +91,12 @@ set(HEADERS
     MinersLib/wrapnvml.h
     MinersLib/Algo/blake2b.h
     MinersLib/Algo/blake2s.h
+    MinersLib/Algo/sph-haval.h
     MinersLib/Algo/sph_blake.h
-    MinersLib/Algo/sph_sha2.h
+    MinersLib/Algo/sph_panama.h
+    MinersLib/Algo/sph_sha0.h
+    MinersLib/Algo/sph_sha1.h
+    MinersLib/Algo/sph_sha2.h  
     MinersLib/Algo/sph_types.h
     MinersLib/Pascal/PascalCommon.h
     MinersLib/Pascal/RandomHash.h
@@ -134,7 +133,11 @@ set(SOURCES
     MinersLib/Algo/blake2b.cpp
     MinersLib/Algo/blake2s.cpp
     MinersLib/Algo/Pascal.cpp
-    MinersLib/Algo/sha2.cpp
+    MinersLib/Algo/haval.cpp
+    MinersLib/Algo/sha0.cpp
+    MinersLib/Algo/sha2.cpp    
+    MinersLib/Algo/sha1.cpp
+    MinersLib/Algo/sph_panama.cpp
     corelib/CommonData.cpp
     corelib/FixedHash.cpp
     corelib/Log.cpp
@@ -172,7 +175,7 @@ endif(RH_CPU_ONLY)
 #    add_definitions(/DHAVE_SYSLOG_H)
 #endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/rhminer_${RH_CUDA_ARCH})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/rhminer_${RH_ARCH})
 message(STATUS "Output directory is ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})

@@ -185,9 +185,6 @@ void GenericMinerClient::doStratum()
 
         while (m_stratumClient->isRunning())
 	    {
-            bool oncePerFRame = false;
-        
-            oncePerFRame = false;
 		    auto mp = m_farm.miningProgress( false);
 
             if (m_stratumClient->isConnected())
@@ -216,7 +213,7 @@ void GenericMinerClient::doStratum()
                     str += "(";
                     for (unsigned i = 0; i < mp.minersHasheRate.size(); i++)
                     {
-                        auto mh = pround(mp.minersHasheRate[i], 2);
+                        auto mh = pround((float)mp.minersHasheRate[i], 2);
                         str += FormatString("%s %s", GpuManager::Gpus[mp.gpuGlobalIndex[i]].gpuName.c_str(), HashrateToString(mh));
                         if (i + 1 != mp.minersHasheRate.size())
                             str += " ";

@@ -16,22 +16,23 @@
 #pragma once
 #include "corelib/basetypes.h"
 
-const static U32 PascalHeaderSize        = 200; //Fixed header size for pool mining
-const static U32 PascalHeaderNonce2Pos   = 116;
-const static U32 PascalHeaderNoncePosV3  = (PascalHeaderSize-4);
+const static U32 PascalHeaderSize        = 200; //Fixed header size for pool mining RandomHash1
+const static U32 PascalHeaderSizeV5      = 236; //Fixed header size for pool mining RandomHash2
 #define          PascalHeaderNoncePosV4(headerSize) (headerSize - 4)
 
+#define RH2_StrideArrayCount         (1024+64)
 
-#define RH_M                    (RHMINER_KB(10)*5)
-#define RH_M_MEM_PER_THREAD_MB  8.8f 
+#define RH2_MIN_N 2
+#define RH2_MAX_N 4
+#define RH2_MIN_J 1
+#define RH2_MAX_J 8
+#define RH2_M 64
+#define RH2_StrideSize           (208896)
 
-#define RH_N                    5
-
-// M*=5
-#define RH_StrideArrayCount     31
-#define RH_StrideSize           (208896)
 
 #define RH_CheckerSize          (sizeof(U64))
-#define RH_WorkSize             RH_StrideSize 
+
 #define RH_IDEAL_ALIGNMENT      64  
+#define RH_IDEAL_ALIGNMENT32    (RH_IDEAL_ALIGNMENT/4)
+
 

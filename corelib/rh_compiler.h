@@ -69,7 +69,7 @@
 #endif
 
 
-#define RH_BUILD_TYPE RHMINER_STRINGIZE(RH_CUDA_ARCH)
+#define RH_BUILD_TYPE RHMINER_STRINGIZE(RH_ARCH)
 
 class RH_Exception : public std::exception 
 {

@@ -314,7 +314,7 @@ PLATFORM_CONST uint64_t RH_ALIGN(64) WhirlPool_rc[256] = {0x0,
 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 
 0x0, 0x0, 0x0}; //end of WhirlPool_8
  
-inline static uint64_t CUDA_SYM_DECL(packIntoUInt64)(const uint32_t b7, const uint32_t b6, const uint32_t b5,
+inline static uint64_t packIntoUInt64(const uint32_t b7, const uint32_t b6, const uint32_t b5,
 	const uint32_t b4, const uint32_t b3, const uint32_t b2, const uint32_t b1, const uint32_t b0)
 {
 	return (uint64_t(b7) << 56) ^ (uint64_t(b6) << 48) ^ (uint64_t(b5) << 40)
@@ -323,7 +323,7 @@ inline static uint64_t CUDA_SYM_DECL(packIntoUInt64)(const uint32_t b7, const ui
 }
 
 
-inline static uint32_t CUDA_SYM_DECL(maskWithReductionPolynomial)(const uint32_t input)
+inline static uint32_t maskWithReductionPolynomial(const uint32_t input)
 {
 	register uint32_t result = input;
 
@@ -333,9 +333,9 @@ inline static uint32_t CUDA_SYM_DECL(maskWithReductionPolynomial)(const uint32_t
 	return result;
 }
 
-void CUDA_SYM_DECL(WhirlPool_Transform)(uint64_t* inData, uint64_t* hash)
+void WhirlPool_Transform(uint64_t* inData, uint64_t* hash)
 {
-    RH_ALIGN(64) uint64_t data[8]; //BE
+    RH_ALIGN(64) uint64_t data[8]; 
     RH_ALIGN(64) uint64_t k[8];
     RH_ALIGN(64) uint64_t m[8];
     RH_ALIGN(64) uint64_t temp[8];
@@ -396,29 +396,25 @@ void CUDA_SYM_DECL(WhirlPool_Transform)(uint64_t* inData, uint64_t* hash)
 }
 
 
-void CUDA_SYM_DECL(RandomHash_WhirlPool)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_WhirlPool(RH_StridePtr roundInput, RH_StridePtr output)
 {
-
-    //init
     const uint32_t Whirlpool_BlockSize = 64;
     const uint32_t Whirlpool_HashSize = 64;
     RH_ALIGN(64) uint64_t state[8];
     RH_memzero_64(state, sizeof(state));
 
-    //body
     int32_t len = (int32_t)RH_STRIDE_GET_SIZE(roundInput);
     uint32_t blockCount = len / Whirlpool_BlockSize;
-    uint64_t *dataPtr = (uint64_t *)RH_STRIDE_GET_DATA(roundInput);
+    uint64_t *dataPtr = RH_STRIDE_GET_DATA64(roundInput);
     uint64_t bits = len * 8;
     while (blockCount > 0)
     {
-        _CM(WhirlPool_Transform)(dataPtr, state);
+        WhirlPool_Transform(dataPtr, state);
         len -= Whirlpool_BlockSize;
         dataPtr += Whirlpool_BlockSize / 8;
         blockCount--;
     }
 
-    //finish
     {
         int32_t padindex; 
         RH_ALIGN(64) uint8_t pad[96];
@@ -439,13 +435,13 @@ void CUDA_SYM_DECL(RandomHash_WhirlPool)(RH_StridePtr roundInput, RH_StridePtr o
         RH_ASSERT(padindex <= sizeof(pad));
         RH_ASSERT(((padindex + len) % Whirlpool_BlockSize) == 0);
 
-        _CM(WhirlPool_Transform)(dataPtr, state);
+        WhirlPool_Transform(dataPtr, state);
         padindex -= Whirlpool_BlockSize;
         if (padindex > 0)
-            _CM(WhirlPool_Transform)(dataPtr + (Whirlpool_BlockSize / 8), state);
+            WhirlPool_Transform(dataPtr + (Whirlpool_BlockSize / 8), state);
     }
 
-    dataPtr = (uint64_t*)RH_STRIDE_GET_DATA(output);
+    dataPtr = RH_STRIDE_GET_DATA64(output);
     RH_STRIDE_SET_SIZE(output, Whirlpool_HashSize);
     copy8_op(dataPtr, state, ReverseBytesUInt64);
 

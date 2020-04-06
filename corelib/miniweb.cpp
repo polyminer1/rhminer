@@ -25,6 +25,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread/thread.hpp>
 
+
 #if !defined(RH_SCREEN_SAVER_MODE)
 
 extern string g_apiPW;

@@ -27,10 +27,6 @@
 error
 #endif
 
-    
-/* MD5_F, MD5_G and MD5_H are basic MD5 functions: selection, majority, parity */
-
-//todo optimiz -> intrinsics
 #define MD5_F(x, y, z) (((x) & (y)) | ((~x) & (z)))
 #define MD5_G(x, y, z) (((x) & (z)) | ((y) & (~z)))
 #define MD5_H(x, y, z) ((x) ^ (y) ^ (z))
@@ -70,7 +66,7 @@ PLATFORM_CONST uint32_t MD5_d0 = 0x10325476;
 
 
 
-void CUDA_SYM_DECL(md5)(uint32_t *in, uint32_t *state) 
+void md5(uint32_t *in, uint32_t *state) 
 {
     uint32_t a, b, c, d;
 
@@ -195,13 +191,13 @@ void CUDA_SYM_DECL(md5)(uint32_t *in, uint32_t *state)
 #undef S44
 
 
-void CUDA_SYM_DECL(RandomHash_MD5)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_MD5(RH_StridePtr roundInput, RH_StridePtr output)
 {
-    //Optimized ALGO
     RH_ALIGN(64) uint32_t state[4] = { MD5_a0, MD5_b0, MD5_c0, MD5_d0 };
-    RandomHash_MD_BASE_MAIN_LOOP(MD5_BLOCKSIZE, _CM(md5), uint64_t);
+    RandomHash_MD_BASE_MAIN_LOOP(MD5_BLOCKSIZE, md5, uint64_t);
 
     //get the hash result
-    memcpy(RH_STRIDE_GET_DATA(output), state, 16);
+    U32* out = RH_STRIDE_GET_DATA(output);
     RH_STRIDE_SET_SIZE(output, 16);
+    copy4(out, state);
 }

@@ -30,6 +30,9 @@
     #error !! UNSUPPORTED COMPILER !!
 #endif
 
+#define RH_IS_ALIGNED_32(p) (0 == (3 & ((const char*)(p) - (const char*)0)))
+#define RH_IS_ALIGNED_64(p) (0 == (7 & ((const char*)(p) - (const char*)0)))
+
 #if defined(__CUDA_ARCH__)
     #define RHMINER_PLATFORM_CUDA
     #define RHMINER_PLATFORM_GPU
@@ -160,7 +163,7 @@ extern void PrintOut(const char *szFormat, ...);
         if (!(x)) \
         { \
             printf("Error. Assert '%s' \n", #x); \
-            int* i = 0; *i = 0; \
+            exit(-(__LINE__)); \
         } \
     }
 #endif

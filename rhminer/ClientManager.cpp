@@ -74,6 +74,8 @@ void ClientManager::Shutdown(eShutdownMode esmode)
         
         PrintOutSilent("Shutdown: logs\n");
         AtomicSet(g_shutdownDone, 1);
+        CpuSleep(200);
+
         CloseLog();
     }
     
@@ -81,19 +83,6 @@ void ClientManager::Shutdown(eShutdownMode esmode)
 
 void ClientManager::Initialize()
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    //
-    //          Register wallets
-    {
-        GlobalMiningPreset::I().RegisterDevCredentials(
-            {
-                "hashplaza.org\t1379"
-             },
-             { "523057-58.0.rig",
-               "529692-23.0.rig"
-             });
-    }
-
     ////////////////////////////////////////////////////////////
     //
     //          Setup gpu map
@@ -116,7 +105,7 @@ void ClientManager::Initialize()
             {
                 g_useCPU = true;
                 if (g_cpuMinerThreads == 0)
-                    g_cpuMinerThreads = 1;
+                    g_cpuMinerThreads = GpuManager::CpuInfos.numberOfProcessors;
             }
             else if (disableGpuSwitcht)
             {
@@ -154,7 +143,7 @@ void ClientManager::Initialize()
 
         //calc ideal CPU count if count is 0
         if (g_cpuMinerThreads == 0)
-            g_cpuMinerThreads = GpuManager::CpuInfos.numberOfProcessors - 1;
+            g_cpuMinerThreads = GpuManager::CpuInfos.numberOfProcessors;
 
         if (g_cpuMinerThreads > (int)GpuManager::CpuInfos.numberOfProcessors &&
             g_disableMaxGpuThreadSafety == false)

@@ -16,9 +16,6 @@
 #include "RandomHash_core.h"
 
 
-PLATFORM_CONST uint32_t Tiger2_rounds = 5;
-PLATFORM_CONST uint64_t Tiger2_C1 = 0xA5A5A5A5A5A5A5A5;
-PLATFORM_CONST uint64_t Tiger2_C2 = 0x0123456789ABCDEF;
 
 PLATFORM_CONST uint64_t RH_ALIGN(64) Tiger2_T1[256] = { uint64_t(0x02AAB17CF7E90C5E),        
 	uint64_t(0xAC424B03E243A8EC), uint64_t(0x72CD5BE30DD5FCD3),         
@@ -538,7 +535,7 @@ PLATFORM_CONST uint64_t RH_ALIGN(64) Tiger2_T4[256] = { uint64_t(0x5B0E608526323
 		uint64_t(0xC3A0396F7363A51F) };
 
 
-void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
+void Tiger2_Transform(uint64_t* inData, uint64_t* state, U32 inRounds)
 {
     uint64_t a, b, c, temp_a;
     uint32_t _rounds;
@@ -590,7 +587,7 @@ void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
     c = c + (Tiger2_T4[uint8_t(a >> 8)] ^ Tiger2_T3[uint8_t(a >> 24)] ^ Tiger2_T2[uint8_t(a >> 40)] ^ Tiger2_T1[uint8_t(a >> 56)]);
     c = c * 5;
 
-    data[0] = data[0] - (data[7] ^ Tiger2_C1);
+    data[0] = data[0] - (data[7] ^ Tiger_C1);
     data[1] = data[1] ^ data[0];
     data[2] = data[2] + data[1];
     data[3] = data[3] - (data[2] ^ (~data[1] << 19));
@@ -605,7 +602,7 @@ void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
     data[4] = data[4] - (data[3] ^ (~data[2] >> 23));
     data[5] = data[5] ^ data[4];
     data[6] = data[6] + data[5];
-    data[7] = data[7] - (data[6] ^ Tiger2_C2);
+    data[7] = data[7] - (data[6] ^ Tiger_C2);
 
     b = b ^ data[0];
     c = c - (Tiger2_T1[uint8_t(b)] ^ Tiger2_T2[uint8_t(b >> 16)] ^ Tiger2_T3[uint8_t(b >> 32)] ^ Tiger2_T4[uint8_t(b >> 48)]);
@@ -647,7 +644,7 @@ void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
     b = b + (Tiger2_T4[uint8_t(c >> 8) & 0xFF] ^ Tiger2_T3[uint8_t(c >> 24)] ^ Tiger2_T2[uint8_t(c >> 40)] ^ Tiger2_T1[uint8_t(c >> 56)]);
     b = b * 7;
 
-    data[0] = data[0] - (data[7] ^ Tiger2_C1);
+    data[0] = data[0] - (data[7] ^ Tiger_C1);
     data[1] = data[1] ^ data[0];
     data[2] = data[2] + data[1];
     data[3] = data[3] - (data[2] ^ (~data[1] << 19));
@@ -662,7 +659,7 @@ void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
     data[4] = data[4] - (data[3] ^ (~data[2] >> 23));
     data[5] = data[5] ^ data[4];
     data[6] = data[6] + data[5];
-    data[7] = data[7] - (data[6] ^ Tiger2_C2);
+    data[7] = data[7] - (data[6] ^ Tiger_C2);
 
     a = a ^ data[0];
     b = b - (Tiger2_T1[uint8_t(a)] ^ Tiger2_T2[uint8_t(a >> 16)] ^ Tiger2_T3[uint8_t(a >> 32)] ^ Tiger2_T4[uint8_t(a >> 48)]);
@@ -705,9 +702,9 @@ void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
     a = a * 9;
 
     _rounds = 3;
-    while (_rounds < Tiger2_rounds)
+    while (_rounds < inRounds)
     {
-        data[0] = data[0] - (data[7] ^ Tiger2_C1);
+        data[0] = data[0] - (data[7] ^ Tiger_C1);
         data[1] = data[1] ^ data[0];
         data[2] = data[2] + data[1];
         data[3] = data[3] - (data[2] ^ (~data[1] << 19));
@@ -722,7 +719,7 @@ void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
         data[4] = data[4] - (data[3] ^ (~data[2] >> 23));
         data[5] = data[5] ^ data[4];
         data[6] = data[6] + data[5];
-        data[7] = data[7] - (data[6] ^ Tiger2_C2);
+        data[7] = data[7] - (data[6] ^ Tiger_C2);
 
         c = c ^ data[0];
         a = a - (Tiger2_T1[uint8_t(c)] ^ Tiger2_T2[uint8_t(c >> 16)] ^ Tiger2_T3[uint8_t(c >> 32)] ^ Tiger2_T4[uint8_t(c >> 48)]);
@@ -770,7 +767,7 @@ void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
         b = temp_a;
 
         _rounds++;
-    } // end while
+    } 
 
     state[0] = state[0] ^ a;
     state[1] = b - state[1];
@@ -778,11 +775,10 @@ void CUDA_SYM_DECL(Tiger2_5_192_Transform)(uint64_t* inData, uint64_t* state)
 }
 
 
-void CUDA_SYM_DECL(RandomHash_Tiger2_5_192)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_Tiger(RH_StridePtr roundInput, RH_StridePtr output, U32 rounds, U32 bitSize, bool isTiger2 = true)
 {
-    // optimized algo
     const uint32_t Tiger2_BlockSize = 64;
-    const uint32_t Tiger2_HashSize = 24;
+    const uint32_t Tiger2_HashSize = bitSize / 8; 
     RH_ALIGN(64) uint64_t state[3] = {
             0x0123456789ABCDEF,
             0xFEDCBA9876543210,
@@ -790,17 +786,16 @@ void CUDA_SYM_DECL(RandomHash_Tiger2_5_192)(RH_StridePtr roundInput, RH_StridePt
 
     int32_t len = (int32_t)RH_STRIDE_GET_SIZE(roundInput);
     uint32_t blockCount = len / Tiger2_BlockSize;
-    uint64_t *dataPtr = (uint64_t *)RH_STRIDE_GET_DATA(roundInput);
+    uint64_t *dataPtr = RH_STRIDE_GET_DATA64(roundInput);
     uint64_t bits = len * 8;
     while (blockCount > 0)
     {
-        _CM(Tiger2_5_192_Transform)(dataPtr, state);
+        Tiger2_Transform(dataPtr, state, rounds);
         len -= Tiger2_BlockSize;
         dataPtr += Tiger2_BlockSize / 8;
         blockCount--;
     }
 
-    //finish
     {
         int32_t padindex; 
         RH_ALIGN(64) uint8_t pad[72];
@@ -812,7 +807,11 @@ void CUDA_SYM_DECL(RandomHash_Tiger2_5_192)(RH_StridePtr roundInput, RH_StridePt
 
         RH_memzero_of8(pad, sizeof(pad));
 
-        pad[0] = 0x80;
+        if (isTiger2)
+            pad[0] = 0x80;
+        else
+            pad[0] = 0x1;
+
         ReadUInt64AsBytesLE(bits, pad + padindex);
 
         padindex = padindex + 8;
@@ -820,14 +819,13 @@ void CUDA_SYM_DECL(RandomHash_Tiger2_5_192)(RH_StridePtr roundInput, RH_StridePt
         RH_ASSERT(padindex <= 72);
         RH_ASSERT(((padindex + len) % Tiger2_BlockSize) == 0);
 
-        _CM(Tiger2_5_192_Transform)(dataPtr, state);
+        Tiger2_Transform(dataPtr, state,rounds);
         padindex -= Tiger2_BlockSize;
         if (padindex > 0)
-            _CM(Tiger2_5_192_Transform)(dataPtr + (Tiger2_BlockSize / 8), state);
+            Tiger2_Transform(dataPtr + (Tiger2_BlockSize / 8), state,rounds);
     }
 
-    //output state
-    dataPtr = (uint64_t*)RH_STRIDE_GET_DATA(output);
+    dataPtr = RH_STRIDE_GET_DATA64(output);
     RH_STRIDE_SET_SIZE(output, Tiger2_HashSize);
     dataPtr[0] = state[0];
     dataPtr[1] = state[1];

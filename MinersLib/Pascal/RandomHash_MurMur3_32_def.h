@@ -28,10 +28,10 @@ struct MurmurHash3_x86_32_State
 {
     union
 	{
-		uint8_t         buf[4]; //pending
+		uint8_t         buf[4]; 
     	uint32_t		buf32;
 	} U;
-    uint32_t        idx;    //pending size
+    uint32_t        idx;    
     uint32_t        totalLen = 0;
     uint32_t        h1 = 0;
 };
@@ -65,32 +65,13 @@ register uint32_t        back_i = 0;
     hx = hx * 5 + MurmurHash3_x86_32_c3;
 
 
-inline void CUDA_SYM_DECL(MurmurHash3_x86_32_Init)(uint32_t seed, MurmurHash3_x86_32_State* state)
+inline void MurmurHash3_x86_32_Init(uint32_t seed, MurmurHash3_x86_32_State* state)
 {
     state->U.buf32 = 0;
     state->idx = 0;
     state->totalLen = 0;
     state->h1 = 0;
 }
-
-/*
-#define INPLACE_M_MurmurHash3_x86_32_Update_1(chunk8)  \
-{                                                      \
-    RH_ASSERT(back_idx != 0xDEADBEEF)                \
-    RH_ASSERT(back_idx != 4);                        \
-    back_totalLen++;                                   \
-    uint32_t h1 = back_h1;                             \
-    back_buf &= ~(0xFF << (back_idx*8));               \
-    back_buf |= (chunk8 << (back_idx*8));              \
-    back_idx++;                                        \
-    if (back_idx == 4)                                 \
-    {                                                  \
-        MURMUR3_BODY(back_buf)                         \
-        back_idx = 0;                                  \
-    }                                                  \
-    back_h1 = h1;                                      \
-}
-*/
 
 #define INPLACE_M_MurmurHash3_x86_32_Update_1(chunk8)  \
 {                                                      \

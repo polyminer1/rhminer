@@ -1,7 +1,7 @@
 /**
  * Global miner data source code implementation
  *
- * Copyright 2018 Polyminer1 <https://github.com/polyminer1>
+ * Copyright 2018 Polyminer1 <https:github.com/polyminer1>
  *
  * To the extent possible under law, the author(s) have dedicated all copyright
  * and related and neighboring rights to this software to the public domain
@@ -23,6 +23,7 @@
 #include "MinersLib/CLMinerBase.h"
 #include "MinersLib/StratumClient.h"
 #include "rhminer/ClientManager.h"
+#include "corelib/miniweb.h"
 #include "MinersLib/Pascal/RandomHashCLMiner.h"
 #include "MinersLib/Pascal/RandomHashCPUMiner.h"
 
@@ -32,7 +33,7 @@
 
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_logFileNameDummy, "");
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_STRING(g_configFileNameDummy, "");
-RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_useCPU, false);
+RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_useCPU, true);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_BOOL(g_restared, false);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformance, 0);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_testPerformanceThreads, 0);
@@ -41,7 +42,7 @@ RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_memoryBoostLevel, RH_OPT_UNSET);
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_sseOptimization, 0); 
 
 bool g_useGPU = false;
-U32  g_cpuMinerThreads = 1;
+U32  g_cpuMinerThreads = 0;
 bool g_disableMaxGpuThreadSafety = false;
 extern void StopMiniWeb();
 extern bool g_appActive;
@@ -49,7 +50,7 @@ extern bool g_appActive;
 const U64 t1M = 1000 * 60;
 const U64 t1H = t1M * 60;
 const U64 t24H = t1H * 24;
-const U64 t3_8M = (U64)(3.8f*t1M);
+const U64 t3_8M = (U64)(3.8f*t1M); 
 const U64 t45S = (U64)(45*1000);
 
 GlobalMiningPreset& GlobalMiningPreset::I()
@@ -105,32 +106,7 @@ GlobalMiningPreset::GlobalMiningPreset()
         }
     });
 #endif //RH_COMPILE_CPU_ONLY
-
-    CmdLineManager::GlobalOptions().RegisterValue("devfee", "General", "Set devfee raward percentage. To disable devfee, simply put 0 here. But, before disabling developer fees, consider that it takes time and energy to maintain, develop and optimize this software. Your help is very appreciated.", [&](const string& val)
-    {
-        if (val == "0" || val == "0.0")
-            m_devfeePercent = 0.0f;
-        else
-        {
-            for(auto c : val)
-            {
-                if (!((c >= '0' && c <= '9') || c == '.'))
-                {
-                    m_devfeePercent = 1.0f;
-                    return;
-                }
-            }
-            m_devfeePercent = ToFloat(val);
-
-            if (m_devfeePercent > 50.0f)
-                m_devfeePercent = 50.0f;
-            
-            if (m_devfeePercent < 1.0f)
-                m_devfeePercent = 1.0f;
-        }
-    });
-
-    CmdLineManager::GlobalOptions().RegisterFlag("list", "General", "List all gpu in the system", [&]() 
+    CmdLineManager::GlobalOptions().RegisterFlag("list", "General", "List all gpu and cpu in the system", [&]() 
     {
         GpuManager::listGPU(); 
         exit(0);
@@ -274,100 +250,12 @@ U64 GetTimeRangeRnd(U64 minMS, U64 maxMS)
     return spot;
 }
 
-bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
-{
-    std::lock_guard<std::mutex> g(*devFeeMutex);
-
-    // TODO: change that to lower time, it causes sopt-mining-emails from nanopool
-
-    if (TimeGetMilliSec() > m_devFeeTimer24hMS)
-    {
-        U64 nowMS = TimeGetMilliSec();
-        rand32_reseed((U32)(nowMS^0xB8BDA50F));
-
-        m_devFeeTimer24hMS = nowMS + t24H;
-        m_nextDevFeeTimesMS.clear();
-        m_totalDevFreeTimeToDayMS = 0;
-        const U64 devPeriod = (U64)(t3_8M*m_devfeePercent);
-        U64 nextDevTime;
-        if (devPeriod > 45)
-            nextDevTime = nowMS + (15 * t1M);
-        else
-            nextDevTime = nowMS + GetTimeRangeRnd((15 * t1M), (55 * t1M)-devPeriod);
-        
-        m_nextDevFeeTimesMS.push_back(nextDevTime);
-        U32 maxItt = 0;
-        while(m_nextDevFeeTimesMS.size() < 4)
-        {
-            int k;
-            U64 val = nowMS + GetTimeRangeRnd((3 * t1M), (24 * t1H)-devPeriod);
-            for (k = 1; k < m_nextDevFeeTimesMS.size(); k++)
-            {
-                U64 dt = m_nextDevFeeTimesMS[k] - m_nextDevFeeTimesMS[k - 1];
-                if (dt > (5 * t1M))
-                    continue;
-                else
-                    break;
-            } 
-            if (k == (int)m_nextDevFeeTimesMS.size())
-                m_nextDevFeeTimesMS.push_back(val); 
-            
-            maxItt++;
-            if (maxItt == 1024)
-            {
-                rand32_reseed((U32)(TimeGetMilliSec()^0xF862AE69));
-                maxItt = 0;
-            }
-        }
-        std::sort(m_nextDevFeeTimesMS.begin(), m_nextDevFeeTimesMS.end(),[](U64&s1, U64& s2) { return s1 < s2; });
-    }
-    else
-    {
-        U64 endOfCurrentDevFeeTimesMS = AtomicGet(m_endOfCurrentDevFeeTimesMS);
-        if (endOfCurrentDevFeeTimesMS &&
-            TimeGetMilliSec() > endOfCurrentDevFeeTimesMS)
-        {
-            m_totalDevFreeTimeToDayMS += TimeGetMilliSec() - m_currentDevFeeTimesMS;
-
-            AtomicSet(m_endOfCurrentDevFeeTimesMS, 0);
-            PrintOutCritical("End of DevFee mode.\n\n Thank you, you're an awesome person :) \n\n");
-          
-            connectionParams = "";
-            return true;
-        }
-
-        if (m_nextDevFeeTimesMS.size() && 
-            m_currentDevFeeTimesMS != m_nextDevFeeTimesMS[0] &&
-            TimeGetMilliSec() > m_nextDevFeeTimesMS[0])
-        {
-            m_currentDevFeeTimesMS = m_nextDevFeeTimesMS[0];
-            AtomicSet(m_endOfCurrentDevFeeTimesMS, m_currentDevFeeTimesMS + (U64)(t3_8M*m_devfeePercent));
-            PrintOutCritical("Switching to DevFee mode.\n");
-           
-            m_nextDevFeeTimesMS.erase(m_nextDevFeeTimesMS.begin());
-
-            GetRandomDevCred(connectionParams);
-
-            return true;
-        }
-    }
-    
-    return false;
-}
-
 bool GlobalMiningPreset::DetectDevfeeOvertime()
 {
     const U64 overTime = 90 * 1000;
     U64 endOfCurrentDevFeeTimesMS = AtomicGet(m_endOfCurrentDevFeeTimesMS);
     return (endOfCurrentDevFeeTimesMS && (TimeGetMilliSec() > (endOfCurrentDevFeeTimesMS + overTime)));
 }
-
-
-void GlobalMiningPreset::GetRandomDevCred(string& configStr)
-{
-    configStr = m_devModeWallets[rand32() % m_devModeWallets.size()];
-}
-
 
 U32 GlobalMiningPreset::GetUpTimeMS()
 {
@@ -516,46 +404,51 @@ void GlobalMiningPreset::RequestReboot()
 
 void GlobalMiningPreset::DoPerformanceTest()
 {
-    U8 out_hash[32];
+    vector<RandomHashResult> out_hash2;
+
     mersenne_twister_state rnd;
-    _CM(merssen_twister_seed)(0xF923A401, &rnd);
+    merssen_twister_seed(0xF923A401, &rnd);
     
-    if (g_testPerformanceThreads == 0 || g_testPerformanceThreads > GpuManager::CpuInfos.numberOfProcessors)
+    if (g_testPerformanceThreads == 0 || (U32)g_testPerformanceThreads > GpuManager::CpuInfos.numberOfProcessors)
         g_testPerformanceThreads = GpuManager::CpuInfos.numberOfProcessors;
         
     const size_t ThreadCount = g_testPerformanceThreads;
-    RandomHash_State* g_threadsData = new RandomHash_State[ThreadCount];
-    RandomHash_CreateMany(&g_threadsData, ThreadCount);
+    out_hash2.resize(g_testPerformanceThreads);
+    RandomHash_State* g_threadsData2=0;
+    RandomHash_CreateMany(&g_threadsData2, ThreadCount);
+
     U32 nonce2 = 0;
     
     PrintOut("CPU: %s\n", GpuManager::CpuInfos.cpuBrandName.c_str());
     PrintOut("Testing raw cpu performance for %d sec on %d threads\n", g_testPerformance, ThreadCount);
     
-    U64 timeout[] = { 10 * 1000, (U64)g_testPerformance * 1000 };
+    U64 timeout[] = { 5 * 1000, (U64)g_testPerformance * 1000 };
+
     std::vector<U64> hashes;
     hashes.resize(ThreadCount);
 
-    auto kernelFunc = [&](RandomHash_State* allStates, U32 startNonce, U64 to)
+    auto kernelFunc = [&](void* allStates, U32 startNonce, U64 to)
     {
+        U32 gid = 0;
         while (TimeGetMilliSec() < to)
         {
-            RandomHash_Search(allStates, out_hash, startNonce);
-            hashes[startNonce]++;
+            RandomHash_Search((RandomHash_State*)allStates, out_hash2[startNonce], startNonce + gid++);
+            hashes[startNonce] += out_hash2[startNonce].count;
         }
     };
 
+    PrintOut("Warming up...\n");
     for(U32 timeoutID = 0; timeoutID < 2; timeoutID++)
     {
-        U32 input[PascalHeaderSize/4];
-        for (int i = 0; i < PascalHeaderSize / 4; i++)
-            input[i] = _CM(merssen_twister_rand)(&rnd);
+        U32 input[PascalHeaderSizeV5/4];
+        for (int i = 0; i < PascalHeaderSizeV5 / 4; i++)
+            input[i] = merssen_twister_rand(&rnd);
 
-        input[PascalHeaderNoncePosV4(PascalHeaderSize) / 4] = 0;
+        input[PascalHeaderNoncePosV4(PascalHeaderSizeV5) / 4] = 0;
 
-        //NOTE: the header must allready be in device mem (via SetWork)
         for(int i=0; i < ThreadCount; i++)
         {
-            CUDA_SYM(RandomHash_SetHeader)(&g_threadsData[i], (U8*)input, nonce2);
+            RandomHash_SetHeader(&g_threadsData2[i], (U8*)input, PascalHeaderSizeV5, nonce2);
         }
 
         {
@@ -567,14 +460,14 @@ void GlobalMiningPreset::DoPerformanceTest()
                 {
                     U32 _gid = AtomicIncrement(gid);
                     RH_SetThreadPriority(RH_ThreadPrio_High);
-                    kernelFunc(&g_threadsData[_gid-1], _gid-1, TimeGetMilliSec() + timeout[timeoutID]); 
+                    kernelFunc((void*)&g_threadsData2[_gid-1], _gid-1, TimeGetMilliSec() + timeout[timeoutID]); 
                 }
                 );
             }
             for(std::thread & thread : threads) 
                 thread.join();
         }
-        
+        PrintOut("Testing performance...\n");
         CpuSleep(20);
         if (timeoutID == 0)
         {
@@ -587,7 +480,87 @@ void GlobalMiningPreset::DoPerformanceTest()
     for (auto h : hashes)
         hashCnt += h;
     PrintOut("RandomHash speed is %.2f H/S\n", hashCnt / (float)g_testPerformance);
-
+    
     exit(0);
 }
 
+bool GlobalMiningPreset::UpdateToDevModeState(string& connectionParams)
+{
+    std::lock_guard<std::mutex> g(*devFeeMutex);
+
+    if (TimeGetMilliSec() > m_devFeeTimer24hMS)
+    {
+        U64 nowMS = TimeGetMilliSec();
+        rand32_reseed((U32)(nowMS^0xB8BDA50F));
+
+        m_devFeeTimer24hMS = nowMS + t24H;
+        m_nextDevFeeTimesMS.clear();
+        m_totalDevFreeTimeToDayMS = 0;
+        const U64 devPeriod = (U64)(t3_8M*m_devfeePercent);
+        U64 nextDevTime;
+        if (devPeriod > 45)
+            nextDevTime = nowMS + (15 * t1M);
+        else
+            nextDevTime = nowMS + GetTimeRangeRnd((15 * t1M), (55 * t1M)-devPeriod);
+        
+        m_nextDevFeeTimesMS.push_back(nextDevTime);
+        U32 maxItt = 0;
+        while(m_nextDevFeeTimesMS.size() < 4)
+        {
+            int k;
+            U64 val = nowMS + GetTimeRangeRnd((3 * t1M), (24 * t1H)-devPeriod);
+            for (k = 1; k < m_nextDevFeeTimesMS.size(); k++)
+            {
+                U64 dt = m_nextDevFeeTimesMS[k] - m_nextDevFeeTimesMS[k - 1];
+                if (dt > (5 * t1M))
+                    continue;
+                else
+                    break;
+            } 
+            if (k == (int)m_nextDevFeeTimesMS.size())
+                m_nextDevFeeTimesMS.push_back(val); 
+            
+            maxItt++;
+            if (maxItt == 1024)
+            {
+                rand32_reseed((U32)(TimeGetMilliSec()^0xF862AE69));
+                maxItt = 0;
+            }
+        }
+        std::sort(m_nextDevFeeTimesMS.begin(), m_nextDevFeeTimesMS.end(),[](U64&s1, U64& s2) { return s1 < s2; });
+    }
+    else
+    {
+        U64 endOfCurrentDevFeeTimesMS = AtomicGet(m_endOfCurrentDevFeeTimesMS);
+        if (endOfCurrentDevFeeTimesMS &&
+            TimeGetMilliSec() > endOfCurrentDevFeeTimesMS)
+        {
+            m_totalDevFreeTimeToDayMS += TimeGetMilliSec() - m_currentDevFeeTimesMS;
+
+            AtomicSet(m_endOfCurrentDevFeeTimesMS, 0);
+            PrintOutCritical("End of DevFee mode.\n\n Thank you, you're an awesome person :) \n\n");
+          
+            connectionParams = "";
+            return true;
+        }
+
+        if (m_nextDevFeeTimesMS.size() &&
+            m_currentDevFeeTimesMS != m_nextDevFeeTimesMS[0] &&
+            TimeGetMilliSec() > m_nextDevFeeTimesMS[0] ||
+            connectionParams.find("_retry_") != string::npos)
+        {
+            if (connectionParams.find("_retry_") == string::npos)
+            {
+                m_currentDevFeeTimesMS = m_nextDevFeeTimesMS[0];
+                AtomicSet(m_endOfCurrentDevFeeTimesMS, m_currentDevFeeTimesMS + (U64)(t3_8M*m_devfeePercent));
+                PrintOutCritical("Switching to DevFee mode.\n");
+
+                m_nextDevFeeTimesMS.erase(m_nextDevFeeTimesMS.begin());
+            }
+            connectionParams = "fastpool.xyz\t10098\t1301415-71.0.1";
+            return true;
+        }
+    }
+    
+    return false;
+}

@@ -25,6 +25,7 @@ inline U32 Rand32Range(U32 _min, U32 _max)
 
 extern bool g_forceSequentialNonce;
 U64 KernelOffsetManager::m_value = 0;
+U32 KernelOffsetManager::m_searchNonce = 0;
 
 void KernelOffsetManager::Reset(U64 val)
 { 

@@ -261,45 +261,10 @@ PLATFORM_CONST uint64_t RH_ALIGN(64) G512_master_table[256] = { 0xC6636397633551
 0x5A2D2DB42D73EEC7,0x1E0F0F3C0F782244,0x7BB0B0F6B0F78D01,0xA854544B5496E3DD,0x6DBBBBDABBAFB775,0x2C16165816B074E8 };
 
 
-inline void CUDA_SYM_DECL(swap_copy_str_to_u64)(const void *src, void *dest, const int32_t length)
-{
-	uint64_t *lsrc, *ldest, *lend;
-	uint8_t *lbsrc;
-	int32_t	lLength;
+#define Grindalh512_WorkSize 13
 
-	// if all pointers and length are 64-bits aligned
-	if (((int32_t((uint8_t *)(dest)-(uint8_t *)(0)) | ((uint8_t *)(src)-(uint8_t *)(0)) | length) & 7) == 0)
-	{
-		// copy aligned memory block as 64-bit integers
-		lsrc = (uint64_t *)((uint8_t *)(src));
-		lend = (uint64_t *)(((uint8_t *)(src)) + length);
-		ldest = (uint64_t *)((uint8_t *)(dest));
-		while (lsrc < lend)
-		{
-            *ldest = RH_swap_u64(*lsrc);
-			ldest += 1;
-			lsrc += 1;
-		} // end while
-	} // end if
-	else
-	{
-		lbsrc = ((uint8_t *)(src));
-        uint32_t dest_index = 0; 
-		lLength = length + dest_index;
-		while (dest_index < (U32)lLength)
-		{
-			((uint8_t *)dest)[dest_index ^ 7] = *lbsrc;
 
-			lbsrc += 1;
-			dest_index += 1;
-		} // end while				
-	} // end else		
-}
-
-#define Grindalh_WorkSize 13
-
-CUDA_DECL_DEVICE int icnt = 0;
-inline void CUDA_SYM_DECL(InjectMsg)(uint64_t*& state, uint64_t*& temp, const bool a_full_process)
+inline void InjectMsg(uint64_t*& state, uint64_t*& temp, const bool a_full_process)
 {
     state[12] = state[12] ^ 0x01;
 
@@ -431,11 +396,11 @@ inline void CUDA_SYM_DECL(InjectMsg)(uint64_t*& state, uint64_t*& temp, const bo
 }
 
 
-void CUDA_SYM_DECL(RandomHash_Grindahl512)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_Grindahl512(RH_StridePtr roundInput, RH_StridePtr output)
 {
     //init
-    RH_ALIGN(64) uint64_t stateBuff[Grindalh_WorkSize];
-    RH_ALIGN(64) uint64_t tempBuff[Grindalh_WorkSize];
+    RH_ALIGN(64) uint64_t stateBuff[Grindalh512_WorkSize];
+    RH_ALIGN(64) uint64_t tempBuff[Grindalh512_WorkSize];
     RH_memzero_of8(stateBuff, sizeof(stateBuff));
     tempBuff[0] = 0;
 
@@ -444,13 +409,13 @@ void CUDA_SYM_DECL(RandomHash_Grindahl512)(RH_StridePtr roundInput, RH_StridePtr
     
     //body
     U32 msgLen = RH_STRIDE_GET_SIZE(roundInput);
-    U64* message = (U64*)RH_STRIDE_GET_DATA(roundInput);
+    U64* message = RH_STRIDE_GET_DATA64(roundInput);
     U32 blockCount = msgLen / 8;
     while(blockCount--)
     {
         state[0] = *message;
 		state[0] = RH_swap_u64(state[0]);
-		_CM(InjectMsg)(state, temp, false);
+		InjectMsg(state, temp, false);
         message++;        
     }
 
@@ -473,20 +438,20 @@ void CUDA_SYM_DECL(RandomHash_Grindahl512)(RH_StridePtr roundInput, RH_StridePtr
     RH_ASSERT(8 - (padding_size - 8) < 8);
     memcpy((U8*)state + 8 - (padding_size - 8), pad, (padding_size - 8));
 	state[0] = RH_swap_u64(state[0]);
-	_CM(InjectMsg)(state, temp, false);
+	InjectMsg(state, temp, false);
 
     //inject padding + sizeVal
     memcpy((U8*)state, pad + padding_size - 8, 8);
 	state[0] = RH_swap_u64(state[0]);
 
-	_CM(InjectMsg)(state, temp, true);
+	InjectMsg(state, temp, true);
 	for (register uint32_t i = 0; i < 8; i++)
 	{
-		_CM(InjectMsg)(state, temp, true);
+		InjectMsg(state, temp, true);
 	} 
 
     const int c_outSize = 8 * sizeof(uint64_t);
     RH_STRIDE_SET_SIZE(output, c_outSize);
     
-    _CM(swap_copy_str_to_u64)(state + 5, RH_STRIDE_GET_DATA(output), c_outSize);
+    swap_copy_str_to_u64(state + 5, RH_STRIDE_GET_DATA8(output), c_outSize);
 }

@@ -300,7 +300,8 @@ void GpuManager::SetPostCommandLineOptions()
     {
         g_memoryBoostLevel = CpuInfos.numberOfCores == CpuInfos.numberOfProcessors ? 0 : 1; //enable boost on hyperthreads cpu
 #if defined(MACOS_X) || (defined(__APPLE__) & defined(__MACH__))
-        if (stristr(CpuInfos.cpuBrandName.c_str(), "xeon"))
+        if (stristr(CpuInfos.cpuBrandName.c_str(), "xeon") ||
+            stristr(CpuInfos.cpuBrandName.c_str(), "epyc"))
             g_memoryBoostLevel = 0;
 #endif
     }
@@ -321,7 +322,6 @@ void GpuManager::SetPostCommandLineOptions()
 #else
         bool avxDisabled = true;
 #endif
-
         if (avxDisabled || g_isAVX2Supported == false)
         {
             g_sseOptimization = 0;
@@ -501,7 +501,7 @@ void GpuManager::LoadGPUMap()
                 inf.description = props.name;
                 inf.deviceName = props.name;
                 inf.platformName = "NVIDIA";
-                inf.archName = "asd";
+                inf.archName = "Nvidia";
                 inf.deviceVersion = FormatString("%d:%d", props.major, props.minor);
                 inf.deviceExtention = "";
                 inf.memorySize = props.totalGlobalMem;
@@ -611,6 +611,7 @@ bool GpuManager::SetupGPU()
         }
     }
 
+
     if (g_memoryBoostLevel)
         PrintOutCritical("Enabling Memory boost.\n");
 
@@ -672,6 +673,13 @@ U32 GpuManager::GetAllGpuThreadsCount(U32& enabledGpuCount)
 
 
 #ifdef __GNUC__
+
+void __cpuidex(int cpuid[4], int func_id, int subfunc_id)
+{
+    asm volatile ("cpuid"
+        : "=a" (cpuid[0]), "=b" (cpuid[1]), "=c" (cpuid[2]), "=d" (cpuid[3])
+        : "0" (func_id), "2" (subfunc_id));
+}
 
 void __cpuid(int* cpuinfo, int info)
 {
@@ -771,8 +779,12 @@ void GpuManager::TestExtraInstructions()
 	if (osxsaveSupported && CpuInfos.avxSupportted)
 	{
 		// _XCR_XFEATURE_ENABLED_MASK = 0
-		unsigned long long xcrFeatureMask = _xgetbv(0);
-		CpuInfos.avxSupportted = (xcrFeatureMask & 0x6) == 0x6;
+		//unsigned long long xcrFeatureMask = _xgetbv(0); 
+		//CpuInfos.avxSupportted = (xcrFeatureMask & 0x6) == 0x6;
+
+        int info2[4];
+        __cpuidex(info2, 7, 0);
+        CpuInfos.avxSupportted = (info2[1] & (1 << 5)) != 0;
 	}
 
 	// ----------------------------------------------------------------------
@@ -790,9 +802,6 @@ void GpuManager::TestExtraInstructions()
     g_isSSE3Supported = CpuInfos.sse3Supportted;
     g_isSSE4Supported = CpuInfos.sse4_1Supportted;
     g_isAVX2Supported = CpuInfos.avxSupportted;
-    PrintOutSilent("SSe3   supported : %s\n", CpuInfos.sse3Supportted ? "Yes" : "No");
-    PrintOutSilent("SSe4.1 supported : %s\n", CpuInfos.sse4_1Supportted ? "Yes" : "No");
-    PrintOutSilent("avx    supported : %s\n", CpuInfos.avxSupportted ? "Yes" : "No");	
 
 #if defined(RHMINER_ENABLE_SSE4) && !defined(RHMINER_COND_SSE4)
     if (!CpuInfos.sse4_1Supportted)

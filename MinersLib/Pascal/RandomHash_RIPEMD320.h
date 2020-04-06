@@ -18,7 +18,7 @@
 
 #define RIPEMD320_BLOCK_SIZE 64
 
-inline void CUDA_SYM_DECL(Ripemd320RoundFunction)(uint32_t* data, uint32_t* state)
+inline void Ripemd320RoundFunction(uint32_t* data, uint32_t* state)
 {
 	uint32_t a, b, c, d, e, aa, bb, cc, dd, ee;
 
@@ -536,10 +536,8 @@ inline void CUDA_SYM_DECL(Ripemd320RoundFunction)(uint32_t* data, uint32_t* stat
 }
 
 
-void CUDA_SYM_DECL(RandomHash_RIPEMD320)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_RIPEMD320(RH_StridePtr roundInput, RH_StridePtr output)
 {
-
-    // optimized algo
     RH_ALIGN(64) uint32_t state[10] = {
         0x67452301,
         0xEFCDAB89,
@@ -551,10 +549,12 @@ void CUDA_SYM_DECL(RandomHash_RIPEMD320)(RH_StridePtr roundInput, RH_StridePtr o
         0x89ABCDEF,
         0x01234567,
         0x3C2D1E0F };
-    RandomHash_MD_BASE_MAIN_LOOP(RIPEMD320_BLOCK_SIZE, _CM(Ripemd320RoundFunction), uint64_t);
+    RandomHash_MD_BASE_MAIN_LOOP(RIPEMD320_BLOCK_SIZE, Ripemd320RoundFunction, uint64_t);
 
     //get the hash result
-    memcpy(RH_STRIDE_GET_DATA(output), state, 10 * 4);
+    U32* out = RH_STRIDE_GET_DATA(output);
     RH_STRIDE_SET_SIZE(output, 10 * 4);
-
+    copy8(out, state);
+    out[8] = state[8];
+    out[9] = state[9];
 }

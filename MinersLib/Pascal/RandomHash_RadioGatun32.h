@@ -28,7 +28,7 @@
 #define RADIOGATUN32_BLOCK_SIZE 12
 
 
-inline void CUDA_SYM_DECL(RadiogatunRoundFunction)(uint32_t* a, uint32_t* mill, uint32_t* belt)
+inline void RadiogatunRoundFunction(uint32_t* a, uint32_t* mill, uint32_t* belt)
 {
     uint32_t q[3];
     RH_RADIOGATUN32_BELT_COPY(q, 0, belt, 12);
@@ -88,26 +88,23 @@ inline void CUDA_SYM_DECL(RadiogatunRoundFunction)(uint32_t* a, uint32_t* mill, 
 }
 
 
-void CUDA_SYM_DECL(RandomHash_RadioGatun32)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_RadioGatun32(RH_StridePtr roundInput, RH_StridePtr output)
 {
     RH_ALIGN(64) uint32_t mill[/*19*/20];
     RH_ALIGN(64) uint32_t a[19];
     RH_ALIGN(64) uint32_t belt[/*13 * 3*/40];
     int32_t  len = (int32_t)RH_STRIDE_GET_SIZE(roundInput);
-    uint32_t *inData = (uint32_t *)RH_STRIDE_GET_DATA(roundInput);
+    uint32_t *inData = RH_STRIDE_GET_DATA(roundInput);
     uint32_t blockCount = len / RADIOGATUN32_BLOCK_SIZE;
-    //init
     RH_memzero_of16(mill, sizeof(mill));
     RH_memzero_of16(belt, sizeof(belt));
 
-    //finish 0 (pre)
     uint32_t pre = len % RADIOGATUN32_BLOCK_SIZE;
 
     memset(((uint8_t*)inData) + len, 0, RADIOGATUN32_BLOCK_SIZE - pre);
     ((uint8_t*)inData)[len] = 0x01;
     blockCount++;
 
-    //update block
     while (blockCount > 0)
     {
         RH_ALIGN(64) uint32_t  data[RADIOGATUN32_BLOCK_SIZE];
@@ -119,7 +116,7 @@ void CUDA_SYM_DECL(RandomHash_RadioGatun32)(RH_StridePtr roundInput, RH_StridePt
             belt[0 + i] = belt[0 + i] ^ data[i];
             i++;
         }
-        _CM(RadiogatunRoundFunction)(a, mill, belt);
+        RadiogatunRoundFunction(a, mill, belt);
 
         len -= RADIOGATUN32_BLOCK_SIZE;
         inData += RADIOGATUN32_BLOCK_SIZE / 4;
@@ -127,14 +124,14 @@ void CUDA_SYM_DECL(RandomHash_RadioGatun32)(RH_StridePtr roundInput, RH_StridePt
     }
 
     for (uint32_t i = 0; i < 16; i++)
-        _CM(RadiogatunRoundFunction)(a, mill, belt);
+        RadiogatunRoundFunction(a, mill, belt);
 
-    uint32_t* result = (uint32_t*)RH_STRIDE_GET_DATA(output);
+    uint32_t* result = RH_STRIDE_GET_DATA(output);
     RH_STRIDE_SET_SIZE(output, 8 * sizeof(uint32_t));
 
     for (uint32_t i = 0; i < 4; i++)
     {
-        _CM(RadiogatunRoundFunction)(a, mill, belt);
+        RadiogatunRoundFunction(a, mill, belt);
         *result = mill[1];
         result++;
         *result = mill[2];

@@ -201,8 +201,8 @@ protected:
     U32             m_accumNewWorkDeltaTimeCount = 0;
     const string    c_DummyMinerName = "DummyMiner";
 
-    U64              m_hashCount = 0;   //NOTE: CPU platform we do hash*1000 so we can have near 0 hash/sec
-    U64              m_hashCountTime = 0;
+    U64              m_hashCount = 0;   
+    U64              m_hashCountTime = U64_Max;
     U64              m_resetHash = 0;
     
     Event           m_workReadyEvent; //only set when work is null

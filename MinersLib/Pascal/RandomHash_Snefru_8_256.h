@@ -17,9 +17,7 @@
 #include "RandomHash_core.h"
 
 #define SNEFRU_SecurityLevel    8
-#define SNEFRU_HashSize         32
-#define SNEFRU_BlockSize        (64 - 32)
-#define SNEFRU_size             (SNEFRU_HashSize >> 2) //8
+
 
 PLATFORM_CONST uint32_t RH_ALIGN(64) Snefru_shifts[4] = { 16, 8, 16, 24 };
 
@@ -618,17 +616,16 @@ PLATFORM_CONST uint32_t RH_ALIGN(64) Snefru_boxes[16][256] = { { 0x64F9001B, 0xF
 																0x4D87253C }};
 
 
-void CUDA_SYM_DECL(Snefru_8_256_Transform)(uint32_t* data, uint32_t* state)
+void Snefru_8_256_Transform(uint32_t* data, uint32_t* state, U32 SNEFRU_size)
 {
 	uint32_t i, j, k, shift;
-    RH_ALIGN(64) uint32_t work[16]; //beData
-		
-    //uint32_t *ptr_work = &work[0];
+    RH_ALIGN(64) uint32_t work[16]; 
 	memcpy(&work[0], &state[0], SNEFRU_size * sizeof(uint32_t));
+    uint32_t* part2 = &work[SNEFRU_size];    
+    copy8_op(part2, data, ReverseBytesUInt32)
 
-    //scratch buffer 64 uint32
-    uint32_t* part2 = &work[8];
-    copy8_op(part2, data, ReverseBytesUInt32);
+    if (SNEFRU_size != 8)
+        copy4_op(part2+8, data+8, ReverseBytesUInt32)
 
 	i = 0;
 	while (i < (uint32_t)SNEFRU_SecurityLevel)
@@ -691,33 +688,37 @@ void CUDA_SYM_DECL(Snefru_8_256_Transform)(uint32_t* data, uint32_t* state)
 	state[1] = state[1] ^ work[14];
 	state[2] = state[2] ^ work[13];
 	state[3] = state[3] ^ work[12];
-
-	state[4] = state[4] ^ work[11];
-	state[5] = state[5] ^ work[10];
-	state[6] = state[6] ^ work[9];
-	state[7] = state[7] ^ work[8];
+    if (SNEFRU_size == 8)
+    {
+        state[4] = state[4] ^ work[11];
+        state[5] = state[5] ^ work[10];
+        state[6] = state[6] ^ work[9];
+        state[7] = state[7] ^ work[8];
+    }
 }
 
 
-void CUDA_SYM_DECL(RandomHash_Snefru_8_256)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_Snefru_8_256(RH_StridePtr roundInput, RH_StridePtr output, U32 hashSize = 32)
 {
-    // init
-    RH_ALIGN(64) uint32_t state[SNEFRU_size];
+    U32 SNEFRU_size = (hashSize / 4); 
+    const U32 SNEFRU_MAX_size = 8;
+    const U32 SNEFRU_BlockSize = (64 - hashSize);
+
+    RH_ASSERT(SNEFRU_size <= SNEFRU_MAX_size );
+    RH_ALIGN(64) uint32_t state[SNEFRU_MAX_size];
     RH_memzero_32(state, sizeof(state));
 
     int32_t len = (int32_t)RH_STRIDE_GET_SIZE(roundInput);
     uint64_t bits = len * 8;
     uint32_t blockCount = len / SNEFRU_BlockSize;
-    uint32_t *dataPtr = (uint32_t *)RH_STRIDE_GET_DATA(roundInput);
+    uint32_t *dataPtr = RH_STRIDE_GET_DATA(roundInput);
     while(blockCount > 0)
     {
-        _CM(Snefru_8_256_Transform)(dataPtr, state);
+        Snefru_8_256_Transform(dataPtr, state, SNEFRU_size);
         len -= SNEFRU_BlockSize;
         dataPtr += SNEFRU_BlockSize / 4;
         blockCount--;
     }
-
-    //finish
 	int32_t padindex;		
     uint32_t pos = len % SNEFRU_BlockSize;
 	if (pos > 0)
@@ -725,7 +726,7 @@ void CUDA_SYM_DECL(RandomHash_Snefru_8_256)(RH_StridePtr roundInput, RH_StridePt
 	else
 		padindex = SNEFRU_BlockSize - pos - 8;
 
-    RH_ALIGN(64) uint32_t pad[SNEFRU_BlockSize*2];
+    RH_ALIGN(64) uint32_t pad[64 *2];
     RH_memzero_of16(pad, sizeof(pad));
 
 	bits = ReverseBytesUInt64(bits);
@@ -737,15 +738,17 @@ void CUDA_SYM_DECL(RandomHash_Snefru_8_256)(RH_StridePtr roundInput, RH_StridePt
 
     RH_ASSERT(((padindex + len) % SNEFRU_BlockSize)==0);
 
-    _CM(Snefru_8_256_Transform)(dataPtr, state);
+    Snefru_8_256_Transform(dataPtr, state, SNEFRU_size);
     padindex -= SNEFRU_BlockSize;
     if (padindex > 0)
-        _CM(Snefru_8_256_Transform)(dataPtr+(SNEFRU_BlockSize/4), state);
+        Snefru_8_256_Transform(dataPtr+(SNEFRU_BlockSize/4), state, SNEFRU_size);
 
-    //output state
-    dataPtr = (uint32_t*)RH_STRIDE_GET_DATA(output);
+    dataPtr = RH_STRIDE_GET_DATA(output);
     RH_STRIDE_SET_SIZE(output, SNEFRU_size * 4);
-    copy8_op(dataPtr, state, ReverseBytesUInt32);
+    if (SNEFRU_size == 8)
+        copy8_op(dataPtr, state, ReverseBytesUInt32)
+    else
+        copy4_op(dataPtr, state, ReverseBytesUInt32)
 
 }
 
