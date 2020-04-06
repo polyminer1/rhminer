@@ -34,10 +34,11 @@
 // state context
 struct blake2b
 {
-    struct blake2b_ctx {
-        uint8_t b[128];                     // input buffer
-        U64 h[8];                      // chained state
-        U64 t[2];                      // total number of bytes
+    struct blake2b_ctx 
+    {
+        /*RH_ALIGN(128) */uint8_t b[128];                     // input buffer
+        RH_ALIGN(128) U64 h[8];                      // chained state
+        RH_ALIGN(128) U64 t[2];                      // total number of bytes
         size_t c;                           // pointer for b[]
         size_t outlen;                      // digest size
     } m_context;

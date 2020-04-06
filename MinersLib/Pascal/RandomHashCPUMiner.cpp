@@ -12,17 +12,19 @@
 ///
 /// @file
 /// @copyright Polyminer1, QualiaLibre
-#include "precomp.h"
+#include "precomp.h" 
 #include "MinersLib/Global.h"
 #include "MinersLib/Pascal/RandomHashCPUMiner.h"
 #include "MinersLib/Algo/sph_sha2.h"
 #include "MinersLib/Algo/sph_blake.h"
 #include "rhminer/ClientManager.h"
+#include "corelib/miniweb.h"
 RHMINER_COMMAND_LINE_DEFINE_GLOBAL_INT(g_cputhrottling, 0)
 
 const U64 VentingMultiplyer = 3;
 extern bool g_useGPU;
 extern bool g_cpuDisabled;
+
 
 RandomHashCPUMiner::RandomHashCPUMiner(FarmFace& _farm, unsigned globalWorkMult, unsigned localWorkSize, U32 gpuIndex) :
     GenericCLMiner(_farm, globalWorkMult, localWorkSize, gpuIndex),
@@ -32,29 +34,27 @@ RandomHashCPUMiner::RandomHashCPUMiner(FarmFace& _farm, unsigned globalWorkMult,
 
 RandomHashCPUMiner::~RandomHashCPUMiner()
 {
-    RandomHash_DestroyMany(m_randomHashArray, g_cpuMinerThreads);
+    RandomHash_DestroyMany(m_randomHash2Array, g_cpuMinerThreads);
 }
 
 void RandomHashCPUMiner::InitFromFarm(U32 relativeIndex)
 {
-	if (g_cputhrottling)
-		PrintOut("Cpu throttling for %d ms every %d seconds\n", g_cputhrottling * 10 * VentingMultiplyer, VentingMultiplyer);
+    if (g_cputhrottling)
+        PrintOut("Cpu throttling for %d ms every %d seconds\n", g_cputhrottling * 10 * VentingMultiplyer, VentingMultiplyer);
 
-    //NOTE: WE need to force the local WS to 64 for UpdateWorkSize
     const U32 g_cpuRoundsThread = 64;
     m_localWorkSize = 64;
     UpdateWorkSize(g_cpuRoundsThread * g_cpuMinerThreads); //64
+    RandomHash_DestroyMany(m_randomHash2Array, g_cpuMinerThreads);
+    RandomHash_CreateMany(&m_randomHash2Array, g_cpuMinerThreads);    
 
-    RandomHash_DestroyMany(m_randomHashArray, g_cpuMinerThreads);
-    RandomHash_CreateMany(&m_randomHashArray, g_cpuMinerThreads); 
+    static_assert (sizeof(CPUKernelData::DataPackage::m_work1) >= sizeof(RandomHashResult), "BadHeader");
 
-    //Make all CPU miner threads
     for (U32 i=0; i < (U32)g_cpuMinerThreads; i++)
     {
         CPUKernelData* kdata = (CPUKernelData*)RH_SysAlloc(sizeof(CPUKernelData));
         memset(kdata, 0, sizeof(CPUKernelData));
         kdata->m_id = i;
-		//kdata->m_packages[0].m_requestPause = true;
         kdata->m_thread = new std::thread([&,kdata] { RandomHashCpuKernel(kdata); });
         m_cpuKernels.push_back(kdata);
         kdata->m_thread->detach();
@@ -67,9 +67,9 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
     snprintf(tname, 64, "Cpu%d", (int)kernelData->m_id);
     setThreadName(tname);
 
-	if (g_cputhrottling)
-		CpuSleep(100 + rand32() % 800);
-	
+    if (g_cputhrottling)
+        CpuSleep(100 + rand32() % 800);
+    
     if (g_setProcessPrio != 1)
     {
         if (kernelData->m_id == GpuManager::CpuInfos.numberOfProcessors-1) 
@@ -83,12 +83,16 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
 
 
     U32 workWindow = m_globalWorkSizePerCPUMiner;
-    U32 gid = (U32)KernelOffsetManager::Increment(workWindow) - workWindow;
-    U32 endFrame = gid + workWindow;
+    U32 gid = KernelOffsetManager::GetNextSearchNonce();
     bool paused = false;
     U64 oldID = U64_Max;
-	U64 cpuVentingTimeout = 0;
-	const U64 CpuVentingPeriod = g_cputhrottling * 10;
+    U64 cpuVentingTimeout = 0;
+    U64 cpuMonitor = 0;
+    const U64 CpuVentingPeriod = g_cputhrottling * 10;
+    
+    std::unordered_set<U32> partialNoncesProcessed(65535);
+    U32 roundCnt = 0;
+    U32 internalCollision = 0;
 
     while(!kernelData->m_abortThread)
     {
@@ -96,36 +100,43 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
         U64 packageID = AtomicGet(kernelData->m_packageID);
         CPUKernelData::DataPackage* packageData = &kernelData->m_packages[packageID % CPUKernelData::PackagesCount];
 
-        //handle internal pause
         if (oldID != packageID && paused)
         {
             paused = false;
         }
 
-        //handle pause request from ::Pause()
         if (packageData->m_requestPause)
         {
             packageData->m_requestPause = 0;
             paused = true;
         }
-        
+
        
+        U32 workCount= 1;
         if (!paused)
         {
- 			if (g_cputhrottling)
-			{
-				if (TimeGetMilliSec() > cpuVentingTimeout)
-				{
-					cpuVentingTimeout = TimeGetMilliSec() + (1000 * VentingMultiplyer) - (CpuVentingPeriod * VentingMultiplyer);
-					//CpuYield();
-					CpuSleep((U32)CpuVentingPeriod);
-				}
-			}
-				
+            if (g_cputhrottling)
+            {
+                if (TimeGetMilliSec() > cpuVentingTimeout)
+                {
+                    cpuVentingTimeout = TimeGetMilliSec() + (1000 * VentingMultiplyer) - (CpuVentingPeriod * VentingMultiplyer);
+                    //CpuYield();
+                    CpuSleep((U32)CpuVentingPeriod);
+                }
+            }
+
             if (oldID != packageID)
             {
-				gid = packageData->m_rndVal;
-                RandomHash_SetHeader(&m_randomHashArray[kernelData->m_id], packageData->m_header.asU8, (U32)packageData->m_nonce2);                 
+                {
+                    if (!packageData->m_headerSize)
+                    {
+                        CpuSleep(100);
+                        continue;
+                    }
+
+                    RandomHash_SetHeader(&m_randomHash2Array[kernelData->m_id], packageData->m_header.asU8,(U32)packageData->m_headerSize, (U32)packageData->m_nonce2);
+
+                }
             }
 
             if (*GpuManager::CpuInfos.pEnabled == false)
@@ -134,71 +145,71 @@ void RandomHashCPUMiner::RandomHashCpuKernel(CPUKernelData* kernelData)
                 continue;
             }
 
-    #ifdef RH_FORCE_PASCAL_V3_ON_CPU
-            extern void PascalHashV3(void *state, const void *input);
-            U32 gidBE = RH_swap_u32(gid); 
-            packageData->m_header.asU32[PascalHeaderNoncePosV3 / 4] = gidBE;
-            PascalHashV3(packageData->m_work1, packageData->m_header.asU8);
-    #else
-            //set start nonce here
-            RandomHash_Search(&m_randomHashArray[kernelData->m_id], (U8*)packageData->m_work1, gid);
-    #endif            
-            U32* work = (uint32_t *)packageData->m_work1;
-            bool resetOFfset = false;
-            if (RH_swap_u32(*work) <= packageData->m_target)
-            {
-                //Swapb256
-                U32 tmp[4] = {work[0], work[1], work[2], work[3]};
-                work[0] = RH_swap_u32(work[7]);            
-                work[1] = RH_swap_u32(work[6]);
-                work[2] = RH_swap_u32(work[5]);
-                work[3] = RH_swap_u32(work[4]);
-                work[4] = RH_swap_u32(tmp[3]);
-                work[5] = RH_swap_u32(tmp[2]);
-                work[6] = RH_swap_u32(tmp[1]);
-                work[7] = RH_swap_u32(tmp[0]);
-                if (IsHashLessThan_32(work, packageData->m_targetFull))
-                {
-                    std::vector<U64> foundNonce;
-#ifdef RH_FORCE_PASCAL_V3_ON_CPU
-                    foundNonce.push_back(gidBE);
-#else
-                    foundNonce.push_back(m_randomHashArray[kernelData->m_id].m_startNonce);
-#endif              
-                    SolutionSptr solPtr = MakeSubmitSolution(foundNonce, packageData->m_nonce2, true);
-                    m_farm.submitProof(solPtr);
-                    resetOFfset = true;
+            U32* work;
+            RandomHashResult* resultv2 = (RandomHashResult*)packageData->m_work1;
 
-                    //pause all solutions until next package in solo
-                    if (kernelData->m_isSolo)
+            {
+                U32 _n = m_randomHash2Array[kernelData->m_id].m_partiallyComputedNonceHeader;                
+                if (_n == U32_Max)
+                {
+                    gid = KernelOffsetManager::GetNextSearchNonce();
+                }
+                RandomHash_Search(&m_randomHash2Array[kernelData->m_id], *resultv2, gid);
+                workCount = resultv2->count;
+            }
+
+            for(U32 w = 0; w < workCount; w++)
+            {
+                {
+                    work = resultv2->hashes[w];
+#ifdef RH_SCREEN_SAVER_MODE
+                    if (w == 1 || w == 3)
+                        ::ScreensaverFeed(resultv2->nonces[w]);
+#endif
+                }
+
+                if (RH_swap_u32(*work) <= packageData->m_target)
+                {
+                    U32 tmp[4] = { work[0], work[1], work[2], work[3] };
+                    work[0] = RH_swap_u32(work[7]);
+                    work[1] = RH_swap_u32(work[6]);
+                    work[2] = RH_swap_u32(work[5]);
+                    work[3] = RH_swap_u32(work[4]);
+                    work[4] = RH_swap_u32(tmp[3]);
+                    work[5] = RH_swap_u32(tmp[2]);
+                    work[6] = RH_swap_u32(tmp[1]);
+                    work[7] = RH_swap_u32(tmp[0]);
+                    if (IsHashLessThan_32(work, packageData->m_targetFull))
                     {
-                        paused = true;
-                    }
+                        std::vector<U64> foundNonce;
+                        {
+                            U32 startNonce = resultv2->nonces[w];
+                            foundNonce.push_back(startNonce);
+                        }
+
+                        SolutionSptr solPtr = MakeSubmitSolution(foundNonce, packageData->m_nonce2, true);
+                        m_farm.submitProof(solPtr);
+                        if (kernelData->m_isSolo)
+                        {
+                            paused = true;
+                        }
 
 #ifdef RH_SCREEN_SAVER_MODE
-                    extern void ScreensaverFoundNonce(U32 nonce);
-                    ScreensaverFoundNonce(foundNonce[0]);
+                        extern void ScreensaverFoundNonce(U32 nonce);
+                        ScreensaverFoundNonce((U32)foundNonce[0]);
 #endif
-
+                    }
                 }
             }
-            /*gid++;
-            if (gid == endFrame)
-            {
-                if (resetOFfset)
-                    KernelOffsetManager::Reset(0);
-
-                gid = (U32)KernelOffsetManager::Increment(workWindow) - workWindow;
-                endFrame = gid + workWindow;
-            }
-			*/
         }
         else
         {
             CpuSleep(20);
         }
         oldID = packageID;
-        kernelData->m_hashes++;
+
+        AtomicAdd(kernelData->m_hashes, workCount);
+
     }
     AtomicSet(kernelData->m_abortThread, U32_Max);
 }
@@ -215,7 +226,6 @@ void RandomHashCPUMiner::UpdateWorkSize(U32 absoluteVal)
 
     m_globalWorkSize = absoluteVal;
 
-    //spread WORK among all cpu miners -> absoluteVal = x * g_cpuMinerThreads
     m_globalWorkSizePerCPUMiner = m_globalWorkSize / g_cpuMinerThreads;
     if (!m_globalWorkSizePerCPUMiner)
         m_globalWorkSizePerCPUMiner = 1;
@@ -225,11 +235,15 @@ void RandomHashCPUMiner::UpdateWorkSize(U32 absoluteVal)
 bool RandomHashCPUMiner::init(const PascalWorkSptr& work)
 {
     m_isInitialized = true;
-    //start hashrate counting
-    if (m_hashCountTime == 0)
+    if (m_hashCountTime == U64_Max)
         m_hashCountTime = TimeGetMilliSec();
 
     m_lastHashReading.resize(g_cpuMinerThreads);
+    for (int i= 0;i < m_lastHashReading.size(); i++)
+        m_lastHashReading[i] = 0;
+
+
+    merssen_twister_seed_fast(rand32(), &m_rnd32);
 
     return true;
 }
@@ -243,7 +257,6 @@ PrepareWorkStatus RandomHashCPUMiner::PrepareWork(const PascalWorkSptr& workTemp
 {
     PrepareWorkStatus workStatus = GenericCLMiner::PrepareWork(workTempl, reuseCurrentWP);    
     
-    //in case we're pause, the workStatus will be PrepareWork_Nothing, BUT we need to restart the cpu kernel...
     Guard g(m_pauseMutex);
     if (workStatus == PrepareWork_Nothing && m_isPaused == 1)
     {        
@@ -261,17 +274,18 @@ PrepareWorkStatus RandomHashCPUMiner::PrepareWork(const PascalWorkSptr& workTemp
 
 void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp, bool requestPause)
 {
-
-    // makeup CPU work pakcage
     const U32 target = m_currentWp->GetDeviceTargetUpperBits();
     U32 savedNonce2 = wp->m_nonce2;
     U64 nextPackage = 0;
+
+    KernelOffsetManager::ResetSearchNonce(merssen_twister_rand_fast(&m_rnd32));
+    
     for (auto& data : m_cpuKernels)
     {
         data->m_isSolo = wp->m_isSolo;
         nextPackage = (AtomicGet(data->m_packageID) + 1);
         CPUKernelData::DataPackage* kernelData = &data->m_packages[nextPackage % CPUKernelData::PackagesCount];
-        
+
         memset(kernelData, 0, sizeof(CPUKernelData::DataPackage));
         kernelData->m_requestPause = !!requestPause;
         kernelData->m_headerSize = wp->m_fullHeader.size();
@@ -281,19 +295,17 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp, bool re
 #ifdef RH_RANDOMIZE_NONCE2
         if (!wp->m_isSolo)
         {
-            //inject new n2
-            kernelData->m_nonce2 = rand32();
-            U64 n264 = PascalWorkPackage::ComputeNonce2(kernelData->m_nonce2);
-            U32 offset = (m_currentWp->m_coinbase1.length() + m_currentWp->m_nonce1.length()) / 2;
+            kernelData->m_nonce2 = merssen_twister_rand_fast(&m_rnd32);
+            U64 n264 = PascalWorkPackage::ComputeNonce2((U32)kernelData->m_nonce2);
+            U32 offset = (U32)(m_currentWp->m_coinbase1.length() + m_currentWp->m_nonce1.length()) / 2;
             string n2str = toHex(n264);
             bytes xbfr = fromHex(n2str);
             memcpy(kernelData->m_header.asU8 + offset, &xbfr[0], sizeof(U64));
         }
 #else
-		kernelData->m_nonce2 = savedNonce2;
+        kernelData->m_nonce2 = savedNonce2;
 #endif
-		//randomize start
-		kernelData->m_rndVal = rand32();
+        kernelData->m_rndVal = merssen_twister_rand_fast(&m_rnd32);
 
         if (wp->m_isSolo)
             memcpy(kernelData->m_targetFull, wp->m_soloTargetPow.data(), 32);
@@ -306,10 +318,8 @@ void RandomHashCPUMiner::SendWorkPackageToKernels(PascalWorkPackage* wp, bool re
         memcpy(&kernelData->m_workID[0], wp->m_jobID.c_str(), wp->m_jobID.length()+1);
         kernelData->m_workID[wp->m_jobID.length()] = 0;
 
-        //set next wp
         AtomicSet(data->m_packageID, nextPackage);
     }
-    PrintOutSilent("Pushing package %llu as work %s to kernels\n", (nextPackage % CPUKernelData::PackagesCount), wp->m_jobID.c_str());
 }
 
 void RandomHashCPUMiner::PauseCpuKernel()
@@ -320,7 +330,6 @@ void RandomHashCPUMiner::PauseCpuKernel()
         return;
     }
     
-    //send pause package !
     PascalWorkSptr wp = m_currentWp;
     SendWorkPackageToKernels(wp.get(), true);
     m_isPaused = 1;
@@ -345,7 +354,6 @@ void RandomHashCPUMiner::Kill()
 
 
 
-//unjam the queueKernel method
 void RandomHashCPUMiner::SetWork(PascalWorkSptr _work)
 { 
     GenericCLMiner::SetWork(_work);
@@ -353,7 +361,6 @@ void RandomHashCPUMiner::SetWork(PascalWorkSptr _work)
 
 void RandomHashCPUMiner::QueueKernel()
 {
-    //wait 100ms
     S32 cnt = 5;
     while (!m_cpuKernels[0]->m_abortThread && cnt >= 0)
     {
@@ -367,12 +374,12 @@ void RandomHashCPUMiner::QueueKernel()
 U64 RandomHashCPUMiner::GetHashRatePerSec() 
 {
     U64 rate = 0;
-    if (m_hashCountTime)
+    if (m_hashCountTime < U64_Max)
     {
         for(U32 i=0; i < m_cpuKernels.size(); i++)
         {
             U64 dt = 1;
-            U64 kHash = m_cpuKernels[i]->m_hashes;
+            U64 kHash = AtomicGet(m_cpuKernels[i]->m_hashes);
             if (kHash > m_lastHashReading[i])
             {
                 dt = kHash - m_lastHashReading[i];

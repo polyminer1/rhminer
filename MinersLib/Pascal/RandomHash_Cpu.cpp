@@ -16,6 +16,38 @@
 
 #include "precomp.h"
 
+
+////////////////////////////////////////////////////
+// opt
+#define RH2_STRIDE_USE_MEMCPY
+//#define RH2_ENABLE_TRANSFO0_MMX128
+#if !defined(_WIN32_WINNT)
+    #define RH2_ENABLE_MERSSEN_12_SSE4
+    #define RH2_ENABLE_MERSSEN_INTERLEAVE
+    #define RH2_ENABLE_EXPAND_MERSSEN_INPLACE
+#else
+    #define RH2_ENABLE_MERSSEN_12_SSE4 
+    #define RH2_ENABLE_EXPAND_MERSSEN_INPLACE
+#endif
+#define RH2_ENABLE_TRANSFO_INPLACE
+#define RH2_ENABLE_COMPACT_TRANSFO_67
+#define RH2_ENABLE_MEM_ZERO_X_USE_MMX
+#define RH2_FORCE_NO_INPLACE_MEMCPY_USE_MMX
+#define RH2_ENABLE_CACHE
+#define RH2_ENABLE_PREFLIGHT_CACHE
+#define RH2_ENABLE_PREFLIGHT_4X
+#define RH2_ENABLE_SHA256_PRERUN
+
+//force UT
+#ifdef _DEBUG
+    #define RHMINER_DEBUG_RANDOMHASH_UNITTEST
+#endif
+
+#ifndef _DEBUG
+    #undef RHMINER_DEBUG_RANDOMHASH_UNITTEST
+#endif
+
+
 #include "MinersLib/Pascal/RandomHash.h"
 #include "MinersLib/Pascal/RandomHash_MurMur3_32.h"  
 
@@ -35,1114 +67,29 @@
 #include "MinersLib/Pascal/RandomHash_Tiger2_5_192.h"
 #include "MinersLib/Pascal/RandomHash_Whirlpool.h"
 
-extern bool g_isSSE3Supported;
-extern bool g_isSSE4Supported;
-extern bool g_isAVX2Supported;
+//--------------- RandomHash2 -------------------
+#include "MinersLib/Pascal/RandomHash_Ghost.h"
+#include "MinersLib/Pascal/RandomHash_Ghost3411.h"
+#include "MinersLib/Pascal/RandomHash_MD2.h"
+#include "MinersLib/Pascal/RandomHash_MD4.h"
+#include "MinersLib/Pascal/RandomHash_Panama.h"
+#include "MinersLib/Pascal/RandomHash_HAS160.h"
+#include "MinersLib/Pascal/RandomHash_SHA.h"
+#include "MinersLib/Pascal/RandomHash_Grindahl256.h"
+#include "MinersLib/Pascal/RandomHash_Haval.h"
+#include "MinersLib/Pascal/RandomHash_RIPEMD.h"
+#include "MinersLib/Pascal/RandomHash_RIPEMD128.h"
 
 
+#define RH_FULLDEBUG_CPU 
+#ifdef RHMINER_RELEASE
+    #undef RH_FULLDEBUG_CPU
+#endif
 
 #include "corelib/CommonData.h"
 
-//--------------------------------------------------------------------------------------------------
-const size_t c_round_outputsCounts[6] = {0, 1, 3, 7, 15, 31 };
-const size_t c_round_parenAndNeighbortOutputsCounts[6] = { 31, 0, 1, 3, 7, 15 };
-const U32    c_AlgoSize[] = { 32,48,64,32,48,64,20,32,40,64,32,24,32,64,32,16,32,64};
-
-static thread_local U64                 c_target = 0xFFFFFFFFFFFFFFFF;
-#define GetTarget()                     c_target
-#define GetRoundOutputCount(n)          c_round_outputsCounts[n]
-#define GetParentRoundOutputCount(n)    c_round_parenAndNeighbortOutputsCounts[n]
-#define GetDeviceID()                   0
-
-CUDA_DECL_HOST_AND_DEVICE
-inline RH_StridePtr CUDA_SYM(RH_StrideArrayGet)(RH_StridePtrArray strideArrayVar, int idx) 
-{
-    RH_ASSERT(idx <= (int)RH_STRIDEARRAY_GET_MAXSIZE(strideArrayVar));
-    return ((RH_StrideArrayStruct*)strideArrayVar)->strides[idx];
-}
-
-
-CUDA_DECL_HOST_AND_DEVICE
-inline RH_StridePtr CUDA_SYM(RH_StrideArrayAllocOutput)(RandomHash_State* state, U32 initialSize) 
-{
-    if (state->m_isMidStateRound)
-    {
-        RHMINER_ASSERT(state->m_stridesAllocIndex + initialSize + 8 < state->m_stridesAllocMidstateBarrier);
-    }
-
-    RH_ASSERT((size_t(state->m_stridesAllocIndex) % 32) == 0);
-    RH_StridePtr stride = ((U8*)state->m_stridesInstances) + (state->m_stridesAllocIndex);
-    RH_ASSERT((size_t(stride) % 32) == 0);
-
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-    if (state->m_strideID)
-        RH_ASSERT(*(U32*)((stride - 4)) == 0xBABABABA);
-#endif
-
-    state->m_stridesAllocIndex += initialSize + RH_IDEAL_ALIGNMENT;
-    RH_ASSERT(state->m_stridesAllocIndex < RH_STRIDE_BANK_SIZE);
-
-    RH_STRIDE_SET_SIZE(stride, initialSize);
-    RH_STRIDE_INIT_INTEGRITY(stride);
-
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-    RH_STRIDE_SET_INDEX(stride, state->m_strideID);
-    state->m_strideID++;
-#endif
-
-    return stride;
-}
-
-CUDA_DECL_HOST_AND_DEVICE
-inline void CUDA_SYM(RH_StrideArrayGrow)(RandomHash_State* state, RH_StridePtr stride, U32 growSize) 
-{
-    if (state->m_isMidStateRound)
-    {
-        RHMINER_ASSERT(state->m_stridesAllocIndex + growSize+8 < state->m_stridesAllocMidstateBarrier);
-    }
-
-    state->m_stridesAllocIndex += growSize;
-    RH_ASSERT(state->m_stridesAllocIndex < RH_STRIDE_BANK_SIZE);
-    
-    RH_STRIDE_SET_SIZE(stride, RH_STRIDE_GET_SIZE(stride) + growSize);
-    RH_STRIDE_INIT_INTEGRITY(stride);
-}
-
-CUDA_DECL_HOST_AND_DEVICE
-inline void CUDA_SYM(RH_StrideArrayClose)(RandomHash_State* state, RH_StridePtr stride) 
-{
-    if (state->m_isMidStateRound)
-    {
-        RHMINER_ASSERT(RHMINER_ALIGN(state->m_stridesAllocIndex, 32) + 8 < state->m_stridesAllocMidstateBarrier);
-    }
-
-    U32 ss = 0;
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-    ss += sizeof(U64);
-#endif
-
-    RH_ASSERT(RHMINER_ALIGN(state->m_stridesAllocIndex + ss, 32) > state->m_stridesAllocIndex);
-    state->m_stridesAllocIndex = RHMINER_ALIGN(state->m_stridesAllocIndex + ss, 32);
-    RH_ASSERT(state->m_stridesAllocIndex < RH_STRIDE_BANK_SIZE);
-    RH_ASSERT((size_t(state->m_stridesAllocIndex) % 32) == 0);
-
-    RH_STRIDE_CHECK_INTEGRITY(stride);
-}
-
-CUDA_DECL_HOST_AND_DEVICE
-inline void CUDA_SYM(RH_StrideArrayReset)(RH_StridePtrArray strideArrayVar) 
-{
-    RH_StrideArrayStruct* arr = (RH_StrideArrayStruct*)strideArrayVar;
-    arr->size = 0;
-    static_assert(sizeof(MurmurHash3_x86_32_State) == 2 * sizeof(U64), "Incorrect struct size");
-    U64* accum = (U64*)&arr->accum;
-    accum[0] = 0;
-    accum[1] = 0;
-
-    static_assert(sizeof(void*) == sizeof(U64), "Incorrect ptr size");
-}
-
 #include "MinersLib/Pascal/RandomHash_inl.h"
 
-inline CUDA_DECL_HOST_AND_DEVICE U32 CUDA_SYM(GetNextRnd)(mersenne_twister_state* gen) 
-{    
-    return _CM(merssen_twister_rand)(gen);
-}
-
-//--------------------------------------------------------------------------------------------------
-void CUDA_DECL_HOST_AND_DEVICE CUDA_SYM(RandomHash_RoundDataInit)(RH_RoundData* rd, int round)
-{
-    RH_ASSERT(rd->roundOutputs || (round == 0 && rd->roundOutputs == 0));
-    if (GetRoundOutputCount(round))
-    {
-        RH_STRIDEARRAY_RESET(rd->roundOutputs);
-    }
-
-    if (GetParentRoundOutputCount(round))
-    {
-        if (round != 5)
-            RH_STRIDEARRAY_RESET( rd->parenAndNeighbortOutputs );
-    }
-}
-
-inline void CUDA_DECL_HOST_AND_DEVICE CUDA_SYM(RandomHash_Initialize)(RandomHash_State* state)
-{
-    CUDA_SYM(RandomHash_RoundDataInit)(&state->m_data[0], 0);
-    CUDA_SYM(RandomHash_RoundDataInit)(&state->m_data[1], 1);
-    CUDA_SYM(RandomHash_RoundDataInit)(&state->m_data[2], 2);
-    CUDA_SYM(RandomHash_RoundDataInit)(&state->m_data[3], 3);
-    CUDA_SYM(RandomHash_RoundDataInit)(&state->m_data[4], 4);
-    CUDA_SYM(RandomHash_RoundDataInit)(&state->m_data[5], 5);
-    
-
-    RH_ASSERT(RH_WorkSize == RH_StrideSize);
-    state->m_strideID = 0;
-    RH_STRIDEARRAY_RESET(state->m_round5Phase2PrecalcArray);
-    
-    if (state->m_isCachedOutputs)
-    {
-        state->m_isMidStateRound = true;
-
-        RH_ASSERT(state->m_stridesAllocIndex);
-        if (state->m_stridesAllocMidstateBarrierNext != RH_STRIDE_BANK_SIZE) 
-        {
-            state->m_stridesAllocIndex = 0;
-            state->m_stridesAllocMidstateBarrier = state->m_stridesAllocMidstateBarrierNext;
-
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-            memset(state->m_stridesInstances + 0, (U8)0xBA, state->m_stridesAllocMidstateBarrierNext); 
-            U64* check = (U64*)(state->m_stridesInstances + RH_STRIDE_BANK_SIZE);
-            RHMINER_ASSERT(*check == 0xFF55AA44BB8800DDLLU);
-#endif            
-        }
-        else 
-        {
-            const U32 ReqDelta = 4096;
-            state->m_stridesAllocIndex = RHMINER_ALIGN(state->m_stridesAllocIndex, 4096) + ReqDelta;
-            state->m_stridesAllocMidstateBarrierNext = state->m_stridesAllocMidstateBarrier;
-            state->m_stridesAllocMidstateBarrier = RH_STRIDE_BANK_SIZE;
-
-
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-            memset(state->m_stridesInstances + state->m_stridesAllocIndex, (U8)0xBA, RH_STRIDE_BANK_SIZE - state->m_stridesAllocIndex);   
-            U64* check = (U64*)(state->m_stridesInstances + RH_STRIDE_BANK_SIZE);
-            RHMINER_ASSERT(*check == 0xFF55AA44BB8800DDLLU);
-#endif
-        }
-    }
-    else
-    {
-        state->m_stridesAllocMidstateBarrierNext = RH_STRIDE_BANK_SIZE;
-        state->m_stridesAllocMidstateBarrier = 0;
-        state->m_stridesAllocIndex = 0;
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-        memset(state->m_stridesInstances, (U8)0xBA, RH_STRIDE_BANK_SIZE);
-        U64* check = (U64*)(state->m_stridesInstances + RH_STRIDE_BANK_SIZE);
-        RHMINER_ASSERT(*check == 0xFF55AA44BB8800DDLLU);
-#endif
-    }
-}
-
-
-#define CUDA_DECLARE_STATE() RandomHash_State* state = allStates;
-
-void CUDA_SYM(RandomHash_SetTarget)(uint64_t target)
-{
-    c_target =  target;
-}
-
-
-void CUDA_SYM(RandomHash_Destroy)(RandomHash_State* state)
-{
-    _CM(RandomHash_RoundDataUnInit)(&state->m_data[0], 0);
-    _CM(RandomHash_RoundDataUnInit)(&state->m_data[1], 1);
-    _CM(RandomHash_RoundDataUnInit)(&state->m_data[2], 2);
-    _CM(RandomHash_RoundDataUnInit)(&state->m_data[3], 3);
-    _CM(RandomHash_RoundDataUnInit)(&state->m_data[4], 4);
-    _CM(RandomHash_RoundDataUnInit)(&state->m_data[5], 5);
-   
-    state->m_isCachedOutputs = false;
-    _CM(RandomHash_Free)(state->m_stridesInstances);
-}
-
-void CUDA_SYM(RandomHash_DestroyMany)(RandomHash_State* stateArray, U32 count)
-{
-    if (stateArray)
-    {
-        for (U32 i = 0; i < count; i++)
-            _CM(RandomHash_Destroy)(&stateArray[i]);
-        _CM(RandomHash_Free)(stateArray);
-    }
-} 
-
-
-void CUDA_SYM(AllocateArray)(U8*& arrayData, int count)
-{
-    U32 size = sizeof(RH_StrideArrayStruct);
-    _CM(RandomHash_Alloc)((void**)&arrayData, size);
-    PLATFORM_MEMSET(arrayData, 0, size);
-
-    RH_STRIDEARRAY_GET_MAXSIZE(arrayData) = count;
-    RH_STRIDEARRAY_GET_EXTRA(arrayData, memoryboost) = g_memoryBoostLevel;
-    RH_STRIDEARRAY_GET_EXTRA(arrayData, sseoptimization) = g_sseOptimization;
-    RH_CUDA_ERROR_CHECK();
-}
-
-
-void CUDA_SYM(RandomHash_RoundDataAlloc)(RH_RoundData* rd, int round)
-{
-    PLATFORM_MEMSET(rd, 0, sizeof(RH_RoundData));
-
-    if (GetRoundOutputCount(round) > 0)
-    {
-        _CM(AllocateArray)(rd->roundOutputs, (int)GetRoundOutputCount(round));
-    }
-        
-    if (GetParentRoundOutputCount(round))
-    {
-        _CM(AllocateArray)(rd->parenAndNeighbortOutputs, (int)GetParentRoundOutputCount(round));
-    }
-}
-
-
-void CUDA_SYM(RandomHash_Create)(RandomHash_State* state)
-{
-    U32 ajust = 0;
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-    ajust = sizeof(U64);
-#endif    
-
-    _CM(RandomHash_Alloc)((void**)&state->m_stridesInstances, RH_STRIDE_BANK_SIZE + ajust);
-    
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-    U64* check = (U64*)(state->m_stridesInstances + RH_STRIDE_BANK_SIZE);
-    *check = 0xFF55AA44BB8800DDLLU;
-#endif
-
-    RH_CUDA_ERROR_CHECK();
-    state->m_stridesAllocIndex = 0;
-    state->m_stridesAllocMidstateBarrierNext = 0;
-
-    _CM(RandomHash_RoundDataAlloc)(&state->m_data[0], 0);
-    _CM(RandomHash_RoundDataAlloc)(&state->m_data[1], 1);
-    _CM(RandomHash_RoundDataAlloc)(&state->m_data[2], 2);
-    _CM(RandomHash_RoundDataAlloc)(&state->m_data[3], 3);
-    _CM(RandomHash_RoundDataAlloc)(&state->m_data[4], 4);
-    _CM(RandomHash_RoundDataAlloc)(&state->m_data[5], 5);
-
-    _CM(AllocateArray)(state->m_round5Phase2PrecalcArray, 31);
-    RH_STRIDEARRAY_RESET(state->m_round5Phase2PrecalcArray);
-    
-    
-    state->m_isCachedOutputs = false;
-    state->m_midStateNonce = 0xFFFFFFFF;
-    state->m_isNewHeader = true;
-    state->m_isMidStateRound = false;
-    state->m_data[1].first_round_consume = false;
-    state->m_data[2].first_round_consume = false;
-    state->m_data[3].first_round_consume = false;
-    state->m_data[4].first_round_consume = false;
-    state->m_data[5].first_round_consume = false;
-
-    _CM(RandomHash_Initialize)(state);
-}
-
-void CUDA_SYM(RandomHash_CreateMany)(RandomHash_State** outPtr, U32 count)
-{
-    _CM(RandomHash_Alloc)((void**)outPtr, sizeof(RandomHash_State)*count);
-    RH_CUDA_ERROR_CHECK();
-
-    for (U32 i = 0; i < count; i++)
-    {
-        _CM(RandomHash_Create)(&(*outPtr)[i]);
-    }
-
-} 
-
-void CUDA_SYM(RandomHash_RoundDataUnInit)(RH_RoundData* rd, int round)
-{
-    _CM(RandomHash_Free)(rd->roundOutputs);
-}
-
-void CUDA_SYM(RandomHash_SetHeader)(RandomHash_State* state, U8* sourceHeader, U32 nonce2)
-{
-    U8* targetInput = state->m_header;
-    
-    state->m_isCachedOutputs = false;
-    state->m_isNewHeader = true;
-    state->m_isMidStateRound = false;
-    state->m_data[1].first_round_consume = false;
-    state->m_data[2].first_round_consume = false;
-    state->m_data[3].first_round_consume = false;
-    state->m_data[4].first_round_consume = false;
-    state->m_data[5].first_round_consume = false;
-
-    RHMINER_ASSERT(sourceHeader);
-    RHMINER_ASSERT(PascalHeaderSize <= PascalHeaderSize);
-    memcpy(targetInput, sourceHeader, PascalHeaderSize);
-
-}
-
-
-inline void CUDA_SYM_DECL(RandomHash_Reseed)(mersenne_twister_state& rndGen, U32 seed) 
-{
-    _CM(merssen_twister_seed)(seed, &rndGen);
-}
-
-
-inline U32 CUDA_SYM_DECL(RandomHash_Checksum)(RH_StridePtr input)
-{
-    U32 csum  = 0;
-    csum = _CM(MurmurHash3_x86_32_Fast)(RH_STRIDE_GET_DATA(input), RH_STRIDE_GET_SIZE(input));
-    return csum;
-}
-    
-U32 CUDA_SYM_DECL(RandomHash_ChecksumArray)(RH_StridePtrArray inputs)
-{
-    U32 csum;
-    MurmurHash3_x86_32_State state;
-    _CM(MurmurHash3_x86_32_Init)(0, &state);
-
-    RH_STRIDEARRAY_FOR_EACH_BEGIN(inputs)
-    {
-        _CM(MurmurHash3_x86_32_Update)(RH_STRIDE_GET_DATA(strideItrator), RH_STRIDE_GET_SIZE(strideItrator), &state);
-    }
-    RH_STRIDEARRAY_FOR_EACH_END(inputs)
-    csum = _CM(MurmurHash3_x86_32_Finalize)(&state);
-	return csum;
-}
-
-void CUDA_SYM_DECL(RandomHash_Expand)(RandomHash_State* state, RH_StridePtr input, int round, int ExpansionFactor, U8* strideArray)
-{
-    U32 inputSize = RH_STRIDE_GET_SIZE(input);
-    U32 seed = _CM(RandomHash_Checksum)(input);
-    _CM(RandomHash_Reseed)(state->m_rndGenExpand, seed);
-    size_t sizeExp = inputSize + ExpansionFactor * RH_M;
-
-    RH_StridePtr output = input;
-
-    S64 bytesToAdd = sizeExp - inputSize;    
-    RH_ASSERT((bytesToAdd % 2) == 0);
-    RH_ASSERT(RH_STRIDE_GET_SIZE(output) != 0);
-    RH_ASSERT(RH_STRIDE_GET_SIZE(output) < RH_StrideSize);
-
-    U8* outputPtr = RH_STRIDE_GET_DATA(output);
-    while (bytesToAdd > 0)
-    {
-        U32 nextChunkSize = RH_STRIDE_GET_SIZE(output);
-        U8* nextChunk = outputPtr + nextChunkSize;  
-        if (nextChunkSize > bytesToAdd)
-        {
-            nextChunkSize = (U32)bytesToAdd; 
-        }
-
-        _CM(RH_StrideArrayGrow)(state, output, nextChunkSize);
-
-        RH_ASSERT(nextChunk + nextChunkSize < output + RH_StrideSize);
-        U32 random = _CM(GetNextRnd)(&state->m_rndGenExpand);
-        U32 r = random % 8;
-        RH_ASSERT((nextChunkSize & 1) == 0);
-        switch(r)
-        {
-            case 0: 
-#if defined(RHMINER_ENABLE_SSE4) && defined(RH_ENABLE_AVX)
-                    if (nextChunkSize <= 512 && (g_sseOptimization == 2))
-                    {
-                        extern void Transfo0_2_AVX(U8* nextChunk, U32 size, U8* source);
-                        Transfo0_2_AVX(nextChunk, nextChunkSize, outputPtr);
-                    }
-                    else
-#endif
-                    if (nextChunkSize <= 128 && (size_t(nextChunk) & 0x0f) == 0)
-                    {
-#if defined(RHMINER_ENABLE_SSE4)
-    #if defined(RHMINER_COND_SSE4)
-                        if (g_isSSE4Supported)
-                            _CM(Transfo0_2_128_SSE4)(nextChunk, nextChunkSize,  outputPtr);
-                        else if (g_isSSE3Supported)
-                            _CM(Transfo0_2_128_SSE3)(nextChunk, nextChunkSize,  outputPtr);
-                        else
-                            _CM(Transfo0_2)(nextChunk, nextChunkSize,  outputPtr); 
-    #else
-                        _CM(Transfo0_2_128_SSE4)(nextChunk, nextChunkSize,  outputPtr);
-                            
-    #endif //defined(RHMINER_COND_SSE4)
-#else
-                        if (g_isSSE3Supported)
-                            _CM(Transfo0_2_128_SSE3)(nextChunk, nextChunkSize,  outputPtr);
-                        else
-                            _CM(Transfo0_2)(nextChunk, nextChunkSize,  outputPtr); 
-#endif
-                    }
-                    else
-                        _CM(Transfo0_2)(nextChunk, nextChunkSize,  outputPtr); 
-                    break;
-                    
-            case 1: _CM(Transfo1_2)(nextChunk, nextChunkSize,  outputPtr); break;
-            case 2: _CM(Transfo2_2)(nextChunk, nextChunkSize,  outputPtr); break;
-            case 3: _CM(Transfo3_2)(nextChunk, nextChunkSize,  outputPtr); break;
-            case 4: 
-            {
-#if defined(RHMINER_ENABLE_SSE4)
-    #if defined(RH_ENABLE_AVX)
-                if (g_sseOptimization == 2 && nextChunkSize > 32)
-                {
-                    extern void Transfo4_2_AVX(U8* nextChunk, U32 size, U8* outputPtr);
-                    Transfo4_2_AVX(nextChunk, nextChunkSize, outputPtr);
-                }
-                else
-    #endif //defined(RH_ENABLE_AVX)
-#if 0
-                if (nextChunkSize <= 128 && (size_t(nextChunk) & 0x0f) && g_isSSE4Supported)
-                {
-                    _CM(Transfo4_2_128_SSE4)(nextChunk, nextChunkSize, outputPtr);
-                }
-                else
-#endif
-#endif //#if defined(RHMINER_ENABLE_SSE4)
-                    _CM(Transfo4_2)(nextChunk, nextChunkSize, outputPtr);
-            }break;
-            case 5: _CM(Transfo5_2)(nextChunk, nextChunkSize,  outputPtr); break; 
-            case 6: _CM(Transfo6_2)(nextChunk, nextChunkSize,  outputPtr); break;
-            case 7: _CM(Transfo7_2)(nextChunk, nextChunkSize,  outputPtr); break;
-        }
-
-        RH_STRIDE_CHECK_INTEGRITY(output);
-        RH_ASSERT(RH_STRIDE_GET_SIZE(output) < RH_StrideSize);
-        bytesToAdd = bytesToAdd - nextChunkSize;
-    }
-    _CM(RH_StrideArrayClose)(state, output);
-    RH_ASSERT(sizeExp == RH_STRIDE_GET_SIZE(output))
-    RH_STRIDE_CHECK_INTEGRITY(output);
-}
-
-void CUDA_SYM_DECL(RandomHash_Compress)(RandomHash_State* state, RH_StridePtrArray inputs, RH_StridePtr Result, U32 in_round)
-{
-    U32 rval;
-
-#ifdef RH_ENABLE_OPTIM_STRIDE_ARRAY_MURMUR3
-    MurmurHash3_x86_32_State tstate = *RH_StrideArrayStruct_GetAccum(inputs);
-    U32 seed = _CM(MurmurHash3_x86_32_Finalize)(&tstate);
-
-#else
-    U32 seed = _CM(RandomHash_ChecksumArray)(inputs);
-#endif
-    _CM(RandomHash_Reseed)(state->m_rndGenCompress, seed);
-
-    RH_STRIDE_SET_SIZE(Result, 100);
-    U8* resultPtr = RH_STRIDE_GET_DATA(Result);
-    U32 inoutSize = RH_STRIDEARRAY_GET_SIZE(inputs);
-
-    for (size_t i = 0; i < 100; i++)
-    {
-        RH_StridePtr source = RH_STRIDEARRAY_GET(inputs, _CM(GetNextRnd)(&state->m_rndGenCompress) % inoutSize);
-        U32 sourceSize = RH_STRIDE_GET_SIZE(source);
-
-        rval = _CM(GetNextRnd)(&state->m_rndGenCompress);
-        resultPtr[i] = RH_STRIDE_GET_DATA(source)[rval % sourceSize];
-    }
-} 
-
-inline void CUDA_SYM_DECL(RandomHash_MiddlePoint)(RandomHash_State* state)
-{
-    state->m_midStateNonce = *(U32*)(RH_STRIDE_GET_DATA(state->m_roundInput)+PascalHeaderNoncePosV4(PascalHeaderSize));
-    
-
-    if (!state->m_isMidStateRound)
-    {
-        const U32 ReqDelta = 4096;
-        state->m_stridesAllocIndex = RHMINER_ALIGN(state->m_stridesAllocIndex, 4096) + ReqDelta;
-        state->m_stridesAllocMidstateBarrierNext = state->m_stridesAllocIndex;
-    }
-
-}
-
-inline void CUDA_SYM_DECL(RandomHash_start)(RandomHash_State* state, U32 in_round)
-{
-    RH_ASSERT(in_round >= 1 && in_round <= RH_N);
-    RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_roundInput) <= PascalHeaderSize);
-    U32 seed = _CM(RandomHash_Checksum)(state->m_roundInput);
-    _CM(RandomHash_Reseed)(state->m_data[in_round].rndGen, seed);
-}
-
-inline void CUDA_SYM_DECL(RandomHash_Phase_1_push)(RandomHash_State* state, int in_round)
-{
-    if (in_round == RH_N)
-    {
-        if (in_round == 5)
-        {
-            if (state->m_midStateNonce == *(U32*)(RH_STRIDE_GET_DATA(state->m_roundInput) + PascalHeaderNoncePosV4(PascalHeaderSize)))
-            {
-                state->m_skipPhase1 = 1;
-                return;
-            }
-        }
-    }
-
-    state->m_data[in_round-1].backup_io_results = state->m_data[in_round-1].io_results;
-    
-    if (in_round == RH_N)
-        state->m_data[in_round - 1].io_results = state->m_data[RH_N].parenAndNeighbortOutputs;
-    else
-        state->m_data[in_round - 1].io_results = state->m_data[in_round].parenAndNeighbortOutputs;
-}
-
-inline void CUDA_SYM_DECL(RandomHash_Phase_1_pop)(RandomHash_State* state, int in_round)
-{
-    RH_StridePtrArray pano;
-    bool skipLastUpdate = false;
-    if (in_round == RH_N)
-    {    
-        if (state->m_skipPhase1)
-        {
-            RH_StridePtrArray testCache = state->m_data[RH_N].parenAndNeighbortOutputs;
-
-            
-            state->m_isCachedOutputs = false;
-            state->m_skipPhase1 = 0;
-
-            skipLastUpdate = true;
-        }
-        
-        pano = state->m_data[RH_N].parenAndNeighbortOutputs;
-    }
-    else
-    {   
-        state->m_data[in_round-1].io_results = state->m_data[in_round-1].backup_io_results;
-        
-        pano = state->m_data[in_round].parenAndNeighbortOutputs;
-    }
-
-#ifdef RH_ENABLE_OPTIM_STRIDE_ARRAY_MURMUR3
-    U32 seed;
-
-    {
-
-        if (skipLastUpdate)
-        {
-            _CM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(pano, RH_STRIDEARRAY_GET_SIZE(pano) - 1); 
-
-            RH_STRIDEARRAY_PUSHBACK_MANY_ALL(state->m_round5Phase2PrecalcArray, pano);
-        }
-        else
-        {
-            _CM(RH_STRIDE_ARRAY_UPDATE_MURMUR3_DUO)(pano, RH_STRIDEARRAY_GET_SIZE(pano) - 1, state->m_round5Phase2PrecalcArray);
-        }
-    }
-
-    MurmurHash3_x86_32_State tstate = *RH_StrideArrayStruct_GetAccum(pano);
-    seed = _CM(MurmurHash3_x86_32_Finalize)(&tstate);
-
-
-#else
-    U32 seed = _CM(RandomHash_ChecksumArray)(state->m_data[in_round].parenAndNeighbortOutputs);
-#endif
-    _CM(RandomHash_Reseed)(state->m_data[in_round].rndGen, seed);
-
-    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) == 0);
-    RH_STRIDEARRAY_PUSHBACK_MANY_ALL(state->m_data[in_round].roundOutputs, pano); 
-
-    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(pano) <= GetParentRoundOutputCount(in_round));
-    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) <= GetRoundOutputCount(in_round));
-   
-    RH_STRIDEARRAY_RESET(pano);
-}
-
-inline void CUDA_SYM_DECL(RandomHash_Phase_2_push)(RandomHash_State* state, int in_round)
-{
-    U32 newNonce = _CM(GetNextRnd)(&state->m_data[in_round].rndGen);
-    *(U32*)(RH_STRIDE_GET_DATA(state->m_roundInput)+PascalHeaderNoncePosV4(PascalHeaderSize)) = newNonce; 
-    
-    state->m_data[in_round-1].backup_io_results = state->m_data[in_round-1].io_results;
-    if (in_round == RH_N)
-        state->m_data[in_round - 1].io_results = state->m_data[RH_N].parenAndNeighbortOutputs;
-    else
-        state->m_data[in_round - 1].io_results = state->m_data[in_round].parenAndNeighbortOutputs;
-}
-
-
-void CUDA_SYM_DECL(RandomHash_Phase_2_pop)(RandomHash_State* state, int in_round)         
-{
-    state->m_data[in_round-1].io_results = state->m_data[in_round-1].backup_io_results;
-    RH_StridePtrArray pano;
-    if (in_round == RH_N)
-    {
-        pano = state->m_data[RH_N].parenAndNeighbortOutputs;
-
-        state->m_isCachedOutputs = true;
-    }
-    else
-        pano = state->m_data[in_round].parenAndNeighbortOutputs;
-
-    RH_ASSERT( RH_STRIDE_GET_SIZE(state->m_data[in_round].roundOutputs) + RH_STRIDE_GET_SIZE(pano) < GetRoundOutputCount(in_round) );
-    
-    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) != 0);
-    
-    if (in_round == 5)
-    {
-        {
-            RH_STRIDEARRAY_PUSHBACK(state->m_round5Phase2PrecalcArray, RH_STRIDEARRAY_GET(pano, RH_STRIDEARRAY_GET_SIZE(pano)-1));
-
-            _CM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(state->m_round5Phase2PrecalcArray, RH_STRIDEARRAY_GET_SIZE(state->m_round5Phase2PrecalcArray) - 1);
-            _CM(RH_STRIDEARRAY_PUSHBACK_MANY_ALL)(state->m_data[in_round].roundOutputs, state->m_round5Phase2PrecalcArray);
-        }
-    }
-    else
-    {
-        if (!state->m_data[in_round].first_round_consume)
-        {
-            state->m_data[in_round].first_round_consume = true;
-
-
-            RH_STRIDEARRAY_PUSHBACK(state->m_round5Phase2PrecalcArray, RH_STRIDEARRAY_GET(pano, RH_STRIDEARRAY_GET_SIZE(pano)-1));
-            _CM(RH_STRIDE_ARRAY_UPDATE_MURMUR3)(state->m_round5Phase2PrecalcArray, RH_STRIDEARRAY_GET_SIZE(state->m_round5Phase2PrecalcArray) - 1);
-            _CM(RH_STRIDEARRAY_PUSHBACK_MANY_ALL)(state->m_data[in_round].roundOutputs, state->m_round5Phase2PrecalcArray);
-
-        }
-        else
-        {
-            _CM(RH_STRIDEARRAY_PUSHBACK_MANY_UPDATE)(state->m_data[in_round].roundOutputs, pano, state->m_round5Phase2PrecalcArray);
-        }
-    }
-
-    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(pano) <= GetParentRoundOutputCount(in_round));
-    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) <= GetRoundOutputCount(in_round));
-
-    _CM(RandomHash_Compress)(state, state->m_data[in_round].roundOutputs, state->m_workBytes, in_round);  
-    RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_workBytes) <= 100);
-        
-    if (in_round != RH_N)
-    {
-        if (in_round == 4 && state->m_isMidStateRound)
-        {
-            if (state->m_stridesAllocMidstateBarrier != RH_STRIDE_BANK_SIZE)
-                state->m_stridesAllocMidstateBarrierNext = RH_STRIDE_BANK_SIZE;
-        }
-        RH_STRIDEARRAY_RESET(pano);
-    }
-}
-
-inline void CUDA_SYM_DECL(RandomHash_Phase_init)(RandomHash_State* state, int in_round)
-{    
-    RH_STRIDEARRAY_RESET(state->m_data[in_round].roundOutputs);
-}
-
-inline void CUDA_SYM_DECL(RandomHash)(RandomHash_State* state, int in_round)
-{
-    RH_StridePtr input;
-    if (in_round == 1)
-    {
-        RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_roundInput) <= PascalHeaderSize);
-        input = state->m_roundInput;
-    }
-    else
-    {
-        RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_workBytes) <= 100);
-        input = state->m_workBytes;
-    }
-
-    U32 rndHash = _CM(GetNextRnd)(&state->m_data[in_round].rndGen) % 18;
-
-    RH_StridePtr output = _CM(RH_StrideArrayAllocOutput)(state, c_AlgoSize[rndHash]);
-    RH_STRIDEARRAY_PUSHBACK(state->m_data[in_round].roundOutputs, output);
-    RH_ASSERT( RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) <= GetRoundOutputCount(in_round));
-    
-    switch(rndHash)
-    {
-        case RandomHashAlgos::RH_SHA2_256     :
-        {
-            _CM(RandomHash_SHA2_256)(input, output);
-        } break;
-        case RandomHashAlgos::RH_SHA2_384     :
-        {
-            _CM(RandomHash_SHA2_384)(input, output);
-        } break;
-        case RandomHashAlgos::RH_SHA2_512     :
-        {
-            _CM(RandomHash_SHA2_512)(input, output);
-        } break;
-        case RandomHashAlgos::RH_SHA3_256     :
-        {
-            _CM(RandomHash_SHA3_256)(input, output);
-        } break;
-        case RandomHashAlgos::RH_SHA3_384     :
-        {
-            _CM(RandomHash_SHA3_384)(input, output);
-        } break;
-        case RandomHashAlgos::RH_SHA3_512     :
-        {
-            _CM(RandomHash_SHA3_512)(input, output);
-        } break;
-        case RandomHashAlgos::RH_RIPEMD160    :
-        {
-            _CM(RandomHash_RIPEMD160)(input, output);
-        } break;
-        case RandomHashAlgos::RH_RIPEMD256    :
-        {
-            _CM(RandomHash_RIPEMD256)(input, output);
-        } break;
-        case RandomHashAlgos::RH_RIPEMD320    :
-        {
-            _CM(RandomHash_RIPEMD320)(input, output);
-        } break;
-        case RandomHashAlgos::RH_Blake2b      :
-        {
-            _CM(RandomHash_blake2b)(input, output);
-        } break;
-        case RandomHashAlgos::RH_Blake2s      :
-        {            
-            _CM(RandomHash_blake2s)(input, output);
-        } break;
-        case RandomHashAlgos::RH_Tiger2_5_192 :
-        {
-            _CM(RandomHash_Tiger2_5_192)(input, output);
-        } break;
-        case RandomHashAlgos::RH_Snefru_8_256 :
-        {
-            _CM(RandomHash_Snefru_8_256)(input, output);
-        } break;
-        case RandomHashAlgos::RH_Grindahl512  :
-        {
-            _CM(RandomHash_Grindahl512)(input, output);
-        } break;
-        case RandomHashAlgos::RH_Haval_5_256  :
-        {
-            _CM(RandomHash_Haval_5_256)(input, output);
-        } break;
-        case RandomHashAlgos::RH_MD5          :
-        {
-            _CM(RandomHash_MD5)(input, output);
-        } break;
-        case RandomHashAlgos::RH_RadioGatun32 :
-        {
-            _CM(RandomHash_RadioGatun32)(input, output);
-        } break;
-        case RandomHashAlgos::RH_Whirlpool    :
-        {
-            _CM(RandomHash_WhirlPool)(input, output);
-        } break;
-    }
-
-    RH_STRIDE_CHECK_INTEGRITY(output);
-}
-
-inline void CUDA_SYM_DECL(RandomHash_end)(RandomHash_State* state, int in_round)
-{    
-    RH_StridePtr output = RH_STRIDEARRAY_GET(state->m_data[in_round].roundOutputs, RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) - 1);
-    _CM(RandomHash_Expand)(state, output, in_round, RH_N - in_round, state->m_data[in_round].roundOutputs);
-    RH_STRIDEARRAY_RESET(state->m_data[in_round].io_results);
-
-    RH_STRIDEARRAY_PUSHBACK_MANY_ALL(state->m_data[in_round].io_results, state->m_data[in_round].roundOutputs); 
-    
-    if (in_round == 5)
-        _CM(RH_STRIDE_ARRAY_UPDATE_MURMUR3_DUO)(state->m_data[5].roundOutputs, RH_STRIDEARRAY_GET_SIZE(state->m_data[5].roundOutputs) - 1, state->m_round5Phase2PrecalcArray);
-    
-    RH_ASSERT(RH_STRIDEARRAY_GET_SIZE(state->m_data[in_round].roundOutputs) <= GetRoundOutputCount(in_round));
-}
-
-inline void CUDA_SYM_DECL(RandomHash_FirstCall_push)(RandomHash_State* state, int in_round)
-{
-    state->m_data[5].io_results = state->m_data[0].parenAndNeighbortOutputs;
-    state->m_skipPhase1 = 0;    
-}
-
-//-------------------------------------------------------------------------------------------------------------------------------------
-#define RH_CALL_KERNEL_BLOCK(N)    CUDA_SYM(RandomHash_Block##N)(allStates);
-
-#define RH_DEFINE_KERNEL_BLOCK(N)  CUDA_DECL_KERNEL void CUDA_SYM(RandomHash_Block##N)(RandomHash_State* allStates) \
-                                    { \
-                                        CUDA_DECLARE_STATE(); \
-                                        RH_B##N \
-                                    }
-
-CUDA_DECL_KERNEL void CUDA_SYM(RandomHash_Block0)(RandomHash_State* allStates)
-{
-    CUDA_DECLARE_STATE();
-    /*#define RH_B0*/     
-    RandomHash_FirstCall_push(state, 5);
-    RandomHash_Phase_init(state, 5);
-    RandomHash_Phase_1_push(state, 5);
-    if (!state->m_skipPhase1) 
-    {
-        RandomHash_Phase_init(state, 4);
-        RandomHash_Phase_1_push(state, 4);
-        RandomHash_Phase_init(state, 3);
-        RandomHash_Phase_1_push(state, 3);
-        RandomHash_Phase_init(state, 2);
-        RandomHash_Phase_1_push(state, 2);
-        RandomHash_Phase_init(state, 1);
-        RandomHash_start(state, 1);
-        RandomHash(state, 1);
-
-        RandomHash_end(state, 1);
-        RandomHash_Phase_1_pop(state, 2);
-
-
-        RandomHash_Phase_2_push(state, 2);
-        RandomHash_Phase_init(state, 1);
-        RandomHash_start(state, 1);
-        RandomHash(state, 1);
-
-        RandomHash_end(state, 1);
-        RandomHash_Phase_2_pop(state, 2);
-
-        RandomHash(state, 2);
-
-        RandomHash_end(state, 2);
-        RandomHash_Phase_1_pop(state, 3);
-
-
-        RandomHash_Phase_2_push(state, 3);
-        RandomHash_Phase_init(state, 2);
-        RandomHash_Phase_1_push(state, 2);
-        RandomHash_Phase_init(state, 1);
-        RandomHash_start(state, 1);
-        RandomHash(state, 1);
-
-        RandomHash_end(state, 1);
-        RandomHash_Phase_1_pop(state, 2);
-
-
-        RandomHash_Phase_2_push(state, 2);
-        RandomHash_Phase_init(state, 1);
-        RandomHash_start(state, 1);
-        RandomHash(state, 1);
-
-        RandomHash_end(state, 1);
-        RandomHash_Phase_2_pop(state, 2);
-
-        RandomHash(state, 2);
-
-        RandomHash_end(state, 2);
-        RandomHash_Phase_2_pop(state, 3);
-
-        RandomHash(state, 3);
-
-        RandomHash_end(state, 3);
-        RandomHash_Phase_1_pop(state, 4);
-
-
-        RandomHash_Phase_2_push(state, 4);
-        RandomHash_Phase_init(state, 3);
-        RandomHash_Phase_1_push(state, 3);
-        RandomHash_Phase_init(state, 2);
-        RandomHash_Phase_1_push(state, 2);
-        RandomHash_Phase_init(state, 1);
-        RandomHash_start(state, 1);
-        RandomHash(state, 1);
-
-        RandomHash_end(state, 1);
-        RandomHash_Phase_1_pop(state, 2);
-
-
-        RandomHash_Phase_2_push(state, 2);
-        RandomHash_Phase_init(state, 1);
-        RandomHash_start(state, 1);
-        RandomHash(state, 1);
-
-        RandomHash_end(state, 1);
-        RandomHash_Phase_2_pop(state, 2);
-
-        RandomHash(state, 2);
-
-        RandomHash_end(state, 2);
-        RandomHash_Phase_1_pop(state, 3);
-
-
-        RandomHash_Phase_2_push(state, 3);
-        RandomHash_Phase_init(state, 2);
-        RandomHash_Phase_1_push(state, 2);
-        RandomHash_Phase_init(state, 1);
-        RandomHash_start(state, 1);
-        RandomHash(state, 1);
-
-        RandomHash_end(state, 1);
-        RandomHash_Phase_1_pop(state, 2);
-
-
-        RandomHash_Phase_2_push(state, 2);
-        RandomHash_Phase_init(state, 1);
-        RandomHash_start(state, 1);
-        RandomHash(state, 1);
-
-        RandomHash_end(state, 1);
-        RandomHash_Phase_2_pop(state, 2);
-
-        RandomHash(state, 2);
-
-        RandomHash_end(state, 2);
-        RandomHash_Phase_2_pop(state, 3);
-
-        RandomHash(state, 3);
-
-        RandomHash_end(state, 3);
-        RandomHash_Phase_2_pop(state, 4);
-
-        RandomHash(state, 4);
-
-        RandomHash_end(state, 4);
-    }
-    RandomHash_Phase_1_pop(state, 5);
-
-
-    RandomHash_Phase_2_push(state, 5);
-    RandomHash_Phase_init(state, 4);
-    RandomHash_Phase_1_push(state, 4);
-    RandomHash_Phase_init(state, 3);
-    RandomHash_Phase_1_push(state, 3);
-    RandomHash_Phase_init(state, 2);
-    RandomHash_Phase_1_push(state, 2);
-    RandomHash_Phase_init(state, 1);
-    RandomHash_start(state, 1);
-    RandomHash_MiddlePoint(state);
-    RandomHash(state, 1);
-
-    RandomHash_end(state, 1);
-    RandomHash_Phase_1_pop(state, 2);
-
-
-    RandomHash_Phase_2_push(state, 2);
-    RandomHash_Phase_init(state, 1);
-    RandomHash_start(state, 1);
-    RandomHash(state, 1);
-
-    RandomHash_end(state, 1);
-    RandomHash_Phase_2_pop(state, 2);
-
-    RandomHash(state, 2);
-
-    RandomHash_end(state, 2);
-    RandomHash_Phase_1_pop(state, 3);
-
-
-    RandomHash_Phase_2_push(state, 3);
-    RandomHash_Phase_init(state, 2);
-    RandomHash_Phase_1_push(state, 2);
-    RandomHash_Phase_init(state, 1);
-    RandomHash_start(state, 1);
-    RandomHash(state, 1);
-
-    RandomHash_end(state, 1);
-    RandomHash_Phase_1_pop(state, 2);
-
-
-    RandomHash_Phase_2_push(state, 2);
-    RandomHash_Phase_init(state, 1);
-    RandomHash_start(state, 1);
-    RandomHash(state, 1);
-
-    RandomHash_end(state, 1);
-    RandomHash_Phase_2_pop(state, 2);
-
-    RandomHash(state, 2);
-
-    RandomHash_end(state, 2);
-    RandomHash_Phase_2_pop(state, 3);
-
-    RandomHash(state, 3);
-
-    RandomHash_end(state, 3);
-    RandomHash_Phase_1_pop(state, 4);
-
-
-    RandomHash_Phase_2_push(state, 4);
-    RandomHash_Phase_init(state, 3);
-    RandomHash_Phase_1_push(state, 3);
-    RandomHash_Phase_init(state, 2);
-    RandomHash_Phase_1_push(state, 2);
-    RandomHash_Phase_init(state, 1);
-    RandomHash_start(state, 1);
-    RandomHash(state, 1);
-
-    RandomHash_end(state, 1);
-    RandomHash_Phase_1_pop(state, 2);
-
-
-    RandomHash_Phase_2_push(state, 2);
-    RandomHash_Phase_init(state, 1);
-    RandomHash_start(state, 1);
-    RandomHash(state, 1);
-
-    RandomHash_end(state, 1);
-    RandomHash_Phase_2_pop(state, 2);
-
-    RandomHash(state, 2);
-
-    RandomHash_end(state, 2);
-    RandomHash_Phase_1_pop(state, 3);
-
-
-    RandomHash_Phase_2_push(state, 3);
-    RandomHash_Phase_init(state, 2);
-    RandomHash_Phase_1_push(state, 2);
-    RandomHash_Phase_init(state, 1);
-    RandomHash_start(state, 1);
-    RandomHash(state, 1);
-
-    RandomHash_end(state, 1);
-    RandomHash_Phase_1_pop(state, 2);
-
-
-    RandomHash_Phase_2_push(state, 2);
-    RandomHash_Phase_init(state, 1);
-    RandomHash_start(state, 1);
-    RandomHash(state, 1);
-
-    RandomHash_end(state, 1);
-    RandomHash_Phase_2_pop(state, 2);
-
-    RandomHash(state, 2);
-
-    RandomHash_end(state, 2);
-    RandomHash_Phase_2_pop(state, 3);
-
-    RandomHash(state, 3);
-
-    RandomHash_end(state, 3);
-    RandomHash_Phase_2_pop(state, 4);
-
-    RandomHash(state, 4);
-
-    RandomHash_end(state, 4);
-    RandomHash_Phase_2_pop(state, 5);
-
-    RandomHash(state, 5);
-
-    RandomHash_end(state, 5);
-}
-
-#define RH_CALL_ALL_KERNEL_BLOCKS \
-RH_CALL_KERNEL_BLOCK(0) \
-
-//-------------------------------------------------------------------------------------------------------------------------------------
-CUDA_DECL_KERNEL void CUDA_SYM(RandomHash_Init)(RandomHash_State* allStates, U8* out_hash, U32 startNonce)
-{
-    CUDA_DECLARE_STATE();
-
-    _CM(RandomHash_Initialize)(state);
-    
-    if (state->m_isNewHeader)
-    {
-        state->m_isNewHeader = false;
-        (*(U32*)(state->m_roundInput)) = PascalHeaderSize;
-        _CM(RH_STRIDE_MEMCPY_UNALIGNED_SIZE8)(RH_STRIDE_GET_DATA(state->m_roundInput), &state->m_header[0], PascalHeaderSize); 
-    }
-    
-    if (state->m_isCachedOutputs)
-        startNonce = state->m_midStateNonce;
-
-#ifdef RH_SCREEN_SAVER_MODE
-    extern void ScreensaverFeed(U32 nonce);
-    ScreensaverFeed(startNonce);
-#endif
-    
-    state->m_startNonce = startNonce;
-    *(U32*)(RH_STRIDE_GET_DATA(state->m_roundInput) + PascalHeaderNoncePosV4(PascalHeaderSize)) = startNonce;
-}
-
-#ifdef __CUDA_ARCH__
-//CUDA_DECL_KERNEL 
-#endif
-void CUDA_SYM(RandomHash_Finalize)(RandomHash_State* allStates, U8* output) 
-{
-    CUDA_DECLARE_STATE();
-
-    RH_STRIDE_CHECK_INTEGRITY(RH_STRIDEARRAY_GET(state->m_data[5].roundOutputs, 30));
-
-    _CM(RandomHash_Compress)(state, state->m_data[5].roundOutputs, state->m_workBytes, 0);
-
-    RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_workBytes) <= 100);
-
-    U8 tempStride[RH_IDEAL_ALIGNMENT + 256];
-    _CM(RandomHash_SHA2_256)(state->m_workBytes, &tempStride[0]);
-
-#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
-    U64* check = (U64*)(state->m_stridesInstances + RH_STRIDE_BANK_SIZE);
-    RHMINER_ASSERT(*check == 0xFF55AA44BB8800DDLLU);
-#endif
-
-    memcpy(output, RH_STRIDE_GET_DATA(tempStride), 32);
-}
 
 void RandomHash_Free(void* ptr)
 {
@@ -1156,13 +103,880 @@ void RandomHash_Alloc(void** out_ptr, size_t size)
     RHMINER_ASSERT(*out_ptr);
 }
 
-void RandomHash_Search(RandomHash_State* in_state, U8* out_hash, U32 startNonce)
-{
 
-    RandomHash_State* allStates = in_state;
-    RandomHash_Init(allStates, out_hash, startNonce);
-    RH_CALL_ALL_KERNEL_BLOCKS
-    RandomHash_Finalize(allStates, out_hash);
+const U32    c_AlgoSize[] = { 20, 32, 64, 48, 16, 20, 28, 32, 32, 32, 64, 32, 64, 20, 16, 20, 24, 28, 32, 
+                              16, 20, 24, 28, 32, 16, 20, 24, 28, 32, 28, 32, 36, 48, 64, 16, 16, 16, 32, 
+                              32, 16, 16, 20, 32, 40, 20, 20, 28, 32, 48, 64, 28, 32, 28, 32, 48, 64, 16, 
+                              32, 16, 20, 24, 16, 20, 24, 16, 20, 24, 16, 20, 24, 16, 20, 24, 16, 20, 24, 64, 28,32 };
+static thread_local U64                 c_target = 0xFFFFFFFFFFFFFfFF;
+#define GetTarget()                     c_target
+
+void RandomHash_CreateMany(RandomHash_State** outPtr, U32 count)
+{
+    RandomHash_Alloc((void**)outPtr, sizeof(RandomHash_State)*count);
+    RH_CUDA_ERROR_CHECK();
+
+    for (U32 i = 0; i < count; i++)
+    {
+        RandomHash_Create(&(*outPtr)[i]);
+    }
+} 
+
+
+inline void RandomHash_Initialize(RandomHash_State* state)
+{
+    state->m_workBytes = state->m_precalcPart2;
+
+    state->m_strideID = 0;
+    state->m_stideDataFlipFlop = state->m_stideDataFlipFlop ? 0 : 1;
+    state->m_pPartiallyComputedOutputsClone = &state->m_stideDBuffer[state->m_stideDataFlipFlop].m_partiallyComputedOutputsClone;
+    state->m_pStridesInstances = state->m_stideDBuffer[state->m_stideDataFlipFlop].m_stridesInstances;
+    state->m_stridesAllocIndex = 0;
+
+#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+    memset(state->m_stideDBuffer[state->m_stideDataFlipFlop].m_stridesInstances, (U8)0xBA, RH2_STRIDE_BANK_SIZE);
+    U64* check = (U64*)(state->m_stideDBuffer[state->m_stideDataFlipFlop].m_stridesInstances + RH2_STRIDE_BANK_SIZE);
+    RHMINER_ASSERT(*check == 0xFF55AA44BB8800DDLLU);
+#endif
 }
 
 
+void RandomHash_Create(RandomHash_State* state)
+{
+    U32 ajust = 0;
+#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+    ajust = sizeof(U64);
+#endif    
+    RandomHash_Alloc((void**)&state->m_stideDBuffer[0].m_stridesInstances, RH2_STRIDE_BANK_SIZE + ajust);
+    RandomHash_Alloc((void**)&state->m_stideDBuffer[1].m_stridesInstances, RH2_STRIDE_BANK_SIZE + ajust);
+#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+    U64* check = (U64*)(state->m_stideDBuffer[0].m_stridesInstances + RH2_STRIDE_BANK_SIZE);
+    *check = 0xFF55AA44BB8800DDLLU;
+    check = (U64*)(state->m_stideDBuffer[1].m_stridesInstances + RH2_STRIDE_BANK_SIZE);
+    *check = 0xFF55AA44BB8800DDLLU;
+#endif
+    RH_CUDA_ERROR_CHECK();
+    state->m_stideDataFlipFlop = 0;    
+
+    state->m_isNewHeader = true;
+    RandomHash_Initialize(state);
+}
+
+
+void RandomHash_Destroy(RandomHash_State* state)
+{
+    RandomHash_Free(state->m_stideDBuffer[0].m_stridesInstances);
+    RandomHash_Free(state->m_stideDBuffer[1].m_stridesInstances);
+}
+
+void RandomHash_DestroyMany(RandomHash_State* stateArray, U32 count)
+{
+    if (stateArray)
+    {
+        for (U32 i = 0; i < count; i++)
+            RandomHash_Destroy(&stateArray[i]);
+        RandomHash_Free(stateArray);
+    }
+} 
+
+
+void RandomHash_SetHeader(RandomHash_State* state, U8* sourceHeader, U32 headerSize, U32 nonce2) 
+{
+    RHMINER_ASSERT(headerSize == PascalHeaderSizeV5); //optimized for 236 header
+    U8* targetInput = state->m_header;
+    state->m_isNewHeader = true;
+    state->m_pascalHeaderSize = headerSize;
+#ifdef RH2_ENABLE_CACHE
+    state->m_partiallyComputedCount = 0;
+    state->m_partiallyComputedRound = U32_Max;
+    state->m_partiallyComputedNonceHeader = U32_Max;
+#endif
+#ifdef RH2_ENABLE_PREFLIGHT_CACHE
+    state->m_isCalculatePreflight = 1;
+    state->m_preflightData.endCut = 8;
+#endif
+    memcpy(targetInput, sourceHeader, state->m_pascalHeaderSize);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    inline RH_StridePtr RH_StrideArrayAllocOutput(RandomHash_State* state, U32 initialSize) 
+    {
+        RH_ASSERT((size_t(state->m_stridesAllocIndex) % 32) == 0);
+        RH_ASSERT((initialSize % 4) == 0);
+        RH_StridePtr stride = state->m_pStridesInstances + (state->m_stridesAllocIndex/4);
+        RH_ASSERT((size_t(stride) % 32) == 0);
+    #ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+        if (state->m_strideID)
+            RH_ASSERT(*(U32*)((stride - 4)) == 0xBABABABA);
+    #endif
+        state->m_stridesAllocIndex += initialSize + RH_IDEAL_ALIGNMENT;
+        RH_ASSERT(state->m_stridesAllocIndex < RH2_STRIDE_BANK_SIZE);
+        RH_STRIDE_INIT_INTEGRITY(stride);
+    #ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+        RH_STRIDE_SET_INDEX(stride, state->m_strideID);
+        state->m_strideID++;
+    #endif
+        return stride;
+    }
+
+    inline void RH_StrideArrayGrow(RandomHash_State* state, RH_StridePtr stride, U32 growSize)
+    {
+        RH_ASSERT((growSize % 4) == 0);
+        state->m_stridesAllocIndex += growSize;
+        RH_ASSERT(state->m_stridesAllocIndex < RH2_STRIDE_BANK_SIZE);
+        //CpuYield();
+        RH_STRIDE_SET_SIZE(stride, RH_STRIDE_GET_SIZE(stride) + growSize);
+        RH_STRIDE_INIT_INTEGRITY(stride);
+    }
+
+
+    inline void RH_StrideArrayClose(RandomHash_State* state, RH_StridePtr stride)
+    {
+        U32 ss = 0;
+#ifdef RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+        ss += sizeof(U64);
+#endif
+        RH_ASSERT(RHMINER_ALIGN(state->m_stridesAllocIndex + ss, 32) > state->m_stridesAllocIndex);
+        state->m_stridesAllocIndex = RHMINER_ALIGN(state->m_stridesAllocIndex + ss, 32);
+        RH_ASSERT(state->m_stridesAllocIndex < RH2_STRIDE_BANK_SIZE);
+        RH_ASSERT((size_t(state->m_stridesAllocIndex) % 32) == 0);
+        RH_ASSERT((size_t(state->m_stridesAllocIndex) % 4) == 0);
+
+        RH_STRIDE_CHECK_INTEGRITY(stride);
+    }
+
+
+inline U32 GetLastDWordLE(RH_StridePtr in_stride)
+{
+    U32 size = RH_STRIDE_GET_SIZE(in_stride);
+    RH_ASSERT(size > 4);
+    return *(RH_STRIDE_GET_DATA(in_stride) + ((size - 4)/4));
+}
+
+inline void SetLastDWordLE(RH_StridePtr in_stride, U32 newNonce)
+{
+    U32 size = RH_STRIDE_GET_SIZE(in_stride);
+    RH_ASSERT(size > 4);
+    *(RH_STRIDE_GET_DATA(in_stride) + ((size - 4)/4)) = newNonce;
+}
+
+
+    void RandomHash_Expand(RandomHash_State* state, RH_StridePtr input, U32 seed, int round, int ExpansionFactor)
+    {
+        U32 inputSize = RH_STRIDE_GET_SIZE(input);
+#if defined(RH2_ENABLE_EXPAND_MERSSEN_USING_FAST4)
+    #ifndef RH2_ENABLE_EXPAND_MERSSEN_INPLACE
+        U32 mt4_sequence = 0;
+        {
+            U64 mt10;
+            U64 mt32;
+            U32 pval = (0x6c078965 * (seed ^ seed >> 30) + 1);
+            mt10 = ((U64)pval) << 32 | seed;
+            
+            mt32 = 0x6c078965 * (pval ^ pval >> 30) + 2;
+            pval = (U32)mt32;
+            pval = 0x6c078965 * (pval ^ pval >> 30) + 3;
+            mt32 |= ((U64)pval) << 32;
+            pval = 0x6c078965 * (pval ^ pval >> 30) + 4;
+            U32 mt5 = pval;
+
+            U32 fval= 5;
+            while (fval < MERSENNE_TWISTER_PERIOD)
+                pval = 0x6c078965 * (pval ^ pval >> 30) + fval++;
+
+            fval = 0x6c078965 * (pval ^ pval >> 30) + MERSENNE_TWISTER_PERIOD;
+            pval = M32((U32)mt10);
+            pval |= L31(mt10>>32);
+            pval = fval ^ (pval >> 1) ^ (((int32_t(pval) << 31) >> 31) & MERSENNE_TWISTER_MAGIC);
+
+            pval ^= pval >> 11; 
+            pval ^= pval << 7 & 0x9d2c5680; 
+            pval ^= pval << 15 & 0xefc60000; 
+            pval ^= pval >> 18;
+
+            mt4_sequence |= (pval % 8);
+            mt4_sequence <<= 8;
+
+            fval = 0x6c078965 * (fval ^ fval >> 30) + MERSENNE_TWISTER_PERIOD+1;
+            pval = M32(mt10>>32);
+            pval |= L31((U32)mt32);
+            pval = fval ^ (pval >> 1) ^ (((int32_t(pval) << 31) >> 31) & MERSENNE_TWISTER_MAGIC);
+
+            pval ^= pval >> 11; 
+            pval ^= pval << 7 & 0x9d2c5680; 
+            pval ^= pval << 15 & 0xefc60000; 
+            pval ^= pval >> 18;
+
+            mt4_sequence |= (pval % 8);
+            mt4_sequence <<= 8;
+
+            fval = 0x6c078965 * (fval ^ fval >> 30) + MERSENNE_TWISTER_PERIOD+2;
+            pval = M32((U32)mt32);
+            pval |= L31(mt32>>32);
+            pval = fval ^ (pval >> 1) ^ (((int32_t(pval) << 31) >> 31) & MERSENNE_TWISTER_MAGIC);
+
+            pval ^= pval >> 11; 
+            pval ^= pval << 7 & 0x9d2c5680; 
+            pval ^= pval << 15 & 0xefc60000; 
+            pval ^= pval >> 18;
+
+            mt4_sequence |= (pval % 8);
+            mt4_sequence <<= 8;
+
+            fval = 0x6c078965 * (fval ^ fval >> 30) + MERSENNE_TWISTER_PERIOD+3;
+            pval = M32(mt32>>32);
+            pval |= L31(mt5);
+            pval = fval ^ (pval >> 1) ^ (((int32_t(pval) << 31) >> 31) & MERSENNE_TWISTER_MAGIC);
+
+            pval ^= pval >> 11; 
+            pval ^= pval << 7 & 0x9d2c5680; 
+            pval ^= pval << 15 & 0xefc60000; 
+            pval ^= pval >> 18;
+
+            mt4_sequence |= (pval % 8);
+            mt4_sequence = RH_swap_u32(mt4_sequence);
+        }
+    #else
+        U32 rndIdx = 0;
+        U64 mt10;
+        U64 mt32;
+        U32 pval = (0x6c078965 * (seed ^ seed >> 30) + 1);
+        mt10 = ((U64)pval) << 32 | seed;
+            
+        mt32 = 0x6c078965 * (pval ^ pval >> 30) + 2;
+        pval = (U32)mt32;
+        pval = 0x6c078965 * (pval ^ pval >> 30) + 3;
+        mt32 |= ((U64)pval) << 32;
+        pval = 0x6c078965 * (pval ^ pval >> 30) + 4;
+        U32 mt5 = pval;
+
+        U32 fval= 5;
+        while (fval < MERSENNE_TWISTER_PERIOD)
+            pval = 0x6c078965 * (pval ^ pval >> 30) + fval++;
+
+    #endif 
+#else 
+    #ifndef RH2_ENABLE_EXPAND_MERSSEN_INPLACE
+        mersenne_twister_state   rndGenExpand;
+        merssen_twister_seed_fast_partial(seed, &rndGenExpand, 4);
+
+        merssen_twister_rand_fast_partial_4(&rndGenExpand);
+        rndGenExpand.index--;
+#else
+        __m128i r1;
+        {
+            __m128i f1;
+            __m128i c1 = _mm_cvtsi32_si128(0x9d2c5680);
+            __m128i c2 = _mm_cvtsi32_si128(0xefc60000);
+            c1 = _mm_shuffle_epi32(c1, 0);
+            c2 = _mm_shuffle_epi32(c2, 0);
+            U32  pval, pval2, pvaln, ip1_l;
+            pval = seed;
+
+            r1 = _mm_cvtsi32_si128(pval);
+            pval = 0x6c078965 * (pval ^ pval >> 30) + 1;
+            r1 = _mm_insert_epi32_M(r1, pval, 1);
+            pval = 0x6c078965 * (pval ^ pval >> 30) + 2;
+            r1 = _mm_insert_epi32_M(r1, pval, 2);
+            pval = 0x6c078965 * (pval ^ pval >> 30) + 3;
+            r1 = _mm_insert_epi32_M(r1, pval, 3);
+            ip1_l = 0x6c078965 * (pval ^ pval >> 30) + 4;
+
+            pval2 = 5;
+            pval = ip1_l;
+            while (pval2 <= MERSENNE_TWISTER_PERIOD)
+            {
+                pval = 0x6c078965 * (pval ^ pval >> 30) + pval2++;
+            }
+            
+            f1 = _mm_cvtsi32_si128(pval);
+            pval = 0x6c078965 * (pval ^ pval >> 30) + 398;
+            f1 = _mm_insert_epi32_M(f1, pval, 1);
+            pval = 0x6c078965 * (pval ^ pval >> 30) + 399;
+            f1 = _mm_insert_epi32_M(f1, pval, 2);
+            pval = 0x6c078965 * (pval ^ pval >> 30) + 400;
+            f1 = _mm_insert_epi32_M(f1, pval, 3);
+
+            RH_MT_ST(r1, f1, 0, 1);
+            RH_MT_ST(r1, f1, 1, 2);
+            RH_MT_ST(r1, f1, 2, 3);
+            pval = _mm_extract_epi32_M(r1, 3);
+            pval2 = ip1_l;
+            pvaln = _mm_extract_epi32_M(f1, 3);
+            pval = M32(pval) | L31(pval2);
+            pval = pvaln ^ (pval >> 1) ^ (((int32_t(pval) << 31) >> 31) & MERSENNE_TWISTER_MAGIC);
+            r1 = _mm_insert_epi32_M(r1, pval, 3);
+
+            f1 = _mm_srli_epi32(r1, 11);
+            r1 = _mm_xor_si128(r1, f1);
+            f1 = _mm_slli_epi32(r1, 7);
+            f1 = _mm_and_si128(f1, c1);
+            r1 = _mm_xor_si128(r1, f1);
+            f1 = _mm_slli_epi32(r1, 15);
+            f1 = _mm_and_si128(f1, c2);
+            r1 = _mm_xor_si128(r1, f1);
+            f1 = _mm_srli_epi32(r1, 18);
+            r1 = _mm_xor_si128(r1, f1);
+        }
+    #endif 
+#endif
+        size_t sizeExp = inputSize + ExpansionFactor * RH2_M;
+
+        RH_StridePtr output = input;
+
+        S64 bytesToAdd = sizeExp - inputSize;
+        RH_ASSERT((bytesToAdd % 2) == 0);
+        RH_ASSERT(RH_STRIDE_GET_SIZE(output) != 0);
+        RH_ASSERT(RH_STRIDE_GET_SIZE(output) < RH2_StrideSize);
+        RH_STRIDE_INIT_INTEGRITY(input);
+
+        U8* outputPtr = RH_STRIDE_GET_DATA8(output);
+        
+        while (bytesToAdd > 0)
+        {
+            U32 nextChunkSize = RH_STRIDE_GET_SIZE(output);
+            U8* nextChunk = outputPtr + nextChunkSize;
+            if (nextChunkSize > bytesToAdd)
+            {
+                nextChunkSize = (U32)bytesToAdd;
+            }
+
+            RH_StrideArrayGrow(state, output, nextChunkSize);
+
+            RH_ASSERT(nextChunk + nextChunkSize < ((U8*)(void*)output) + RH2_StrideSize);
+#ifdef RH2_ENABLE_EXPAND_MERSSEN_USING_FAST4
+#ifndef RH2_ENABLE_EXPAND_MERSSEN_INPLACE
+            U32 r = (U8)mt4_sequence;
+            mt4_sequence >>= 8;
+#else
+            switch (rndIdx)
+            {
+            case 0:
+                fval = 0x6c078965 * (pval ^ pval >> 30) + MERSENNE_TWISTER_PERIOD;
+                pval = M32((U32)mt10);
+                pval |= L31(mt10 >> 32);
+                break;
+            case 1:
+                fval = 0x6c078965 * (fval ^ fval >> 30) + MERSENNE_TWISTER_PERIOD + 1;
+                pval = M32(mt10 >> 32);
+                pval |= L31((U32)mt32);
+                break;
+            case 2:
+                fval = 0x6c078965 * (fval ^ fval >> 30) + MERSENNE_TWISTER_PERIOD + 2;
+                pval = M32((U32)mt32);
+                pval |= L31(mt32 >> 32);
+                break;
+            case 3:
+                fval = 0x6c078965 * (fval ^ fval >> 30) + MERSENNE_TWISTER_PERIOD + 3;
+                pval = M32(mt32 >> 32);
+                pval |= L31(mt5);
+                break;
+            }
+            rndIdx++;
+            pval = fval ^ (pval >> 1) ^ (((int32_t(pval) << 31) >> 31) & MERSENNE_TWISTER_MAGIC);
+
+            pval ^= pval >> 11;
+            pval ^= pval << 7 & 0x9d2c5680;
+            pval ^= pval << 15 & 0xefc60000;
+            pval ^= pval >> 18;
+            U32 r = (pval % 8);
+#endif
+#else
+#ifndef RH2_ENABLE_EXPAND_MERSSEN_INPLACE
+            U32 random = merssen_twister_rand_fast_partial_4(&rndGenExpand);
+            U32 r = random % 8;
+#else
+            U32 r = _mm_extract_epi32_M(r1, 0);
+            r1 = _mm_bsrli_si128(r1, 4);
+            r = r % 8;
+#endif
+#endif
+            RH_ASSERT((nextChunkSize & 1) == 0);
+            RH_ASSERT(r >= 0 && r <= 7);
+#ifdef RH2_ENABLE_TRANSFO_INPLACE
+
+            U32 halfSize = nextChunkSize >> 1;
+            switch (r)
+            {
+                case 0:
+                {
+                    halfSize = (*(U32*)(outputPtr + nextChunkSize - 4));
+
+                    if (!halfSize)
+                        halfSize = 1;
+
+                    for (U32 i = 0; i < nextChunkSize; i++)
+                    {
+                        halfSize ^= halfSize << 13;
+                        halfSize ^= halfSize >> 17;
+                        halfSize ^= halfSize << 5;
+                        *nextChunk = outputPtr[halfSize % nextChunkSize];
+                        nextChunk++;
+                    }
+                }
+                break;
+                case 1:
+                {
+                    memcpy(nextChunk, outputPtr + halfSize, halfSize);
+                    memcpy(nextChunk + halfSize, outputPtr, halfSize);
+                }
+                break;
+                case 2:
+                {
+                    U8* srcHead = outputPtr;
+                    U8* srcEnd = srcHead + halfSize;
+                    U8* srcTail = &outputPtr[nextChunkSize - 1];
+                    U8* tail = &nextChunk[nextChunkSize - 1];
+                    while (srcHead < srcEnd)
+                    {
+                        *nextChunk = *srcTail;
+                        *tail = *srcHead;
+                        nextChunk++;
+                        tail--;
+                        srcHead++;
+                        srcTail--;
+                    }
+                }
+                break;
+                case 3:
+                {
+                    U32 left = 0;
+                    U32 right = (int)halfSize;
+                    while (left < halfSize)
+                    {
+                        *nextChunk = outputPtr[left++];
+                        nextChunk++;
+                        *nextChunk = outputPtr[right++];
+                        nextChunk++;
+                    }
+                }
+                break;
+                case 4:
+                {
+                    U8* left = outputPtr;
+                    U8* right = outputPtr + halfSize;
+                    while (halfSize)
+                    {
+                        *nextChunk = *right;
+                        nextChunk++;
+                        *nextChunk = *left;
+                        nextChunk++;
+                        right++;
+                        left++;
+                        halfSize--;
+                    }
+                }
+                break;
+                case 5:
+                {
+                    S32 itt = 0;
+                    S32 ritt = nextChunkSize - 1;
+                    S32 fitt = 0;
+                    while (fitt < halfSize)
+                    {
+                        nextChunk[fitt] = outputPtr[itt] ^ outputPtr[itt + 1];
+                        itt += 2;
+                        nextChunk[fitt + halfSize] = outputPtr[fitt] ^ outputPtr[ritt];
+                        fitt++;
+                        ritt--;
+                    }
+                }
+                break;
+                case 6:
+                {
+                    for (int i = 0; i < nextChunkSize; i++)
+                        nextChunk[i] = ROTL8(outputPtr[i], nextChunkSize - i);
+                }
+                break;
+                case 7:
+                {
+                    for (int i = 0; i < nextChunkSize; i++)
+                        nextChunk[i] = ROTR8(outputPtr[i], nextChunkSize - i);
+                }
+                break;
+        }
+#else
+            switch (r)
+            {
+            case 0: Transfo0_2(nextChunk, nextChunkSize, outputPtr); break;
+            case 1: Transfo1_2(nextChunk, nextChunkSize, outputPtr); break;
+            case 2: Transfo2_2(nextChunk, nextChunkSize, outputPtr); break;
+            case 3: Transfo3_2(nextChunk, nextChunkSize, outputPtr); break;
+            case 4: Transfo4_2(nextChunk, nextChunkSize, outputPtr); break;
+            case 5: Transfo5_2(nextChunk, nextChunkSize, outputPtr); break;
+            case 6: Transfo6_2(nextChunk, nextChunkSize, outputPtr); break;
+            case 7: Transfo7_2(nextChunk, nextChunkSize, outputPtr); break;
+            }
+#endif
+
+            RH_STRIDE_CHECK_INTEGRITY(output);
+            RH_ASSERT(RH_STRIDE_GET_SIZE(output) < RH2_StrideSize);
+            bytesToAdd = bytesToAdd - nextChunkSize;
+        }
+       
+
+        RH_StrideArrayClose(state, output);
+        RH_ASSERT(sizeExp == RH_STRIDE_GET_SIZE(output));
+        RH_STRIDE_CHECK_INTEGRITY(output);
+    }
+
+
+
+    void RandomHash_Compress(RandomHash_State* state, RH_StrideArrayStruct& inputs, RH_StridePtr Result, U32 seed)
+    {
+        U32 rval;
+        mersenne_twister_state   rndGenCompress;
+        merssen_twister_seed_fast_partial(seed, &rndGenCompress, 204);
+        
+        merssen_twister_rand_fast_partial_204(&rndGenCompress);
+
+#if defined(RH2_ENABLE_MERSSEN_INTERLEAVE) && !defined(RHMINER_NO_SSE4)
+        rndGenCompress.index -= 2;
+#else
+        rndGenCompress.index--;
+#endif
+
+        RH_STRIDE_SET_SIZE(Result, 100);
+        U8* resultPtr = RH_STRIDE_GET_DATA8(Result);
+        U32 inoutSize = RH_STRIDEARRAY_GET_SIZE(inputs);
+        RH_StridePtr source;
+        for (size_t i = 0; i < 100; i++)
+        {
+            source = RH_STRIDEARRAY_GET(inputs, merssen_twister_rand_fast_partial(&rndGenCompress, 204) % inoutSize);
+            U32 sourceSize = RH_STRIDE_GET_SIZE(source);
+            rval = merssen_twister_rand_fast_partial(&rndGenCompress, 204);
+            resultPtr[i] = RH_STRIDE_GET_DATA8(source)[rval % sourceSize];
+        }
+    }
+
+    inline void ComputeVeneerRound(RandomHash_State* state, RH_StrideArrayStruct& in_strideArray, RH_StridePtr finalHash)
+    {
+        U32 seed = GetLastDWordLE(RH_STRIDEARRAY_GET(in_strideArray, RH_STRIDEARRAY_GET_SIZE(in_strideArray)-1));
+        RandomHash_Compress(state, in_strideArray, state->m_workBytes, seed);
+        RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_workBytes) < WorkBytesSize);
+
+        RandomHash_SHA2_256(state->m_workBytes, finalHash, false, false);
+
+    }
+    bool CalculateRoundOutputs(RandomHash_State* state, U32 in_round, RH_StrideArrayStruct& roundOutputs)
+    {    
+        U32 LSeed = 0;
+        RH_ASSERT(in_round >= 1 && in_round <= RH2_MAX_N);
+        RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_roundInput) <= state->m_pascalHeaderSize);
+
+#ifdef RH2_ENABLE_CACHE
+        mersenne_twister_state   rndGen; 
+
+        if (state->m_partiallyComputedCount &&
+            state->m_partiallyComputedRound == in_round &&
+            GetLastDWordLE(state->m_roundInput) == state->m_partiallyComputedNonceHeader)
+        {
+            RH_STRIDEARRAY_RESET(roundOutputs);
+
+            RH_StrideArrayPtr prevCompClone = &state->m_stideDBuffer[state->m_stideDataFlipFlop ? 0 : 1].m_partiallyComputedOutputsClone;
+            RH_STRIDEARRAY_COPY_ALL(roundOutputs, *prevCompClone);
+
+           
+
+            state->m_partiallyComputedCount = 0;
+            state->m_partiallyComputedRound = U32_Max;
+            state->m_partiallyComputedNonceHeader = U32_Max;
+            return 0; 
+        }
+#endif
+        if (in_round == 1)
+        {
+#ifdef RH2_ENABLE_PREFLIGHT_CACHE
+    #ifndef RH2_ENABLE_PREFLIGHT_4X
+            RandomHash_SHA2_256_Part2(state->m_roundInput, state->m_preflightData, state->m_workBytes);
+    #endif
+#else
+            RandomHash_SHA2_256(state->m_roundInput, state->m_workBytes);
+#endif
+            LSeed = GetLastDWordLE(state->m_workBytes);
+            merssen_twister_seed_fast_partial(LSeed, &rndGen,12);
+            RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_roundInput) == state->m_pascalHeaderSize);
+
+        #ifdef RH2_ENABLE_SHA256_PRERUN
+            LSeed = merssen_twister_rand_fast_partial_12(&rndGen) % RH2_MAX_ALGO;
+            rndGen.index--;
+        #endif
+
+
+        }
+        else
+        {
+            RH_StrideArrayStruct parenAndNeighbortOutputs;
+#ifdef RH2_ENABLE_PREFLIGHT_4X
+            if (in_round - 1 == 1)
+                RandomHash_SHA2_256_Part2(state->m_roundInput, state->m_preflightData, state->m_workBytes);
+#endif
+            if (CalculateRoundOutputs(state, in_round - 1, parenAndNeighbortOutputs) == true)
+            {
+                RH_STRIDEARRAY_RESET(roundOutputs); 
+                RH_STRIDEARRAY_COPY_ALL(roundOutputs, parenAndNeighbortOutputs);
+                return true;
+            }
+
+            LSeed = GetLastDWordLE( RH_STRIDEARRAY_GET(parenAndNeighbortOutputs, RH_STRIDEARRAY_GET_SIZE(parenAndNeighbortOutputs)-1) );
+            merssen_twister_seed_fast_partial(LSeed, &rndGen, 12);
+            merssen_twister_rand_fast_partial_12(&rndGen);
+            rndGen.index--;
+
+            RH_STRIDEARRAY_COPY_ALL(roundOutputs, parenAndNeighbortOutputs); 
+            RH_STRIDEARRAY_RESET(parenAndNeighbortOutputs);            
+            U32 LNumNeighbours = (merssen_twister_rand_fast_partial_12(&rndGen) % (RH2_MAX_J - RH2_MIN_J)) + RH2_MIN_J;
+            
+#ifdef RH2_ENABLE_PREFLIGHT_4X
+            state->m_workBytes = state->m_precalcPart2;
+            U32* MT = &rndGen.MT[rndGen.index];
+            if (LNumNeighbours >= 4)
+            {
+                SetLastDWordLE(state->m_roundInput, *MT);
+                RandomHash_SHA2_256_Part2_SSE_4x(state->m_roundInput, state->m_preflightData,
+                    MT[1], MT[2], MT[3],
+                    state->m_workBytes + 0 * WorkBytesSize32,
+                    state->m_workBytes + 1 * WorkBytesSize32,
+                    state->m_workBytes + 2 * WorkBytesSize32,
+                    state->m_workBytes + 3 * WorkBytesSize32);
+                state->m_workBytes += 4*WorkBytesSize32;
+                MT += 4;
+            }
+            switch(LNumNeighbours % 4)
+            {
+            case 3:
+            case 2:
+                SetLastDWordLE(state->m_roundInput, *MT);
+                RandomHash_SHA2_256_Part2_SSE_4x(state->m_roundInput, state->m_preflightData,
+                    MT[1], MT[2], MT[3],
+                    state->m_workBytes + 0 * WorkBytesSize32,
+                    state->m_workBytes + 1 * WorkBytesSize32,
+                    state->m_workBytes + 2 * WorkBytesSize32,
+                    state->m_workBytes + 3 * WorkBytesSize32);
+                state->m_workBytes += 4*WorkBytesSize32;
+                MT += 4;
+                break;
+
+            case 1:
+                SetLastDWordLE(state->m_roundInput, *MT);
+                RandomHash_SHA2_256_Part2(state->m_roundInput, state->m_preflightData, state->m_workBytes);
+                state->m_workBytes += WorkBytesSize32;
+                MT++;
+            }
+
+            state->m_workBytes = state->m_precalcPart2 - WorkBytesSize32;
+#endif 
+
+
+            for (U32 i = 0; i < LNumNeighbours; i++)
+            {
+                LSeed = merssen_twister_rand_fast_partial_12(&rndGen);
+                SetLastDWordLE(state->m_roundInput, LSeed); 
+#ifdef RH2_ENABLE_PREFLIGHT_4X
+                state->m_workBytes += WorkBytesSize32;
+                RH_ASSERT(state->m_workBytes < state->m_precalcPart2 + sizeof(state->m_precalcPart2)/4);
+#endif
+                bool LNeighbourWasLastRound = CalculateRoundOutputs(state, in_round - 1, parenAndNeighbortOutputs);
+                RH_STRIDEARRAY_PUSHBACK_MANY(roundOutputs, parenAndNeighbortOutputs); 
+                
+#ifdef RH2_ENABLE_CACHE
+                if (LNeighbourWasLastRound)
+                {
+                    if (state->out_hashes->count < RandomHashResult::MaxHashes)
+                    {
+                        state->out_hashes->nonces[state->out_hashes->count] = LSeed;
+
+                        ComputeVeneerRound(state, parenAndNeighbortOutputs, state->out_hashes->hashes[state->out_hashes->count]);
+                        state->out_hashes->count++;
+                    }
+                    else
+                    {
+                        PrintOut("Warning: Missed internal hash.\n");
+                    }
+                }
+                else
+                {
+                    U32 pround = in_round - 1;
+                    if ((pround >= 3))
+                    {
+                        {
+                            state->m_partiallyComputedLocalCount++;
+                            state->m_partiallyComputedCount++;
+                            state->m_partiallyComputedRound = pround;
+                            state->m_partiallyComputedNonceHeader = LSeed;
+
+
+                            RH_STRIDEARRAY_RESET(*(state->m_pPartiallyComputedOutputsClone));
+                            RH_STRIDEARRAY_COPY_ALL(*(state->m_pPartiallyComputedOutputsClone), parenAndNeighbortOutputs);
+
+                        }
+                    }
+                }
+#endif
+                RH_STRIDEARRAY_RESET(parenAndNeighbortOutputs);
+            }
+            
+            LSeed = merssen_twister_rand_fast_partial_12(&rndGen);
+            RandomHash_Compress(state, roundOutputs, state->m_workBytes, LSeed);
+            RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_workBytes) <= 100);
+        }
+        U32 rndHash = (merssen_twister_rand_fast_partial_12(&rndGen) % RH2_MAX_ALGO);
+        RH_StridePtr input = state->m_workBytes;
+        RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_workBytes) < WorkBytesSize);
+        RH_StridePtr output = RH_StrideArrayAllocOutput(state, c_AlgoSize[rndHash]);
+        switch(rndHash)
+        {
+            case RH2_Blake2B_160:       RandomHash_blake2b(input, output, 160); break; 
+            case RH2_Blake2B_256:       RandomHash_blake2b(input, output, 256); break;
+            case RH2_Blake2B_512:       RandomHash_blake2b(input, output, 512); break;
+            case RH2_Blake2B_384:       RandomHash_blake2b(input, output, 384); break;
+            case RH2_Blake2S_128:       RandomHash_blake2s(input, output, 128); break;
+            case RH2_Blake2S_160:       RandomHash_blake2s(input, output, 160); break;
+            case RH2_Blake2S_224:       RandomHash_blake2s(input, output, 224); break;
+            case RH2_Blake2S_256:       RandomHash_blake2s(input, output, 256); break;
+            case RH2_Gost              :RandomHash_Ghost(input, output); break;
+            case RH2_GOST3411_2012_256 :RandomHash_Ghost3411(input, output, 256); break;
+            case RH2_GOST3411_2012_512 :RandomHash_Ghost3411(input, output, 512); break;
+            case RH2_Grindahl256       :RandomHash_Grindahl256(input, output); break;
+            case RH2_Grindahl512       :RandomHash_Grindahl512(input, output); break;
+            case RH2_HAS160            :RandomHash_HAS160(input, output); break;
+            case RH2_Haval_3_128       :RandomHash_Haval3 (input, output, 128); break;
+            case RH2_Haval_3_160       :RandomHash_Haval3 (input, output, 160); break;
+            case RH2_Haval_3_192       :RandomHash_Haval3 (input, output, 192); break;
+            case RH2_Haval_3_224       :RandomHash_Haval3 (input, output, 224); break;
+            case RH2_Haval_3_256       :RandomHash_Haval3 (input, output, 256); break;
+            case RH2_Haval_4_128       :RandomHash_Haval4 (input, output, 128); break;
+            case RH2_Haval_4_160       :RandomHash_Haval4 (input, output, 160); break;
+            case RH2_Haval_4_192       :RandomHash_Haval4 (input, output, 192); break;
+            case RH2_Haval_4_224       :RandomHash_Haval4 (input, output, 224); break;
+            case RH2_Haval_4_256       :RandomHash_Haval4 (input, output, 256); break;
+            case RH2_Haval_5_128       :RandomHash_Haval_5_256 (input, output, 128); break;
+            case RH2_Haval_5_160       :RandomHash_Haval_5_256 (input, output, 160); break;
+            case RH2_Haval_5_192       :RandomHash_Haval_5_256 (input, output, 192); break;
+            case RH2_Haval_5_224       :RandomHash_Haval_5_256 (input, output, 224); break;
+            case RH2_Haval_5_256       :RandomHash_Haval_5_256 (input, output, 256); break;
+            case RH2_Keccak_224        :_RandomHash_SHA3_512  (input, output, 224/8, false); break;
+            case RH2_Keccak_256        :_RandomHash_SHA3_512  (input, output, 256/8, false); break;
+            case RH2_Keccak_288        :_RandomHash_SHA3_512  (input, output, 288/8, false); break;
+            case RH2_Keccak_384        :_RandomHash_SHA3_512  (input, output, 384/8, false); break;
+            case RH2_Keccak_512        :_RandomHash_SHA3_512  (input, output, 512/8, false); break;
+            case RH2_MD2               :RandomHash_MD2         (input, output); break;
+            case RH2_MD5               :RandomHash_MD5         (input, output); break;
+            case RH2_MD4               :RandomHash_MD4         (input, output); break;
+            case RH2_Panama            :RandomHash_Panama      (input, output); break;
+            case RH2_RadioGatun32      :RandomHash_RadioGatun32(input, output); break;
+            case RH2_RIPEMD            :RandomHash_RIPEMD      (input, output); break;
+            case RH2_RIPEMD128         :RandomHash_RIPEMD128   (input, output); break;
+            case RH2_RIPEMD160         :RandomHash_RIPEMD160   (input, output); break;
+            case RH2_RIPEMD256         :RandomHash_RIPEMD256   (input, output); break;
+            case RH2_RIPEMD320         :RandomHash_RIPEMD320   (input, output); break;
+            case RH2_SHA0              :RandomHash_SHA0        (input, output); break;
+            case RH2_SHA1              :RandomHash_SHA1        (input, output); break;
+            case RH2_SHA2_224          :RandomHash_SHA2_256    (input, output, true); break;                 
+            case RH2_SHA2_256          :RandomHash_SHA2_256    (input, output, false); break;
+            case RH2_SHA2_384          :RandomHash_SHA2_512    (input, output, SHA2_512_MODE_384); break;
+            case RH2_SHA2_512          :RandomHash_SHA2_512    (input, output, SHA2_512_MODE_512); break;
+            case RH2_SHA2_512_224      :RandomHash_SHA2_512    (input, output, SHA2_512_MODE_512_224); break;
+            case RH2_SHA2_512_256      :RandomHash_SHA2_512    (input, output, SHA2_512_MODE_512_256); break;
+            case RH2_SHA3_224          :RandomHash_SHA3_224    (input, output); break;
+            case RH2_SHA3_256          :RandomHash_SHA3_256    (input, output); break;
+            case RH2_SHA3_384          :RandomHash_SHA3_384    (input, output); break;
+            case RH2_SHA3_512          :RandomHash_SHA3_512    (input, output); break;
+            case RH2_Snefru_8_128      :RandomHash_Snefru_8_256(input, output, 16); break;
+            case RH2_Snefru_8_256      :RandomHash_Snefru_8_256(input, output, 32); break;
+            case RH2_Tiger_3_128       :RandomHash_Tiger(input, output, 3, 128, false); break;
+            case RH2_Tiger_3_160       :RandomHash_Tiger(input, output, 3, 160, false); break;
+            case RH2_Tiger_3_192       :RandomHash_Tiger(input, output, 3, 192, false); break;
+            case RH2_Tiger_4_128       :RandomHash_Tiger(input, output, 4, 128, false); break;
+            case RH2_Tiger_4_160       :RandomHash_Tiger(input, output, 4, 160, false); break;
+            case RH2_Tiger_4_192       :RandomHash_Tiger(input, output, 4, 192, false); break;
+            case RH2_Tiger_5_128       :RandomHash_Tiger(input, output, 5, 128, false); break;
+            case RH2_Tiger_5_160       :RandomHash_Tiger(input, output, 5, 160, false); break;
+            case RH2_Tiger_5_192       :RandomHash_Tiger(input, output, 5, 192, false); break;
+            case RH2_Tiger2_3_128      :RandomHash_Tiger(input, output, 3, 128, true); break;
+            case RH2_Tiger2_3_160      :RandomHash_Tiger(input, output, 3, 160, true); break;
+            case RH2_Tiger2_3_192      :RandomHash_Tiger(input, output, 3, 192, true); break;
+            case RH2_Tiger2_4_128      :RandomHash_Tiger(input, output, 4, 128, true); break;
+            case RH2_Tiger2_4_160      :RandomHash_Tiger(input, output, 4, 160, true); break;
+            case RH2_Tiger2_4_192      :RandomHash_Tiger(input, output, 4, 192, true); break;
+            case RH2_Tiger2_5_128      :RandomHash_Tiger(input, output, 5, 128, true); break;
+            case RH2_Tiger2_5_160      :RandomHash_Tiger(input, output, 5, 160, true); break;
+            case RH2_Tiger2_5_192      :RandomHash_Tiger(input, output, 5, 192, true); break;
+            case RH2_WhirlPool         :RandomHash_WhirlPool(input, output); break;
+        }
+
+
+        RH_ASSERT(RH_STRIDE_GET_SIZE(state->m_workBytes) <= 100);
+        RH_ASSERT(RH_STRIDE_GET_SIZE(output) == c_AlgoSize[rndHash]);
+
+
+        LSeed = merssen_twister_rand_fast_partial_12(&rndGen);
+        RandomHash_Expand(state, 
+                               output, 
+                               LSeed, 
+                               in_round, 
+                               RH2_MAX_N - in_round);
+        RH_STRIDEARRAY_PUSHBACK(roundOutputs, output);
+
+        bool finalResult = (in_round == RH2_MAX_N) || ((in_round >= RH2_MIN_N) && ((GetLastDWordLE(output) % RH2_MAX_N) == 0));
+        return finalResult;
+    }
+
+
+    void RandomHash_Init(RandomHash_State* allStates, U32 startNonce)
+    {
+        CUDA_DECLARE_STATE();
+
+        RH_ASSERT(state->m_pascalHeaderSize > 0);
+
+        RandomHash_Initialize(state);
+
+        if (state->m_isNewHeader)
+        {
+            state->m_isNewHeader = false;
+            RH_STRIDE_SET_SIZE(state->m_roundInput, state->m_pascalHeaderSize);
+            memcpy(RH_STRIDE_GET_DATA(state->m_roundInput), &state->m_header[0], state->m_pascalHeaderSize); 
+            RH_STRIDE_INIT_INTEGRITY(state->m_roundInput);
+
+            if (state->m_isCalculatePreflight)
+            {
+                state->m_isCalculatePreflight = 0;
+                RandomHash_SHA2_256_Part1(RH_STRIDE_GET_DATA(state->m_roundInput), RH_STRIDE_GET_SIZE(state->m_roundInput), state->m_preflightData);
+            }
+        }
+        else
+        {
+            if (state->m_partiallyComputedNonceHeader && state->m_partiallyComputedNonceHeader != U32_Max)
+            {
+                startNonce = state->m_partiallyComputedNonceHeader;
+            }
+        }
+        state->out_hashes->count = 1;
+        state->out_hashes->nonces[0] = startNonce;
+        SetLastDWordLE(state->m_roundInput, startNonce);
+    }
+    
+  
+
+    void RandomHash_Search(RandomHash_State* in_state, RandomHashResult& out_hashes, U32 startNonce)
+    {
+        in_state->m_partiallyComputedLocalCount = 0;
+        in_state->out_hashes = &out_hashes;
+        RandomHash_Init(in_state, startNonce);
+        RH_StrideArrayStruct roundOutputs;
+        CalculateRoundOutputs(in_state, RH2_MAX_N, roundOutputs);
+        ComputeVeneerRound(in_state, roundOutputs, out_hashes.hashes[0]);
+        if(in_state->m_partiallyComputedLocalCount == 0)
+        {            
+            in_state->m_partiallyComputedCount = 0;
+            in_state->m_partiallyComputedRound = U32_Max;
+            in_state->m_partiallyComputedNonceHeader = U32_Max;
+            RH_STRIDEARRAY_RESET(*in_state->m_pPartiallyComputedOutputsClone);
+        }
+
+        RH_ASSERT(out_hashes.count <= RandomHashResult::MaxHashes);
+    }

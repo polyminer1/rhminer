@@ -13,12 +13,12 @@
 /// @file
 /// @copyright Polyminer1, QualiaLibre
 
-
+    
 #include "precomp.h"
 #include "MinersLib/Pascal/RandomHash.h"
-#include "MinersLib\Pascal\RandomHash_core.h"
+#include "MinersLib/Pascal/RandomHash_core.h"
 
-#ifdef RH_ENABLE_AVX
+#if defined(RH_ENABLE_AVX) && 0
 
 /*
     NOTE on AVX coding and why it's slower to use AVX instructions than SSE instructions. 
@@ -237,7 +237,8 @@ void Transfo0_2_16_AVX(U8* nextChunk, U32 size, U8* source)
 
         U32 d;
         //_mm256_extract_epi8
-#pragma message ("------------------- NOT TESTED ")
+
+        // --- NOT TESTED ---
 #define RH_GB256_4_AVX(r256, n)                                         \
         {                                                               \
             d = ((n) & 0x7)*8;                                          \
@@ -298,7 +299,7 @@ void Transfo4_2_AVX(U8* nextChunk, U32 size, U8* outputPtr)
     __m128i const* right = (__m128i const*)(outputPtr + halfSize);
     __m256i* work = (__m256i*)nextChunk;
     __m256i v;
-#pragma message ("------------------- NOT TESTED, Bogus values")
+//  --- NOT TESTED, Bogus values  ---
     __m256i  ctrlMask = _mm256_set_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16);
     halfSize /= 32;
     while (halfSize)
@@ -335,13 +336,13 @@ void Transfo4_2_AVX(U8* nextChunk, U32 size, U8* outputPtr)
 
 void RH_STRIDE_ARRAY_UPDATE_MURMUR3_AVX2_2(U8* strideArray, U32 elementIdx, U8* strideArray2)
 {
-    RH_StridePtr lstride = RH_STRIDEARRAY_GET(strideArray, elementIdx);
-    U32 size = RH_STRIDE_GET_SIZE(lstride);
+    RH_StridePtr lstridep = RH_STRIDEARRAY_GET(strideArray, elementIdx);
+    U32 size = RH_STRIDE_GET_SIZE(lstridep);
 
     if (size < sizeof(__m256i))
         return RH_STRIDE_ARRAY_UPDATE_MURMUR3_SSE41_2(strideArray, elementIdx, strideArray2);
 
-    lstride = RH_STRIDE_GET_DATA(lstride);
+    U8* lstride = RH_STRIDE_GET_DATA(lstridep);
 
     MurmurHash3_x86_32_State* mm3_array2 = RH_StrideArrayStruct_GetAccum(strideArray2);
     MurmurHash3_x86_32_State* mm3_array1 = RH_StrideArrayStruct_GetAccum(strideArray);
@@ -355,7 +356,7 @@ void RH_STRIDE_ARRAY_UPDATE_MURMUR3_AVX2_2(U8* strideArray, U32 elementIdx, U8* 
     RH_ASSERT(((size_t)strideArray % 32) == 0);
     S32 n = (size / sizeof(__m256i)) * sizeof(__m256i);
     U32 m = size % sizeof(__m256i);
-    RH_StridePtr lstride_end = lstride + n;
+    U8* lstride_end = lstride + n;
 
     __m256i r0, r1;
     __m256i c1 = _mm256_set1_epi32(MurmurHash3_x86_32_c1);
@@ -408,13 +409,13 @@ void RH_STRIDE_ARRAY_UPDATE_MURMUR3_AVX2_2(U8* strideArray, U32 elementIdx, U8* 
 
 void RH_STRIDE_ARRAY_UPDATE_MURMUR3_AVX2(U8* strideArray, U32 elementIdx)
 {
-    RH_StridePtr lstride = RH_STRIDEARRAY_GET(strideArray, elementIdx);
-    U32 size = RH_STRIDE_GET_SIZE(lstride);
+    RH_StridePtr lstridep = RH_STRIDEARRAY_GET(strideArray, elementIdx);
+    U32 size = RH_STRIDE_GET_SIZE(lstridep);
 
     if (size < sizeof(__m256i))
         return RH_STRIDE_ARRAY_UPDATE_MURMUR3_SSE41(strideArray, elementIdx);
 
-    lstride = RH_STRIDE_GET_DATA(lstride);
+    U8* lstride = RH_STRIDE_GET_DATA(lstridep);
 
     MurmurHash3_x86_32_State* mm3_array = RH_StrideArrayStruct_GetAccum(strideArray);
     RH_ASSERT(mm3_array->idx != 0xDEADBEEF)
@@ -424,7 +425,7 @@ void RH_STRIDE_ARRAY_UPDATE_MURMUR3_AVX2(U8* strideArray, U32 elementIdx)
     RH_ASSERT(((size_t)strideArray % 32) == 0);
     S32 n = (size / sizeof(__m256i)) * sizeof(__m256i);
     U32 m = size % sizeof(__m256i);
-    RH_StridePtr lstride_end = lstride + n;
+    U8* lstride_end = lstride + n;
     __m256i r0, r1;
     __m256i c1 = _mm256_set1_epi32(MurmurHash3_x86_32_c1);
     __m256i c2 = _mm256_set1_epi32(MurmurHash3_x86_32_c2);

@@ -26,30 +26,44 @@
     #include <immintrin.h>
   #endif
 
+  #ifndef _WIN32_WINNT
+    #include <x86intrin.h>
+    
+    #define _rotr8(x,n)	(((x) >> n) | ((x) << (8 - n)))
+    #define _rotl8(x,n)	(((x) << n) | ((x) >> (8 - n)))
+
+    #define _rotr64(x,n)	(((x) >> (n)) | ((x) << (64 - (n))))
+    #define _rotl64(x,n)	(((x) << (n)) | ((x) >> (64 - (n))))
+  #endif
 #endif
 
 #define RH_DISABLE_RH_ASSERTS
-#define RH_ENABLE_OPTIM_STRIDE_ARRAY_MURMUR3
-//#define RH_ENABLE_OPTIM_EXPAND_ACCUM8
 
 #ifdef RHMINER_DEBUG
     #undef RH_DISABLE_RH_ASSERTS
-    //#define RHMINER_DEBUG_STRIDE_INTEGRITY_CHECK
+#endif
+
+#if defined(RHMINER_ENABLE_SSE4)
+    #if defined(RHMINER_NO_SSE4)
+        static inline __m128i _mm_mullo_epi32_EMU(const __m128i &a, const __m128i &b)
+        {
+            __m128i tmp1 = _mm_mul_epu32(a,b); 
+            __m128i tmp2 = _mm_mul_epu32( _mm_srli_si128(a,4), _mm_srli_si128(b,4)); 
+            return _mm_unpacklo_epi32(_mm_shuffle_epi32(tmp1, _MM_SHUFFLE (0,0,2,0)), _mm_shuffle_epi32(tmp2, _MM_SHUFFLE (0,0,2,0))); 
+        }
+        #define _mm_mullo_epi32_M _mm_mullo_epi32_EMU
+    #else
+        #define _mm_mullo_epi32_M _mm_mullo_epi32
+    #endif
 #endif
 
 
-#ifdef RANDOMHASH_CUDA
-    //Cache re-use does not work on cuda. Kernels gets out of sync and driver fails.
-    #define RH_DISABLE_NONCE_REUSE_AND_CACHE
-
-    #define RH_TOTAL_STRIDES_INSTANCES ((RH_StrideArrayCount+1))
-#else
-    #define RH_TOTAL_STRIDES_INSTANCES (RH_StrideArrayCount+1)
- #endif
-
-#define RH_STRIDE_BANK_SIZE 5033984
-
+#define RH_TOTAL_STRIDES_INSTANCES (RH2_StrideArrayCount+1)
+#define RH1_STRIDE_BANK_SIZE 5033984
+#define RH2_STRIDE_BANK_SIZE  (70*4096)
 #define RH_GET_MEMBER_POS(STRUCT, MEMBER)  (U32)((size_t)(void*)&(((STRUCT*)0)->MEMBER))
+#define copy128b(dst, src) { *reinterpret_cast<U64*>(dst) = *reinterpret_cast<U64*>(src); \
+                            *(reinterpret_cast<U64*>(dst)+1) = *(reinterpret_cast<U64*>(src)+1);}
 
 #define copy4(dst, src) {(dst)[0] = (src)[0]; \
                          (dst)[1] = (src)[1]; \
@@ -88,6 +102,15 @@
 
 #ifndef __CUDA_ARCH__
 
+//linux's gcc to dumb to compile _mm_shuffle_epi8 with -mssse3 !!!
+#if !defined(_WIN32_WINNT) && !defined(RHMINER_ENABLE_SSE4)
+#define RH2_DISABLE_SHUFFLE_EPI8
+#endif
+
+
+//#define RH_SSE_CONST(val) _mm_shuffle_epi32(_mm_cvtsi32_si128(val), 0)
+#define RH_SSE_CONST(V) _mm_set1_epi32(V)
+
 template<unsigned i>
 inline U32 _mm_extract_epi32_( __m128i V)
 {
@@ -95,12 +118,23 @@ inline U32 _mm_extract_epi32_( __m128i V)
     return (U32)_mm_cvtsi128_si32(V);
 }
 
-#if defined(RANDOMHASH_CUDA) || defined(RHMINER_NO_SSE4)
+template<unsigned i>
+inline __m128i _mm_insert_epi32_(__m128i V, U32 V32 )
+{
+    return _mm_insert_epi16(_mm_insert_epi16(V, (U16)V32, i*2), (U16)(V32>>16), (i*2)+1);
+}
+
+#if defined(RHMINER_NO_SSE4)
     #define _mm_extract_epi32_M(V, I) _mm_extract_epi32_<I>(V)
+    #define _mm_insert_epi32_M(V, V32, I) _mm_insert_epi32_<I>(V,V32)
 #else
     #define _mm_extract_epi32_M(V, I) _mm_extract_epi32(V, I)
+    #define _mm_insert_epi32_M(V, V32, I) _mm_insert_epi32(V, V32, I)
 #endif
 
+
+#define RH_MM_LOAD128_A16       _mm_load_si128 
+#define RH_MM_STORE128_A16      _mm_load_si128 
 
 #define RH_MM_LOAD128           _mm_loadu_si128
 #define RH_MM_STORE128          _mm_storeu_si128
@@ -111,20 +145,14 @@ inline U32 _mm_extract_epi32_( __m128i V)
 
 #ifdef RHMINER_PLATFORM_CPU
 
-#ifndef RotateLeft8
-#define _rotr8(x,n)	    ((U8)(((x) >> (n)) | ((x) << (8 - (n)))))
-#define _rotl8(x,n)	    ((U8)(((x) << (n)) | ((x) >> (8 - (n)))))
+#ifndef _WIN32_WINNT
+    #if defined(MACOS_X) || (defined(__APPLE__) & defined(__MACH__))
+        #define _rotr(x,n)	    ((((x) >> (n)) | ((x) << (32 - (n)))))
+        #define _rotl(x,n)	    ((((x) << (n)) | ((x) >> (32 - (n)))))
+    #endif
 #endif
 
-#ifndef RotateLeft32
-#define _rotr(x,n)	    ((((x) >> (n)) | ((x) << (32 - (n)))))
-#define _rotl(x,n)	    ((((x) << (n)) | ((x) >> (32 - (n)))))
-#define _rotr64(x,n)	(((x) >> (n)) | ((x) << (64 - (n))))
-#define _rotl64(x,n)	(((x) << (n)) | ((x) >> (64 - (n))))
-#endif
-
-
-#endif //CPU
+#endif 
 
 
 #ifndef RHMINER_PLATFORM_GPU // CPU
@@ -225,26 +253,6 @@ inline U32 _mm_extract_epi32_( __m128i V)
     #define BIG_CONSTANT(x) (x##LLU)
 #endif
 
-template <typename T>
-CUDA_DECL_HOST_AND_DEVICE inline void cuSetMember(void* ptr, U32 memberPos, T VAL) 
-{
-#ifdef RANDOMHASH_CUDA
-  #ifdef __CUDA_ARCH__
-    *(T*)(((U8*)ptr) + memberPos) = VAL;
-  #else
-    cudaMemcpy((((U8*)ptr) + memberPos), &VAL, sizeof(T), cudaMemcpyHostToDevice);
-  #endif
-#else
-    *(T*)(((U8*)ptr) + memberPos) = VAL;
-#endif
-}
-
-template <typename T>
-CUDA_DECL_HOST_AND_DEVICE inline void* cuGetMemberPtr(T* ptr, U32 memberPos) 
-{
-    return (void*)(((U8*)ptr) + memberPos);
-}
-
 
 //--------------------------------------------------------------
 #define RH_memzero_8(ptr, size)             \
@@ -256,7 +264,7 @@ CUDA_DECL_HOST_AND_DEVICE inline void* cuGetMemberPtr(T* ptr, U32 memberPos)
     }
 
 
-#if !defined(RANDOMHASH_CUDA)
+#if defined(RH2_ENABLE_MEM_ZERO_X_USE_MMX)
 
     #define RH_memzero_16(ptr, size)            \
     {                                           \
@@ -307,32 +315,35 @@ CUDA_DECL_HOST_AND_DEVICE inline void* cuGetMemberPtr(T* ptr, U32 memberPos)
     { \
         RH_ASSERT((size_t(ptr) % 32) == 0);  \
         RH_ASSERT((size) == 16);  \
-        ((U64*)ptr)[0] = 0; \
-        ((U64*)ptr)[1] = 0; \
+        U64* _ptr = reinterpret_cast<U64*>(ptr); \
+        _ptr[0] = 0; \
+        _ptr[1] = 0; \
     }
 
     #define RH_memzero_32(ptr, size)  \
     { \
         RH_ASSERT((size_t(ptr) % 32) == 0); \
         RH_ASSERT((size) == 32); \
-        ((U64*)ptr)[0] = 0; \
-        ((U64*)ptr)[1] = 0; \
-        ((U64*)ptr)[2] = 0; \
-        ((U64*)ptr)[3] = 0; \
+        U64* _ptr = reinterpret_cast<U64*>(ptr); \
+        _ptr[0] = 0; \
+        _ptr[1] = 0; \
+        _ptr[2] = 0; \
+        _ptr[3] = 0; \
     }
 
     #define RH_memzero_64(ptr, size)  \
     { \
         RH_ASSERT((size_t(ptr) % 32) == 0); \
         RH_ASSERT(size == 64); \
-        ((U64*)ptr)[0] = 0; \
-        ((U64*)ptr)[1] = 0; \
-        ((U64*)ptr)[2] = 0; \
-        ((U64*)ptr)[3] = 0; \
-        ((U64*)ptr)[4] = 0; \
-        ((U64*)ptr)[5] = 0; \
-        ((U64*)ptr)[6] = 0; \
-        ((U64*)ptr)[7] = 0; \
+        U64* _ptr = reinterpret_cast<U64*>(ptr); \
+        _ptr[0] = 0; \
+        _ptr[1] = 0; \
+        _ptr[2] = 0; \
+        _ptr[3] = 0; \
+        _ptr[4] = 0; \
+        _ptr[5] = 0; \
+        _ptr[6] = 0; \
+        _ptr[7] = 0; \
     }
 
 
@@ -344,13 +355,12 @@ CUDA_DECL_HOST_AND_DEVICE inline void* cuGetMemberPtr(T* ptr, U32 memberPos)
     {                                \
         RH_ASSERT((size_t(ptr) % 32) == 0); \
         RH_ASSERT((s % 8) == 0); \
-        U64* buf = (U64*)ptr;        \
-        size_t size = s / 8;         \
-        while (size)                 \
+        U64* buf = reinterpret_cast<U64*>(ptr);        \
+        const U64* end = buf + (s / 8);        \
+        while (buf != end)           \
         {                            \
             *buf = 0;                \
             buf++;                   \
-            size--;                  \
         }                            \
     }
 
@@ -359,6 +369,17 @@ CUDA_DECL_HOST_AND_DEVICE inline void* cuGetMemberPtr(T* ptr, U32 memberPos)
 
 
 #define RHMINER_T64(x)    ((x) & uint64_t(0xFFFFFFFFFFFFFFFF))
+
+RH_DECL_DEVICE
+RH_DECL_FORCEINLINE
+void ReadUInt32AsBytesLE(const uint64_t a_in, uint8_t* a_out)
+{
+    a_out[0] = uint8_t(a_in);
+    a_out[1] = uint8_t(a_in >> 8);
+    a_out[2] = uint8_t(a_in >> 16);
+    a_out[3] = uint8_t(a_in >> 24);
+
+}
 
 RH_DECL_DEVICE
 RH_DECL_FORCEINLINE
@@ -442,12 +463,12 @@ uint32_t ReverseBytesUInt32(const uint32_t value)
 #ifdef RH_ENABLE_ASSERT
 #define RH_ASSERT RHMINER_ASSERT
 #else
-#define RH_ASSERT(...) 
+#define RH_ASSERT(...) while(0){}
 #endif
 
 #if defined(RH_DISABLE_RH_ASSERTS)
 #undef RH_ASSERT
-#define RH_ASSERT(...) 
+#define RH_ASSERT(...) while(0){}
 #endif
 
 #ifdef RHMINER_DEBUG_DEV

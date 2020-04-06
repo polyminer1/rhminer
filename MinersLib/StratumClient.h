@@ -167,6 +167,7 @@ protected:
     U32 m_sleepBeforeConnectMS = 0;
 	int	m_retries = 0;
 	int	m_maxRetries;  //set by -retries
+    int m_maxRetriesDEV;  //set by -retries
 
     U64 m_lastReceivedCommandTime = 0;
     string m_lastReceivedMiningNotify;

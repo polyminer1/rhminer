@@ -142,7 +142,7 @@ Gpu options:
   -cputhreads           Number of CPU miner threads when mining with CPU. ex: -cpu -cputhreads 4.
                         NOTE: adding + before thread count will disable the maximum thread count safety of one thread per core/hyperthread.
                         Use this option at your own risk.
-                        
+
 Network options:
   -s                    Stratum/wallet server address:port.
                         NOTE: You can also use http://address to connect to local wallet.

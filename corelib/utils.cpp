@@ -42,9 +42,8 @@
 #endif //_WIN32_WINNT
 
 extern int g_logVerbosity;
-
 #define STR_FORMAT_TEXT_BUFFER_COUNT    (64+8)
-#define STR_FORMAT_TEXT_BUFFER_SIZE     4096
+#define STR_FORMAT_TEXT_BUFFER_SIZE     RHMINER_KB(12)
 
 extern char const* getThreadName();
 typedef std::chrono::system_clock Clock;
@@ -814,6 +813,8 @@ U64 GetFileSize(const char* name)
     return buf.st_size;
 #endif
 } 
+
+///////////////////////////
 
 
 ///////////////////////////////////////////////////////

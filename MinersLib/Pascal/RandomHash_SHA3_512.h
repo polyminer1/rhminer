@@ -10,15 +10,13 @@
  * this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
  */
 
-///
-/// @file
-/// @copyright Polyminer1, QualiaLibre
+ ///
+ /// @file
+ /// @copyright Polyminer1, QualiaLibre
 
-//#include "RandomHash_core.h"
+#define SHA3_512_MAX_BLOCK_SIZE (200 - (int32_t(32) * 2))  
 
-#define SHA3_512_MAX_BLOCK_SIZE (200 - (int32_t(32) * 2))  //=136. Buffersize = 64K
-
-void CUDA_SYM_DECL(SHA3_512_Transorm)(const uint64_t *data, uint64_t* state, const size_t BlockSize)
+void SHA3_512_Transorm(const uint64_t *data, uint64_t* state, U32 BlockSize)
 {
 	uint64_t Aba, Abe, Abi, Abo, Abu, Aga, Age, Agi, Ago, Agu, Aka, Ake, Aki, Ako, Aku,
 		Ama, Ame, Ami, Amo, Amu, Asa, Ase, Asi, Aso, Asu, Bba, Bbe, Bbi, Bbo, Bbu,
@@ -29,39 +27,37 @@ void CUDA_SYM_DECL(SHA3_512_Transorm)(const uint64_t *data, uint64_t* state, con
 
 	uint32_t j;
 	j = 0;
-	while (j < (uint32_t)(BlockSize >> 3))
+    while (j < (uint32_t)(BlockSize >> 3))
 	{
 		state[j]  = state[j] ^ data[j];
 		j++;
 	}
-	//TODO optim : implement this for CUDA https://github.com/potatosalad/erlang-keccakf1600/blob/master/c_src/shake.c
-	//			   keccakf() is core impl of Update
-
-	Aba = state[0];
-	Abe = state[1];
-	Abi = state[2];
-	Abo = state[3];
-	Abu = state[4];
-	Aga = state[5];
-	Age = state[6];
-	Agi = state[7];
-	Ago = state[8];
-	Agu = state[9];
-	Aka = state[10];
-	Ake = state[11];
-	Aki = state[12];
-	Ako = state[13];
-	Aku = state[14];
-	Ama = state[15];
-	Ame = state[16];
-	Ami = state[17];
-	Amo = state[18];
-	Amu = state[19];
-	Asa = state[20];
-	Ase = state[21];
-	Asi = state[22];
-	Aso = state[23];
-	Asu = state[24];
+	
+    Aba = state[0];
+    Abe = state[1];
+    Abi = state[2];
+    Abo = state[3];
+    Abu = state[4];
+    Aga = state[5];
+    Age = state[6];
+    Agi = state[7];
+    Ago = state[8];
+    Agu = state[9];
+    Aka = state[10];
+    Ake = state[11];
+    Aki = state[12];
+    Ako = state[13];
+    Aku = state[14];
+    Ama = state[15];
+    Ame = state[16];
+    Ami = state[17];
+    Amo = state[18];
+    Amu = state[19];
+    Asa = state[20];
+    Ase = state[21];
+    Asi = state[22];
+    Aso = state[23];
+    Asu = state[24];
 
 	Ca = Aba ^ Aga ^ Aka ^ Ama ^ Asa;
 	Ce = Abe ^ Age ^ Ake ^ Ame ^ Ase;
@@ -2616,13 +2612,13 @@ void CUDA_SYM_DECL(SHA3_512_Transorm)(const uint64_t *data, uint64_t* state, con
 }
 
 
-void CUDA_SYM_DECL(_RandomHash_SHA3_512)(RH_StridePtr roundInput, RH_StridePtr output, uint64_t hashsize)
+void _RandomHash_SHA3_512(RH_StridePtr roundInput, RH_StridePtr output, uint64_t hashsize, bool isSHA3 = true)
 {
 
     const uint64_t BlockSize = 200 - (int32_t(hashsize) * 2);
     
-    //init
-    RH_ALIGN(64) uint64_t state[/*25*/26];
+    
+    RH_ALIGN(64) uint64_t state[26];
     RH_memzero_of16(state, sizeof(state));
 
 	state[1] = uint64_t(-1);
@@ -2632,28 +2628,36 @@ void CUDA_SYM_DECL(_RandomHash_SHA3_512)(RH_StridePtr roundInput, RH_StridePtr o
 	state[17] = uint64_t(-1);
 	state[20] = uint64_t(-1);
 
-    //body
+    
     int64_t len = (int64_t)RH_STRIDE_GET_SIZE(roundInput);
     uint32_t padLen = (uint32_t)(len % BlockSize);
     uint32_t blockCount = (uint32_t)len / (uint32_t)BlockSize;
-    uint64_t *dataPtr = (uint64_t *)RH_STRIDE_GET_DATA(roundInput);
+    uint64_t *dataPtr = RH_STRIDE_GET_DATA64(roundInput);
 
     while(blockCount > 0)
     {
-        _CM(SHA3_512_Transorm)(dataPtr, state, BlockSize);
+        SHA3_512_Transorm(dataPtr, state, BlockSize);
         len -= BlockSize;
         dataPtr += BlockSize / 8;
         blockCount--;
     }
 
-    //finish
+    
     {           
         memset(((uint8_t*)dataPtr) + padLen, 0, BlockSize-padLen);
 
-	    *(((uint8_t*)dataPtr)+padLen) = 0x6;
-        *(((uint8_t*)dataPtr)+(BlockSize - 1)) = *(((uint8_t*)dataPtr)+(BlockSize - 1)) ^ 0x80;
+        if (isSHA3)
+        {
+            *(((uint8_t*)dataPtr) + padLen) = 0x6;
+            *(((uint8_t*)dataPtr) + (BlockSize - 1)) = *(((uint8_t*)dataPtr) + (BlockSize - 1)) ^ 0x80;
+        }
+        else
+        {
+            *(((uint8_t*)dataPtr) + padLen) = 0x1;
+            *(((uint8_t*)dataPtr) + (BlockSize - 1)) = *(((uint8_t*)dataPtr) + (BlockSize - 1)) ^ 0x80;
+        }
 
-	    _CM(SHA3_512_Transorm)(dataPtr, state, BlockSize);
+	    SHA3_512_Transorm(dataPtr, state, BlockSize);
     }
 
 	state[1] = ~state[1];
@@ -2662,17 +2666,18 @@ void CUDA_SYM_DECL(_RandomHash_SHA3_512)(RH_StridePtr roundInput, RH_StridePtr o
 	state[12] = ~state[12];
 	state[17] = ~state[17];
 
-    //get the hash result IN BE
-    dataPtr = (uint64_t*)RH_STRIDE_GET_DATA(output);
+    
+    dataPtr = RH_STRIDE_GET_DATA64(output);
     uint64_t* statePtr = state;    
     RH_STRIDE_SET_SIZE(output, hashsize);
-    RH_ASSERT(hashsize == 32 || hashsize == 48 || hashsize == 64);
+    RH_ASSERT(hashsize == 32 || hashsize == 48 || hashsize == 64 || hashsize == 36 || hashsize == 28);
     switch(hashsize)
     {
         case 64 : *dataPtr++ = *statePtr++;
                   *dataPtr++ = *statePtr++;
         case 48 : *dataPtr++ = *statePtr++;
-                  *dataPtr++ = *statePtr++;
+        case 36 : *dataPtr++ = *statePtr++;
+        case 28:
         case 32 : *dataPtr++ = *statePtr++;
                   *dataPtr++ = *statePtr++;
                   *dataPtr++ = *statePtr++;
@@ -2682,19 +2687,24 @@ void CUDA_SYM_DECL(_RandomHash_SHA3_512)(RH_StridePtr roundInput, RH_StridePtr o
 } 
 
 
-void CUDA_SYM_DECL(RandomHash_SHA3_256)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_SHA3_224(RH_StridePtr roundInput, RH_StridePtr output)
 {
-    _CM(_RandomHash_SHA3_512)(roundInput, output, 32);
+    _RandomHash_SHA3_512(roundInput, output, 28);
+}
+
+void RandomHash_SHA3_256(RH_StridePtr roundInput, RH_StridePtr output)
+{
+    _RandomHash_SHA3_512(roundInput, output, 32);
 }
 
 
-void CUDA_SYM_DECL(RandomHash_SHA3_384)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_SHA3_384(RH_StridePtr roundInput, RH_StridePtr output)
 {
-    _CM(_RandomHash_SHA3_512)(roundInput, output, 48);
+    _RandomHash_SHA3_512(roundInput, output, 48);
 }
 
 
-void CUDA_SYM_DECL(RandomHash_SHA3_512)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_SHA3_512(RH_StridePtr roundInput, RH_StridePtr output)
 {
-    _CM(_RandomHash_SHA3_512)(roundInput, output, 64);
+    _RandomHash_SHA3_512(roundInput, output, 64);
 }

@@ -56,7 +56,6 @@ SolutionSptr RandomHashCLMiner::MakeSubmitSolution(const std::vector<U64>& nonce
 */
 bool RandomHashCLMiner::configureGPU()
 {
-    //target a minimum of I=10
     return GpuManager::SetupGPU();
 }
 

@@ -24,7 +24,6 @@
 #include "MinersLib/Algo/sph_blake.h"
 #include "MinersLib/Pascal/RandomHash.h"
 
-
 using namespace std;
 using namespace chrono;
 
@@ -221,22 +220,14 @@ h256 PascalWorkPackage::RebuildNonce(U64 nonce)
     h256 solution;
     h256 solutionTmp;
 
-#ifndef RH_FORCE_PASCAL_V3_ON_CPU
-    {
-        RandomHash_State opt;
-        RandomHash_Create(&opt);
-        RandomHash_SetHeader(&opt, &m_fullHeader[0], m_nonce2); 
-        RandomHash_Search(&opt, solutionTmp.data(), (U32)nonce);
-        swab256((void*)solution.data(), (void*)solutionTmp.data());
-        RandomHash_Destroy(&opt);
-    }
-#else
-    {
-        ReplaceInVector(m_fullHeader, PascalHeaderNoncePosV3, (U32)nonce);
-        PascalHashV3((void*)solutionTmp.data(), m_fullHeader.data());
-        swab256((void*)solution.data(), (void*)solutionTmp.data());
-    }
-#endif
+    RandomHash_State opt;
+    RandomHashResult res;
+    RandomHash_Create(&opt);
+    RandomHash_SetHeader(&opt, &m_fullHeader[0], m_fullHeader.size(), m_nonce2); 
+    RandomHash_Search(&opt, res, (U32)nonce);
+    swab256((void*)solution.data(), (void*)&res.hashes[0]);
+    RandomHash_Destroy(&opt);
+
 
     return solution;
 }
@@ -251,17 +242,17 @@ void PascalWorkPackage::ComputeTargetBoundary()
 
 U64 PascalWorkPackage::ComputeNonce2(U32 nonce2)
 {
-	//updated injected nonce2
-	string n2str;
-	n2str.reserve(10);
-	n2str = FormatString("%X", nonce2);
-	while (n2str.length() < 8)
-		n2str += '0';
+    //updated injected nonce2
+    string n2str;
+    n2str.reserve(10);
+    n2str = FormatString("%X", nonce2);
+    while (n2str.length() < 8)
+        n2str += '0';
 
-	U64 nonce2_64;
-	static_assert(sizeof(nonce2_64) <= 8, "fatal error");
-	memcpy(&nonce2_64, n2str.c_str(), 8);
-	return nonce2_64;
+    U64 nonce2_64;
+    static_assert(sizeof(nonce2_64) <= 8, "fatal error");
+    memcpy(&nonce2_64, n2str.c_str(), 8);
+    return nonce2_64;
 }
 
 
@@ -273,7 +264,7 @@ string PascalWorkPackage::ComputePayload()
 
 void PascalWorkPackage::UpdateHeader()
 {
-	m_nonce2_64 = ComputeNonce2(m_nonce2);
+    m_nonce2_64 = ComputeNonce2(m_nonce2);
 
     string noncePlaceHolder;
     string payload;
@@ -281,7 +272,7 @@ void PascalWorkPackage::UpdateHeader()
     payload = ComputePayload();
 
     if (m_coinbase1.length() == 0 || m_nonce1.length() == 0)
-        throw RH_Exception("Error. Coinbase data is wrong.");
+        throw RH_Exception("Coinbase data is wrong.");
 
     // 256 -> 180bytes
     // 283 -> 194bytes
@@ -296,15 +287,19 @@ void PascalWorkPackage::UpdateHeader()
     headerStr = m_coinbase1 + payload + m_coinbase2 + noncePlaceHolder;
     m_fullHeader = fromHex(headerStr, WhenError::Throw); 
 
-    if (m_fullHeader.size() != PascalHeaderSize)
+    if (m_fullHeader.size() != PascalHeaderSizeV5)
     {
         //sometimes the wallet send incorect package
         throw RH_Exception("Incorrect coinbase/wallet data.\n");
     }
 
     h32 ntime(m_ntime);
-    ((uint32_t *)m_fullHeader.data())[48] = RH_swap_u32(*(U32*)ntime.data()); 
-    ((uint32_t *)m_fullHeader.data())[49] = 0;    
+    U32 ntimeIdx = 48;
+    ntimeIdx = (PascalHeaderSizeV5 / 4) - 2;
+
+    
+    ((uint32_t *)m_fullHeader.data())[ntimeIdx+0] = RH_swap_u32(*(U32*)ntime.data());
+    ((uint32_t *)m_fullHeader.data())[ntimeIdx+1] = 0;
 }
 
 

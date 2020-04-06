@@ -57,13 +57,12 @@ static PLATFORM_CONST uint8_t RH_ALIGN(64) blake2s_sigma[10][16] = {
 #define store32_SSE2(dst, w) {*(uint32_t *)(dst) = w;}
 
 
-inline int CUDA_SYM_DECL(blake2s_compress_SSE2)( blake2s_state *S, const uint8_t block[BLAKE2S_BLOCKBYTES] )
+inline int blake2s_compress_SSE2( blake2s_state *S, const uint8_t block[BLAKE2S_BLOCKBYTES] )
 {
 	uint32_t m[16];
 	uint32_t v[16];
 
-    //TODO: optimiz -> unroll + MACRO
-	for( size_t i = 0; i < 16; ++i )
+    for( size_t i = 0; i < 16; ++i )
 		m[i] = load32_SSE2( block + i * sizeof( m[i] ) );
 
     v[0] = S->h[0];
@@ -127,7 +126,7 @@ inline int CUDA_SYM_DECL(blake2s_compress_SSE2)( blake2s_state *S, const uint8_t
 }
 
 
-int CUDA_SYM_DECL(blake2s_update_SSE2)( blake2s_state *S, const uint8_t *in, uint64_t inlen )
+int blake2s_update_SSE2( blake2s_state *S, const uint8_t *in, uint64_t inlen )
 {
 	while( inlen > 0 )
 	{
@@ -136,19 +135,19 @@ int CUDA_SYM_DECL(blake2s_update_SSE2)( blake2s_state *S, const uint8_t *in, uin
 
 		if( inlen > fill )
 		{
-			memcpy( S->buf + left, in, fill ); // Fill buffer
+			memcpy( S->buf + left, in, fill ); 
 			S->buflen += fill;
 			blake2s_increment_counter( S, BLAKE2S_BLOCKBYTES );
-			_CM(blake2s_compress_SSE2)( S, S->buf ); // Compress
-			memcpy( S->buf, S->buf + BLAKE2S_BLOCKBYTES, BLAKE2S_BLOCKBYTES ); // Shift buffer left
+			blake2s_compress_SSE2( S, S->buf ); 
+			memcpy( S->buf, S->buf + BLAKE2S_BLOCKBYTES, BLAKE2S_BLOCKBYTES ); 
 			S->buflen -= BLAKE2S_BLOCKBYTES;
 			in += fill;
 			inlen -= fill;
 		}
-		else // inlen <= fill
+		else 
 		{
 			memcpy(S->buf + left, in, (size_t) inlen);
-			S->buflen += (size_t) inlen; // Be lazy, do not compress
+			S->buflen += (size_t) inlen; 
 			in += inlen;
 			inlen -= inlen;
 		}
@@ -158,14 +157,14 @@ int CUDA_SYM_DECL(blake2s_update_SSE2)( blake2s_state *S, const uint8_t *in, uin
 }
 
 
-int CUDA_SYM_DECL(blake2s_final_SSE2)( blake2s_state *S, uint8_t *out, uint8_t outlen )
+int blake2s_final_SSE2( blake2s_state *S, uint8_t *out, uint8_t outlen )
 {
 	uint8_t buffer[BLAKE2S_OUTBYTES];
 
 	if( S->buflen > BLAKE2S_BLOCKBYTES )
 	{
 		blake2s_increment_counter( S, BLAKE2S_BLOCKBYTES );
-		_CM(blake2s_compress_SSE2)( S, S->buf );
+		blake2s_compress_SSE2( S, S->buf );
 		S->buflen -= BLAKE2S_BLOCKBYTES;
 		memcpy( S->buf, S->buf + BLAKE2S_BLOCKBYTES, S->buflen );
 	}
@@ -173,7 +172,7 @@ int CUDA_SYM_DECL(blake2s_final_SSE2)( blake2s_state *S, uint8_t *out, uint8_t o
 	blake2s_increment_counter( S, ( uint32_t )S->buflen );
 	blake2s_set_lastblock( S );
 	memset( S->buf + S->buflen, 0, 2 * BLAKE2S_BLOCKBYTES - S->buflen ); /* Padding */
-	_CM(blake2s_compress_SSE2)( S, S->buf );
+	blake2s_compress_SSE2( S, S->buf );
 
 	for( int i = 0; i < 8; ++i ) /* Output full hash to temp buffer */
 		store32_SSE2( buffer + sizeof( S->h[i] ) * i, S->h[i] );
@@ -183,15 +182,13 @@ int CUDA_SYM_DECL(blake2s_final_SSE2)( blake2s_state *S, uint8_t *out, uint8_t o
 }
 
 
-void CUDA_SYM_DECL(RandomHash_blake2s)(RH_StridePtr roundInput, RH_StridePtr output)
+void RandomHash_blake2s(RH_StridePtr roundInput, RH_StridePtr output, U32 bitSize)
 {
-    uint32_t *in = (uint32_t*)RH_STRIDE_GET_DATA(roundInput);
+    uint32_t *in = RH_STRIDE_GET_DATA(roundInput);
 
     RH_ALIGN(64) blake2s_state S;
 	RH_ALIGN(64) blake2s_param P[1];
-    const int outlen = BLAKE2S_OUTBYTES;
-	/* Move interval verification here? */
-    
+    const int outlen = bitSize / 8;
 
 	P->digest_length = outlen;
 	P->key_length    = 0;
@@ -221,11 +218,10 @@ void CUDA_SYM_DECL(RandomHash_blake2s)(RH_StridePtr roundInput, RH_StridePtr out
 
 	uint32_t *p = ( uint32_t * )( P );
 
-	/* IV XOR ParamBlock */
 	for( size_t i = 0; i < 8; ++i )
 		S.h[i] ^= load32_SSE2( &p[i] );
     
-	_CM(blake2s_update_SSE2)( &S, ( uint8_t * )in, RH_STRIDE_GET_SIZE(roundInput) );
-	_CM(blake2s_final_SSE2)( &S, RH_STRIDE_GET_DATA(output), BLAKE2S_OUTBYTES );
-    RH_STRIDE_SET_SIZE(output, BLAKE2S_OUTBYTES)
+	blake2s_update_SSE2( &S, ( uint8_t * )in, RH_STRIDE_GET_SIZE(roundInput) );
+	blake2s_final_SSE2( &S, RH_STRIDE_GET_DATA8(output), outlen);
+    RH_STRIDE_SET_SIZE(output, outlen)
 }

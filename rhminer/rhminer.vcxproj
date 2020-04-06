@@ -334,7 +334,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Pascal</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0601;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_ARCH=Cpu;RH_COMPILE_CPU_ONLY;____RHMINER_NO_SSE4</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(CUDA_PATH)/include;$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -347,6 +347,7 @@
       <AdditionalDependencies>lib_json.lib;OpenCL.lib;cudart_static.lib;cuda.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CUDA_PATH)/lib/x64;..\x64\$(Configuration)\</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ShowProgress>NotSet</ShowProgress>
     </Link>
     <PostBuildEvent>
     </PostBuildEvent>
@@ -476,7 +477,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Maxwell</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Maxwell;RH_EXCLUDE_RH1</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(CUDA_PATH)/include;$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -505,7 +506,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Pascal</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Pascal;RH_EXCLUDE_RH1</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(CUDA_PATH)/include;$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -533,7 +534,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Pascal</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Pascal;RH_EXCLUDE_RH1</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(CUDA_PATH)/include;$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -561,7 +562,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Volta</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Volta;RH_EXCLUDE_RH1</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(CUDA_PATH)/include;$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -587,7 +588,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);RH_COMPILE_CPU_ONLY;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=CPU</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);RH_COMPILE_CPU_ONLY;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_ARCH=CPU</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -598,9 +599,10 @@
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <DebugInformationFormat>None</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <ControlFlowGuard>false</ControlFlowGuard>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -610,6 +612,7 @@
       <AdditionalLibraryDirectories>..\x64\$(Configuration)\</AdditionalLibraryDirectories>
       <MapFileName>
       </MapFileName>
+      <ShowProgress>NotSet</ShowProgress>
       <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
     <PostBuildEvent />
@@ -620,7 +623,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>RH_SCREEN_SAVER_MODE;RHMINER_NO_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);RH_COMPILE_CPU_ONLY;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=CPU_ScreenSaver</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RH_SCREEN_SAVER_MODE;RHMINER_NO_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);RH_COMPILE_CPU_ONLY;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_ARCH=CPU_ScreenSaver</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -657,7 +660,7 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>RHMINER_NO_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);RH_COMPILE_CPU_ONLY;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=CPU_OLDGEN</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);RH_COMPILE_CPU_ONLY;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_ARCH=CPU_OLDGEN;RHMINER_NO_SSE4</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -686,7 +689,7 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>Full</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Kepler</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RHMINER_COND_SSE4;_WIN32_WINNT=0x0601;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;RH_CUDA_ARCH=Kepler;RH_EXCLUDE_RH1</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(CUDA_PATH)/include;$(BOOST_ROOT);..\jsoncpp-1.8.0\include;..\</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>precomp.h</PrecompiledHeaderFile>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -709,6 +712,7 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\corelib\int128_o.cpp" />
     <ClCompile Include="..\corelib\miniweb.cpp" />
     <ClCompile Include="..\corelib\PascalWork.cpp" />
     <ClCompile Include="..\corelib\CommonData.cpp" />
@@ -719,12 +723,19 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
     <ClCompile Include="..\MinersLib\Algo\blake.cpp" />
     <ClCompile Include="..\MinersLib\Algo\blake2b.cpp" />
     <ClCompile Include="..\MinersLib\Algo\blake2s.cpp" />
+    <ClCompile Include="..\MinersLib\Algo\haval.cpp" />
     <ClCompile Include="..\MinersLib\Algo\Pascal.cpp" />
+    <ClCompile Include="..\MinersLib\Algo\sha0.cpp" />
+    <ClCompile Include="..\MinersLib\Algo\sha1.cpp" />
     <ClCompile Include="..\MinersLib\Algo\sha2.cpp" />
+    <ClCompile Include="..\MinersLib\Algo\sph_panama.cpp" />
     <ClCompile Include="..\MinersLib\Pascal\avx.cpp">
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
-    <ClCompile Include="..\MinersLib\Pascal\RandomHash_Cpu.cpp" />
+    <ClCompile Include="..\MinersLib\Pascal\RandomHash_Cpu.cpp">
+      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">NoListing</AssemblerOutput>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release_CPU|x64'">Level4</WarningLevel>
+    </ClCompile>
     <ClCompile Include="..\MinersLib\StratumClient.cpp" />
     <ClCompile Include="..\MinersLib\CLMinerBase.cpp" />
     <ClCompile Include="..\MinersLib\Farm.cpp" />
@@ -767,6 +778,7 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
   <ItemGroup>
     <ClInclude Include="..\BuildInfo.h" />
     <ClInclude Include="..\corelib\basetypes.h" />
+    <ClInclude Include="..\corelib\int128_o.h" />
     <ClInclude Include="..\corelib\miniweb.h" />
     <ClInclude Include="..\corelib\PascalWork.h" />
     <ClInclude Include="..\corelib\Common.h" />
@@ -781,14 +793,28 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
     <ClInclude Include="..\corelib\Worker.h" />
     <ClInclude Include="..\MinersLib\Algo\blake2b.h" />
     <ClInclude Include="..\MinersLib\Algo\blake2s.h" />
+    <ClInclude Include="..\MinersLib\Algo\sph-haval.h" />
     <ClInclude Include="..\MinersLib\Algo\sph_blake.h" />
+    <ClInclude Include="..\MinersLib\Algo\sph_panama.h" />
+    <ClInclude Include="..\MinersLib\Algo\sph_sha0.h" />
+    <ClInclude Include="..\MinersLib\Algo\sph_sha1.h" />
     <ClInclude Include="..\MinersLib\Algo\sph_sha2.h" />
     <ClInclude Include="..\MinersLib\Algo\sph_types.h" />
     <ClInclude Include="..\MinersLib\Pascal\RandomHash_def.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_Ghost.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_Ghost3411.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_Grindahl256.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_HAS160.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_Haval.h" />
     <ClInclude Include="..\MinersLib\Pascal\RandomHash_inl.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_MD2.h" />
     <ClInclude Include="..\MinersLib\Pascal\RandomHash_mersenne_twister.h" />
     <ClInclude Include="..\MinersLib\Pascal\RandomHash_MurMur3_32.h" />
     <ClInclude Include="..\MinersLib\Pascal\RandomHash_MurMur3_32_def.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_Panama.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_RIPEMD.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_RIPEMD128.h" />
+    <ClInclude Include="..\MinersLib\Pascal\RandomHash_SHA.h" />
     <ClInclude Include="..\MinersLib\StratumClient.h" />
     <ClInclude Include="..\MinersLib\CLMinerBase.h" />
     <ClInclude Include="..\MinersLib\CPUMiner.h" />
@@ -830,11 +856,6 @@ copy "$(TargetPath)" "$(OutDir)$(TargetName)".scr /Y</Command>
     <ClInclude Include="CommandLineManager.h" />
     <ClInclude Include="precomp.h" />
     <ClInclude Include="resource.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\cudalib\cudalib.vcxproj">
-      <Project>{65073578-B99A-4D67-8086-CE2C040376A0}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Text Include="TODO.txt">

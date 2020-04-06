@@ -28,9 +28,6 @@
 #include "utils.h"
 
 
-//Enable V3 on cpu only. To bootstrap the chain.
-//#define RH_FORCE_PASCAL_V3_ON_CPU
-
 //Randomize nonce2
 #define RH_RANDOMIZE_NONCE2
 
@@ -57,7 +54,7 @@ struct PascalWorkPackage
     string  ComputePayload();
 
     static void     ComputeTargetBoundary(h256& boundary, double& diff, double diffMultiplyer);
-	static U64	    ComputeNonce2(U32 nonce2);
+    static U64	    ComputeNonce2(U32 nonce2);
 
     string          m_jobID;
     string          m_ntime;   

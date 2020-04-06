@@ -36,7 +36,7 @@ protected:
     // Get all codes and kernel name
     virtual U32 GetOutputMaxCount(){ return MAX_GPUS; }
     virtual U32 GetOutputBufferSize() {return (GetOutputMaxCount() + 1)*sizeof(U32);}
-    virtual U32 GetHeaderBufferSize() { return PascalHeaderSize; }
+    virtual U32 GetHeaderBufferSize() { return PascalHeaderSizeV5 ; }
 
 
     // must use m_queue in m_context to load/store buffers

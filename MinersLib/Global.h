@@ -27,7 +27,7 @@
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_STRING("logfilename", g_logFileNameDummy, "General", "Set the name of the log's filename.\nNote: the log file will be overwritten every time you start rhminer");
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_STRING("configfile", g_configFileNameDummy, "General", "Xml config file containing all config options.\nAll other command line options are ignored if config file given.");
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_BOOL("cpu", g_useCPU, "Gpu", "Enable the use of CPU to mine.\nex '-cpu -cputhreads 4' will enable mining on cpu while gpu mining.");
-RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("testperformance", g_testPerformance, "Debug", "Run performance test for an amount of seconds", 0, 120)
+RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("testperformance", g_testPerformance, "Debug", "Run performance test for an amount of seconds", 0, 300)
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("testperformancethreads", g_testPerformanceThreads, "Debug", "Amount of threads to use for performance test", 0, 256)
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("processpriority", g_setProcessPrio, "General", "On windows only. Set miner's process priority.\n0=Background Process, 1=Low Priority, 2=Normal Priority, 3=High Priority.\nDefault is 3.\nNOTE:Background Proces mode will make the console disapear from the desktop and taskbar. WARNING: Changing this value will affect GPU mining.", 0, 10);
 RHMINER_COMMAND_LINE_DECLARE_GLOBAL_INT("memoryboost", g_memoryBoostLevel, "Optimizations", "This option will enable some memory optimizations that could make the miner slower on some cpu.\nTest it with -testperformance before using it.\n1 to enable boost. 0 to disable boost.\nEnabled, by default, on cpu with hyperthreading.", 0, RH_OPT_UNSET+1);
@@ -110,15 +110,8 @@ class GlobalMiningPreset
         U64         GetTotalDevFeeTime24H() { return m_totalDevFreeTimeToDayMS; }
         bool        IsInDevFeeMode() { return !!AtomicGet(m_endOfCurrentDevFeeTimesMS); }
         bool        DetectDevfeeOvertime();
-        void        GetRandomDevCred(string& configStr);
         bool        UpdateToDevModeState(string& connectionParams);
         float       m_devfeePercent = 1.0f;
-        inline void RegisterDevCredentials(const strings& servers, const strings& walletAddr)
-        {
-            for(auto& server : servers)
-                for (auto& addr : walletAddr)
-                    m_devModeWallets.push_back(server + "\t" + addr);
-        }
 
         //Local difficulty
         float m_localDifficulty = 0.0f;
@@ -131,18 +124,18 @@ class GlobalMiningPreset
         string GetPendingConfigFile() { return m_pendingConfigFile; }
 
     protected:
-        U64          m_startTimeMS = 0;
-        U32          m_requestRestart = 0;
-        U32          m_requestReboot = 0;
-
-        std::mutex   *devFeeMutex;
-        U64          m_devFeeTimer24hMS = 0;
-        vector<U64>  m_nextDevFeeTimesMS;
-        U64          m_currentDevFeeTimesMS = 0;
-        U64          m_endOfCurrentDevFeeTimesMS = 0;
-        U64          m_totalDevFreeTimeToDayMS = 0;
-        strings      m_devModeWallets;
-        string      m_pendingConfigFile;
+        U64            m_startTimeMS = 0;
+        U32            m_requestRestart = 0;
+        U32            m_requestReboot = 0;
+                      
+                      
+        std::mutex     *devFeeMutex;
+        U64            m_devFeeTimer24hMS = 0;
+        vector<U64>    m_nextDevFeeTimesMS;
+        U64            m_currentDevFeeTimesMS = 0;
+        U64            m_endOfCurrentDevFeeTimesMS = 0;
+        U64            m_totalDevFreeTimeToDayMS = 0;
+        string         m_pendingConfigFile;
 
         void SetStratumInfo(const string& val);
         void FailOverURL(const string& val);

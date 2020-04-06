@@ -18,20 +18,13 @@
 
 #define SHA2_512_BLOCK_SIZE 128
 
-//DO the job for 384 and 512
-
-
-void CUDA_SYM_DECL(SHA2_512_RoundFunction)(uint64_t* data, uint64_t* state)
+void SHA2_512_RoundFunction(uint64_t* data, uint64_t* state)
 {
     uint64_t T0, T1, a, b, c, d, e, f, g, h;
 
-    //scratch buffer 64 uint32
     uint64_t beData[128];
     for (a = 0; a < 128 / 8; a++)
-        beData[a] = ReverseBytesUInt64(data[a]); //swap 64 first bytes
-
-    // Step 1
-
+        beData[a] = ReverseBytesUInt64(data[a]); 
     T0 = beData[16 - 15];
     T1 = beData[16 - 2];
     beData[16] = ((ROTL64(T1, 45)) ^ (ROTL64(T1, 3)) ^ (T1 >> 6)) + beData[16 - 7] + ((ROTL64(T0, 63)) ^ (ROTL64(T0, 56)) ^ (T0 >> 7)) + beData[0];
@@ -233,9 +226,6 @@ void CUDA_SYM_DECL(SHA2_512_RoundFunction)(uint64_t* data, uint64_t* state)
     f = state[5];
     g = state[6];
     h = state[7];
-
-    // Step 2
-
     h = h + (0x428A2F98D728AE22 + beData[0] + ((ROTL64(e, 50)) ^ (ROTL64(e, 46)) ^ (ROTL64(e, 23))) + ((e & f) ^ (~e & g)));
 
     d = d + h;
@@ -649,52 +639,70 @@ void CUDA_SYM_DECL(SHA2_512_RoundFunction)(uint64_t* data, uint64_t* state)
 
 }
 
-
-inline void CUDA_SYM_DECL(_RandomHash_SHA2_512)(RH_StridePtr roundInput, RH_StridePtr output, bool is384)
+inline void RandomHash_SHA2_512(RH_StridePtr roundInput, RH_StridePtr output, SHA2_512_MODE mode)
 {
-    
-    // optimized algo 
     RH_ALIGN(64) uint64_t state[8];
-    if (is384)
+    switch (mode)
     {
-        state[0] = 0xCBBB9D5DC1059ED8;
-        state[1] = 0x629A292A367CD507;
-        state[2] = 0x9159015A3070DD17;
-        state[3] = 0x152FECD8F70E5939;
-        state[4] = 0x67332667FFC00B31;
-        state[5] = 0x8EB44A8768581511;
-        state[6] = 0xDB0C2E0D64F98FA7;
-        state[7] = 0x47B5481DBEFA4FA4;
+        case SHA2_512_MODE_384:
+        {
+            state[0] = 0xCBBB9D5DC1059ED8;
+            state[1] = 0x629A292A367CD507;
+            state[2] = 0x9159015A3070DD17;
+            state[3] = 0x152FECD8F70E5939;
+            state[4] = 0x67332667FFC00B31;
+            state[5] = 0x8EB44A8768581511;
+            state[6] = 0xDB0C2E0D64F98FA7;
+            state[7] = 0x47B5481DBEFA4FA4;
+        }break;
+        case SHA2_512_MODE_512:
+        {
+            state[0] = 0x6A09E667F3BCC908;
+            state[1] = 0xBB67AE8584CAA73B;
+            state[2] = 0x3C6EF372FE94F82B;
+            state[3] = 0xA54FF53A5F1D36F1;
+            state[4] = 0x510E527FADE682D1;
+            state[5] = 0x9B05688C2B3E6C1F;
+            state[6] = 0x1F83D9ABFB41BD6B;
+            state[7] = 0x5BE0CD19137E2179;
+        }break;
+        case SHA2_512_MODE_512_224:
+        {
+            state[0] = U64(0x8C3D37C819544DA2);
+            state[1] = 0x73E1996689DCD4D6;;
+            state[2] = 0x1DFAB7AE32FF9C82;;
+            state[3] = 0x679DD514582F9FCF;;
+            state[4] = 0x0F6D2B697BD44DA8;;
+            state[5] = 0x77E36F7304C48942;;
+            state[6] = 0x3F9D85A86A1D36C8;;
+            state[7] = 0x1112E6AD91D692A1;;
+        }break;
+        case SHA2_512_MODE_512_256:
+        {
+            state[0] = 0x22312194FC2BF72C;;
+            state[1] = U64(0x9F555FA3C84C64C2);;
+            state[2] = 0x2393B86B6F53B151;;
+            state[3] = U64(0x963877195940EABD);;
+            state[4] = U64(0x96283EE2A88EFFE3);;
+            state[5] = U64(0xBE5E1E2553863992);;
+            state[6] = 0x2B0199FC2C85B8AA;;
+            state[7] = 0x0EB72DDC81C52CA2;;
+        }break;
     }
-    else
-    {
-        state[0] = 0x6A09E667F3BCC908;
-        state[1] = 0xBB67AE8584CAA73B;
-        state[2] = 0x3C6EF372FE94F82B;
-        state[3] = 0xA54FF53A5F1D36F1;
-        state[4] = 0x510E527FADE682D1;
-        state[5] = 0x9B05688C2B3E6C1F;
-        state[6] = 0x1F83D9ABFB41BD6B;
-        state[7] = 0x5BE0CD19137E2179;
-    }
-
-    //body
     int64_t oriLen = RH_STRIDE_GET_SIZE(roundInput);
     int64_t len = oriLen;
     uint32_t blockCount = (uint32_t)len / SHA2_512_BLOCK_SIZE;
-    uint64_t *dataPtr = (uint64_t *)RH_STRIDE_GET_DATA(roundInput);
+    uint64_t *dataPtr = RH_STRIDE_GET_DATA64(roundInput);
     while(blockCount > 0)
     {
-        _CM(SHA2_512_RoundFunction)(dataPtr, state);
+        SHA2_512_RoundFunction(dataPtr, state);
         len -= SHA2_512_BLOCK_SIZE;
         dataPtr += SHA2_512_BLOCK_SIZE / 8;
         blockCount--;
     }
-    
-    //finish
 	register uint64_t lowBits, hiBits;
 	register int32_t padindex;
-    RH_ALIGN(64) uint8_t pad[/*255*/256];
+    RH_ALIGN(64) uint8_t pad[256];
 	    
 	lowBits = oriLen << 3;
 	hiBits = oriLen >> 61;
@@ -724,35 +732,37 @@ inline void CUDA_SYM_DECL(_RandomHash_SHA2_512)(RH_StridePtr roundInput, RH_Stri
 
     RH_ASSERT(((padindex + len) % SHA2_512_BLOCK_SIZE)==0);
 
-    _CM(SHA2_512_RoundFunction)(dataPtr, state);
+    SHA2_512_RoundFunction(dataPtr, state);
     padindex -= SHA2_512_BLOCK_SIZE;
     if (padindex > 0)
-        _CM(SHA2_512_RoundFunction)(dataPtr + (SHA2_512_BLOCK_SIZE/8), state);
+        SHA2_512_RoundFunction(dataPtr + (SHA2_512_BLOCK_SIZE/8), state);
     RH_ASSERT(padindex > -SHA2_512_BLOCK_SIZE);
 
-    //get the hash result IN BE
-    dataPtr = (uint64_t*)RH_STRIDE_GET_DATA(output);
-    if (is384)
+    dataPtr = RH_STRIDE_GET_DATA64(output);
+    switch (mode)
     {
-        RH_STRIDE_SET_SIZE(output, 6 * 8);
-        copy6_op(dataPtr, state, ReverseBytesUInt64);
+        case SHA2_512_MODE_384:
+        {
+            RH_STRIDE_SET_SIZE(output, 6 * 8);
+            copy6_op(dataPtr, state, ReverseBytesUInt64);
+        }break;
+        case SHA2_512_MODE_512:
+        {
+            RH_STRIDE_SET_SIZE(output, 8 * 8);
+            copy8_op(dataPtr, state, ReverseBytesUInt64);
+        }break;
+        case SHA2_512_MODE_512_224:
+        {
+            RH_STRIDE_SET_SIZE(output, 7 * 4);
+            copy8_op(dataPtr, state, ReverseBytesUInt64);
+        }break;
+        case SHA2_512_MODE_512_256:
+        {
+            RH_STRIDE_SET_SIZE(output, 4 * 8);
+            copy8_op(dataPtr, state, ReverseBytesUInt64);
+        }break;
     }
-    else
-    {
-        RH_STRIDE_SET_SIZE(output, 8 * 8);
-        copy8_op(dataPtr, state, ReverseBytesUInt64);
-    }
+    
 
 }
 
-
-void CUDA_SYM_DECL(RandomHash_SHA2_512)(RH_StridePtr roundInput, RH_StridePtr output)
-{
-    _CM(_RandomHash_SHA2_512)(roundInput, output, false);
-}
-
-
-void CUDA_SYM_DECL(RandomHash_SHA2_384)(RH_StridePtr roundInput, RH_StridePtr output)
-{
-    _CM(_RandomHash_SHA2_512)(roundInput, output, true);
-}

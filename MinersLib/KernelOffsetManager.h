@@ -26,7 +26,11 @@ struct KernelOffsetManager
     static U64      GetCurrentValue() { return AtomicGet(m_value);  }
     static void     Reset(U64 val);
     static U64      Increment(U32 increment); //return val += inc;
+    static U32      GetNextSearchNonce(){ return AtomicIncrement(m_searchNonce);  }
+    static void     ResetSearchNonce(U32 v) { AtomicSet(m_searchNonce, v);  }
 
 protected:
     static U64 m_value;
+    static U32 m_searchNonce;
 };
+
