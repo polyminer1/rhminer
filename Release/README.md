@@ -14,9 +14,9 @@ Download here : https://github.com/polyminer1/rhminer/releases/<br>
 ## MD5 binaries hashes ##
 | Package Name                          |  MD5 for rhminer executable           |
 | --------------------------------------|---------------------------------------|
-| rhminer.2.3.Windows.CPU.zip           | **edefc509ebf70db01b8108073cd26f96**  |
-| rhminer.2.3.Windows.CPU_OLDGEN.zip    | **eab1591f0812a834c888570cc1739612**  |
-| PascalCoinScreenSaver.zip             | **d7f1427a8851c7879646288b827f2329**  |
+| rhminer.2.3.Windows.CPU.zip           | **2ff6d8e08a5d7d0b0fff930f54a62f4e**  |
+| rhminer.2.3.Windows.CPU_OLDGEN.zip    | **7a861474b48eedf3effcd1af7a798faf**  |
+| PascalCoinScreenSaver.zip             | **b3a89c77731c28569be6a76fe459ad9e**  |
 | rhminer.2.3.MacOS.CPU.zip             | **37d59e04472c80ea9213c54dde7f9dd3**  |
 | rhminer.2.3.Linux.CPU.zip             | **c35be25b546fb60aa46150780e5c849e**  |
 | rhminer.2.3.Linux.CPU_OLDGEN.zip      | **b1292b3b58e20052fded7593393e749d**  |

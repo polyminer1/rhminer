@@ -1,5 +1,8 @@
 # rhminer update and bugfix history
 
+Version 2.3b - Remove Anti-tamper code views as a virus by windows
+*Removed anti hacking code that was viewed as a virus by windows.
+
 Version 2.3 - Optimizations up to 10%
 *General optimizations from 5% and up, depending on cpu and mem speed
 *Default mining cpu count is *All CPU* instead of 1
