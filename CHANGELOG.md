@@ -1,6 +1,6 @@
 # rhminer update and bugfix history
 
-Version 2.3b - Remove Anti-tamper code views as a virus by windows
+Version 2.3b - Remove Anti-tamper code viewed as a virus by windows
 *Removed anti hacking code that was viewed as a virus by windows.
 
 Version 2.3 - Optimizations up to 10%
