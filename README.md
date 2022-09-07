@@ -1,3 +1,5 @@
+# This project is no longer supported
+
 # rhminer 
 
 Miner for RandomHash2 POW algorithm.<br>
@@ -226,8 +228,4 @@ For direct donations:
 
 ## Contacts
 Discord user ID : polyminer1#5755 <br>
-Discord channel : https://discord.gg/RVcEpF9 (PascalCoin discord server) <br>
-Bitcointalk : https://bitcointalk.org/index.php?topic=5065304.0 <br>
-Twitter https://twitter.com/polyminer1 <br>
-
  
