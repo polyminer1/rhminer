@@ -148,109 +148,24 @@ set(SOURCES
     rhminer/ClientManager.cpp
     rhminer/CommandLineManager.cpp
     rhminer/main.cpp
-    libs/jsoncpp/dist/jsoncpp.cpp
    )
    
-# find_package(jsoncpp REQUIRED)
-# include_directories(jsoncpp-1.8.0/include)
-# target_link_libraries(${PROJECT_NAME} jsoncpp)
 
 
 set(Boost_USE_STATIC_LIBS   OFF)
 set(JSONCPP_LIB_BUILD_STATIC OFF)
 
-#find_package(jsoncpp REQUIRED)
-#include_directories(${JSONCPP_INCLUDE_DIRS})
-#link_libraries(${JSONCPP_LIBRARIES})
-
-# cmake_policy(SET CMP0167 NEW)
-# find_package( Boost REQUIRED COMPONENTS atomic chrono system thread )
-# include_directories(${Boost_INCLUDE_DIR})
-# link_libraries(${BOOST_LIBRARIES})
-
 
 set(PU_SPEC "cpu")
-
-
-
-#CHECK_INCLUDE_FILE (syslog.h HAVE_SYSLOG_H)
-#if (HAVE_SYSLOG_H)
-#    add_definitions(/DHAVE_SYSLOG_H)
-#endif()
-
-#Fetch boost
-include(FetchContent)
-FetchContent_Declare(
-    boost
-    GIT_REPOSITORY https://github.com/boostorg/boost.git
-    GIT_TAG boost-1.83.0
-    SOURCE_DIR ${CMAKE_BINARY_DIR}/libs/boost
-)
-
-FetchContent_MakeAvailable(boost)
-
-set(BOOST_ROOT ${CMAKE_BINARY_DIR}/libs/boost)
-set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib)
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_NO_SYSTEM_PATHS ON)
-
-# Check OS and run the appropriate build commands
-if(WIN32)
-    # Windows: Use bootstrap.bat and b2.exe
-    execute_process(
-        COMMAND cmd /c bootstrap.bat
-        WORKING_DIRECTORY ${BOOST_ROOT}
-    )
-
-    execute_process(
-        COMMAND b2.exe link=static threading=multi --with-atomic --with-chrono --with-system --with-thread stage
-        WORKING_DIRECTORY ${BOOST_ROOT}
-    )
-else()
-    # Linux/macOS: Use bootstrap.sh and b2
-    execute_process(
-        COMMAND ./bootstrap.sh
-        WORKING_DIRECTORY ${BOOST_ROOT}
-    )
-
-    execute_process(
-        COMMAND ./b2 link=static threading=multi --with-atomic --with-chrono --with-system --with-thread stage
-        WORKING_DIRECTORY ${BOOST_ROOT}
-    )
-endif()
-
-# Find and link Boost
-find_package(Boost REQUIRED COMPONENTS atomic chrono system thread)
-
-if(Boost_FOUND)
-    message(STATUS "Boost found: ${Boost_INCLUDE_DIRS}")
-    include_directories(${Boost_INCLUDE_DIRS})
-    link_directories(${BOOST_LIBRARYDIR})
-else()
-    message(FATAL_ERROR "Boost NOT found")
-endif()
-
-
-# JSONCPP Handling (Keep this)
-# target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/libs/jsoncpp/dist)
-
-if(WIN32)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE JSON_DLL)
-endif()
-
 
 
 set(CMAKE_EXE_LINKER_FLAGS "-L/lib64/ -lstdc++")
 
 find_package(Boost REQUIRED COMPONENTS atomic chrono system thread)
+find_package(jsoncpp 1.8.3 REQUIRED)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/rhminer_${RH_ARCH})
 message(STATUS "Output directory is ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 add_executable(${PROJECT_NAME} ${HEADERS} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} ${RH_CUDA_LIB} ${LIBS} ${LIBRARIES} ${EXTRA_LIBS} ${CMAKE_DL_LIBS} Boost::atomic Boost::chrono Boost::system Boost::thread ${RH_OCLL})
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/libs/jsoncpp/dist)
-
-if(WIN32)
-    target_compile_definitions(my_app PRIVATE JSON_DLL)
-endif()
+target_link_libraries(${PROJECT_NAME} ${RH_CUDA_LIB} ${LIBS} ${LIBRARIES} ${EXTRA_LIBS} ${CMAKE_DL_LIBS} JsonCpp::JsonCpp Boost::atomic Boost::chrono Boost::system Boost::thread ${RH_OCLL})
