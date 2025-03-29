@@ -7,8 +7,10 @@ I am in no means cabable of actually doing anything other than cleaning the proj
 ```
 git clone https://github.com/AteebXYZ/rhminer
 cd rhminer
+mkdir -p build/rhminer
 cd build/rhminer
-cmake ../../ -DCMAKE_BUILD_TYPE=Release
+conan install ../../ --output-folder=./ --build=missing
+cmake ../../ --preset rhminer
 make -j12
 ```
 Binary should be available in the rhminer_CPU folder.
