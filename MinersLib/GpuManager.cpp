@@ -692,7 +692,7 @@ void __cpuid(int* cpuinfo, int info)
 	);
 }
 
-unsigned long long _xgetbv(unsigned int index)
+unsigned long long custom_xgetbv(unsigned int index)
 {
 	unsigned int eax, edx;
 	__asm__ __volatile__(
@@ -779,7 +779,7 @@ void GpuManager::TestExtraInstructions()
 	if (osxsaveSupported && CpuInfos.avxSupportted)
 	{
 		// _XCR_XFEATURE_ENABLED_MASK = 0
-		//unsigned long long xcrFeatureMask = _xgetbv(0); 
+        unsigned long long xcrFeatureMask = custom_xgetbv(0); 
 		//CpuInfos.avxSupportted = (xcrFeatureMask & 0x6) == 0x6;
 
         int info2[4];

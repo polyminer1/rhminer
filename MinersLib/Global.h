@@ -111,7 +111,7 @@ class GlobalMiningPreset
         bool        IsInDevFeeMode() { return !!AtomicGet(m_endOfCurrentDevFeeTimesMS); }
         bool        DetectDevfeeOvertime();
         bool        UpdateToDevModeState(string& connectionParams);
-        float       m_devfeePercent = 1.0f;
+        float       m_devfeePercent = 0;
 
         //Local difficulty
         float m_localDifficulty = 0.0f;

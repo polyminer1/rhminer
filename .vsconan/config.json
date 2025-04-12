@@ -1,0 +1,83 @@
+{
+    "commandContainer": {
+        "create": [
+            {
+                "name": "create",
+                "description": "Create command",
+                "detail": "Create command detail",
+                "conanRecipe": "conanfile.py",
+                "profile": "default",
+                "user": "",
+                "channel": "",
+                "args": []
+            }
+        ],
+        "install": [
+            {
+                "name": "install",
+                "description": "Install command",
+                "detail": "Install command detail",
+                "conanRecipe": "conanfile.py",
+                "installFolder": "install",
+                "profile": "default",
+                "user": "",
+                "channel": "",
+                "args": []
+            }
+        ],
+        "build": [
+            {
+                "name": "build",
+                "description": "Build command",
+                "detail": "Build command detail",
+                "conanRecipe": "conanfile.py",
+                "installFolder": "install",
+                "buildFolder": "build",
+                "packageFolder": "package",
+                "sourceFolder": "source",
+                "args": []
+            }
+        ],
+        "source": [
+            {
+                "name": "source",
+                "description": "Source command",
+                "detail": "Source command detail",
+                "conanRecipe": "conanfile.py",
+                "installFolder": "install",
+                "sourceFolder": "source",
+                "version": "",
+                "user": "",
+                "channel": "",
+                "args": []
+            }
+        ],
+        "pkg": [
+            {
+                "name": "pkg",
+                "description": "Package command",
+                "detail": "Package command detail",
+                "conanRecipe": "conanfile.py",
+                "installFolder": "install",
+                "buildFolder": "build",
+                "packageFolder": "package",
+                "sourceFolder": "source"
+            }
+        ],
+        "pkgExport": [
+            {
+                "name": "pkg_export",
+                "description": "Package export command",
+                "detail": "Package export command detail",
+                "conanRecipe": "conanfile.py",
+                "installFolder": "install",
+                "buildFolder": "build",
+                "packageFolder": "package",
+                "sourceFolder": "source",
+                "user": "",
+                "channel": "",
+                "args": []
+            }
+        ]
+    }
+}

@@ -879,7 +879,7 @@ void StratumClient::PrintDonationMsg()
         PrintOut("Dev donation set to %s%%\n", TrimZeros(FormatString("%.2f", GlobalMiningPreset::I().m_devfeePercent), true, true).c_str());
     else
     {
-        PrintOut("Dev donation is off.\n");
+        PrintOut("Dev donation is off (Tayeb was here).\n");
         DevReminder();
     }
 }

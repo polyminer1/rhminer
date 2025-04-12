@@ -1,5 +1,5 @@
 #pragma once
-
+#define BOOST_TIMER_ENABLE_DEPRECATED
 #//#define _WINSOCKAPI_    // stops windows.h including winsock.h
 #ifdef _WIN32_WINNT
     #include <winsock2.h>

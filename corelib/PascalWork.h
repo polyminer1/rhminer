@@ -18,7 +18,7 @@
 #if defined(_WIN32_WINNT) || defined(MACOS_X) || (defined(__APPLE__) & defined(__MACH__))
 #include <json/json.h>
 #else
-#include <jsoncpp/json/json.h>
+#include <json/json.h>
 #endif
 
 
